@@ -111,7 +111,14 @@ are pennies. Run the long task once per harness.
   agent's self-report is never consulted. Your harness evaluation at work
   should share this property: external checkers on your tasks.
 - `results/results.jsonl` accumulates every run; `compare.py` shows the
-  latest per cell. Rerun a flaky cell and the table updates.
+  latest per cell (with a `when` column so you can tell recent rows from
+  old ones). Rerun a flaky cell and the table updates.
+- To start the table over — say, to separate warm-up attempts from the
+  runs you intend to keep — archive the file; nothing is lost:
+
+  ```
+  mv results/results.jsonl results/results.warmup.jsonl
+  ```
 
 ## Debrief questions
 
