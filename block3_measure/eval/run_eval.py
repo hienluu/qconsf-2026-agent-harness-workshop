@@ -13,6 +13,7 @@ Results append to results/results.jsonl; render with eval/compare.py.
 """
 
 import argparse
+import contextlib
 import importlib
 import json
 import shutil
@@ -21,6 +22,22 @@ import sys
 import time
 from dataclasses import asdict
 from pathlib import Path
+
+
+class Tee:
+    """Write harness output to the terminal AND a per-run log file, so
+    'why did this run cost what it cost' stays answerable afterward."""
+
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, text):
+        for s in self.streams:
+            s.write(text)
+
+    def flush(self):
+        for s in self.streams:
+            s.flush()
 
 HERE = Path(__file__).resolve().parent
 BLOCK3 = HERE.parent
@@ -71,7 +88,10 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     print(f"\n=== {HARNESSES[harness_key]} × {task_name} ===")
     print(f"    harness: {(module.__doc__ or '').strip().splitlines()[0]}")
     print(f"    task: {task['description']}")
-    result = module.run(str(workspace), task["prompt"])
+    log_path = run_dir / "console.log"
+    with log_path.open("w") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):
+        result = module.run(str(workspace), task["prompt"])
+    print(f"    trace saved: {log_path.relative_to(BLOCK3)}")
 
     tests_green, pytest_summary = check_tests(workspace)
     row = asdict(result)
