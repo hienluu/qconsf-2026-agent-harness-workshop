@@ -1,9 +1,9 @@
 # Block 2 — Build the Naive Harness
 
-You will build the simplest possible agent harness — a loop and a tool
-dispatcher — then watch it succeed on small tasks and fall apart on a
-long-horizon one. That failure is the setup for Block 3, where harness
-components fix it measurably.
+You will complete a minimal agent harness — a loop and a tool dispatcher —
+verify it on small tasks, then run it on a long-horizon task sized past
+its design limits and characterize how it fails. Block 3 adds the missing
+components one configuration at a time and measures what each one buys.
 
 ## Exercise flow
 
@@ -14,9 +14,10 @@ components fix it measurably.
    provided; read it.
 2. Run the short tasks (see each `TASK.md` under `tasks/short/`). All three
    should finish green in under a minute each.
-3. Run the long-horizon task (`tasks/long_horizon/refactor_v2/TASK.md`).
-   Watch the transcript grow and progress stall.
-4. Debrief: map each failure you observed to the missing harness component.
+3. Run the long-horizon task (`tasks/long_horizon/refactor_v2/TASK.md`)
+   and observe how the transcript grows and where progress stalls.
+4. Debrief: map each failure mode you observed to the missing harness
+   component.
 
 Stuck on the TODOs? The finished harness is in `solution/harness.py`.
 

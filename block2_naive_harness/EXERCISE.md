@@ -1,7 +1,12 @@
-# Block 2 Exercise: Build a Harness, Watch It Win, Watch It Die
+# Block 2 Exercise: Build a Minimal Harness and Find Its Limits
 
 Time: ~55 minutes. Everything runs locally against your provider API key.
 Cost for the whole exercise: roughly $1–2.
+
+The plan: complete a minimal agent harness, verify it handles a short task,
+then give it a task sized past its design limits and characterize how it
+fails. The failure modes you observe here are what Block 3 fixes and
+measures.
 
 All commands below are run from this directory (`block2_naive_harness/`)
 via `uv run` — no virtualenv to create or activate, ever. uv finds the
@@ -77,15 +82,15 @@ cd ../../../..
 It prints `[1.5, 2.5]` — two windows, not three. (Rerun it after the agent
 fixes the file and you'll get all three.)
 
-Don't fix it yourself — that's the agent's job. (Full spoiler in the
-task's `TASK.md` if you want it.)
+Leave the fix to the agent — the point of this step is establishing the
+before-state yourself. (Full explanation in the task's `TASK.md`.)
 
 **Open `tasks/short/01_fix_bug/workspace/stats.py` in your editor and keep
 it visible.** Look at line 6 — the buggy loop bound. Your editor will
-reload the file the moment the agent rewrites it, so you'll see the fix
-land live.
+reload the file the moment the agent rewrites it, so you can watch the
+edit land.
 
-**Now unleash your agent on it.** The harness takes two arguments — the
+**Now run your agent against it.** The harness takes two arguments — the
 workspace directory (the only files the agent's tools can see) and the task
 prompt (`uv run harness_skeleton.py --help` for details):
 
@@ -98,15 +103,17 @@ Watch the turns print. Expected: ~5 turns, under a minute. Notice the agent
 does exactly what you just did — runs the tests, reads the diff, reads the
 loop — then edits.
 
-**Verify it yourself** (never take an agent's word for it):
-Run the following command from the block2_naive_harness directory
+**Verify the result yourself** — an agent's self-report is not evidence;
+the test suite is. Run the following from the block2_naive_harness
+directory:
 
 ```
 uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 ```
 
-`4 passed`. You saw red, the agent worked, you saw green. You just built a
-working coding agent in ~40 lines. Optional: run
+`4 passed`. Red before, green after, confirmed by your own checker rather
+than the agent's summary — that verification habit is the one to keep. The
+harness that did this is about 40 lines. Optional: run
 `tasks/short/02_add_function` and `03_small_rename` the same way (see each
 TASK.md for the run command).
 
@@ -125,23 +132,24 @@ While it runs, skim `tasks/long_horizon/refactor_v2/workspace/MIGRATION.md`
 to see what you asked for, and watch what the agent does: how many files it
 reads, what its searches return, how big its write batches get.
 
-Expected: this **usually ends badly** — a raw Python traceback mid-run (a
-truncated tool call the harness couldn't parse), a context-length error, or
-the 40-turn cap with tests still red. But sometimes the agent limps
-through after 30+ turns and roughly a **million input tokens** (~$1 for
-one task!), because the naive harness resends the entire growing
-transcript on every single call.
+Expected outcome, based on our tuning runs: this usually fails — a raw
+Python traceback mid-run (a truncated tool call the harness couldn't
+parse), a context-length error, or the 40-turn cap with the suite still
+red. Some runs instead complete after 30+ turns and roughly a million
+input tokens (about $1 for one task), because the harness resends the
+entire growing transcript on every call.
 
-Both outcomes are data. The crash shows fragility; the expensive "success"
-shows the cost curve. Note which one YOU got, the turn count, and the
-wall time — you'll compare against protected harnesses in Block 3. Check
-the state:
+Both outcomes are data. The crash demonstrates fragility; the expensive
+success demonstrates the cost curve. Record which you got, the turn
+count, and the wall time — Block 3 compares these numbers against
+protected harnesses. Then check the workspace state:
 
 ```
 uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 ```
 
-Half-migrated. Money spent. Agent gone.
+On a failed run you'll typically find it partially migrated: work
+performed, then stranded when the process died.
 
 To reset the workspace for another attempt (from the repo root):
 
@@ -149,9 +157,10 @@ To reset the workspace for another attempt (from the repo root):
 git checkout -- block2_naive_harness/tasks/long_horizon/refactor_v2/workspace
 ```
 
-## Step 5 — The autopsy (group debrief)
+## Step 5 — The postmortem (group debrief)
 
-Before the debrief, answer for yourself:
+Standard incident-review questions, applied to your run. Before the group
+debrief, answer for yourself:
 
 1. What was the *proximate* cause of death in YOUR run? (Read the last few
    lines of output.)

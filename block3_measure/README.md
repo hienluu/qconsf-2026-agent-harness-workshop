@@ -1,8 +1,12 @@
 # Block 3 — Measure It
 
-In Block 2 you watched one harness die on one task, once. An anecdote.
-This block turns it into evidence: three harnesses, four tasks, one model,
-one score table. The harness is the only variable.
+Block 2 gave you a single data point: one harness, one task, one run. None
+of us would accept that in a design review, so let's not accept it here.
+This block is the controlled experiment: hold the model, the tasks, and
+the tools constant; vary only the harness; measure solve rate, turns,
+tokens, and wall time. You leave with a score table you could defend to
+your team — and, more usefully, a method you can rerun against your own
+tasks when a vendor benchmark asks you to take its word for it.
 
 ## The task suite
 
@@ -15,7 +19,7 @@ afterward** (the agent is never asked whether it succeeded).
 | `fix_bug` | find and fix an off-by-one in a stats module (1 file, 4 tests) | short — a few turns |
 | `add_function` | implement a missing `slugify` from its 5 tests | short |
 | `small_rename` | rename two legacy functions across 2 files | short |
-| `refactor_v2` | migrate a ~150-file bookkeeping library to its v2 API using an *incomplete* changelog, 35 tests | long — this is the one that kills naive harnesses |
+| `refactor_v2` | migrate a ~150-file bookkeeping library to its v2 API using an *incomplete* changelog, 35 tests | long — sized past a naive harness's design limits |
 
 Workspaces live under `../block2_naive_harness/tasks/` (each has a TASK.md
 with details); the prompts sent to the agent are in `eval/tasks.py`.
@@ -41,7 +45,7 @@ diff harnesses/h2_managed.py harnesses/h3_full.py
    ```
    uv run eval/run_eval.py h1 --task fix_bug
    ```
-2. **Reproduce the death, with numbers this time:**
+2. **Reproduce the Block 2 failure, instrumented this time:**
    ```
    uv run eval/run_eval.py h1 --task refactor_v2
    ```
@@ -53,7 +57,7 @@ diff harnesses/h2_managed.py harnesses/h3_full.py
    ```
    uv run eval/run_eval.py h3 --task refactor_v2
    ```
-5. **The payoff table:**
+5. **The comparison table:**
    ```
    uv run eval/compare.py
    ```

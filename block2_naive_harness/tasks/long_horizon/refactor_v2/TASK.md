@@ -1,6 +1,7 @@
 # Long-horizon task: the pyledger v2 migration
 
-This is the task that breaks the naive harness — on purpose.
+This task is deliberately sized past the naive harness's design limits —
+the failure it produces is the subject of Blocks 2 and 3.
 
 The `workspace/` contains **pyledger**, a small double-entry bookkeeping
 library (~20 source files), whose test suite was already updated to the v2

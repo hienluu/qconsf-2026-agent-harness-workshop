@@ -4,9 +4,10 @@ Hands-on repository for **"Building AI Agents: A Practical Framework for
 Choosing the Right Agent Harness"** — QCon San Francisco, November 19, 2026.
 
 An agent is a model plus a harness: the loop, tools, context management,
-memory, sandboxing, and guardrails around it. In this repo you build the
-simplest possible harness, watch it fail, measure why, and then evaluate the
-production harnesses through the same lens.
+memory, sandboxing, and guardrails around it. In this repo you build a
+minimal harness, characterize where and why it fails, measure what each
+added component buys, and then evaluate the production harnesses through
+the same lens.
 
 ## Setup (do this at home — venue WiFi will not support it)
 
