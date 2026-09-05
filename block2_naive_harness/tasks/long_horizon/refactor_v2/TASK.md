@@ -11,9 +11,11 @@ the 14 rename rules. The agent must apply them across every file until
 Run it (from `block2_naive_harness/`):
 
 ```
-python solution/harness.py tasks/long_horizon/refactor_v2/workspace \
-  "Migrate the source code to the v2 API following MIGRATION.md until all tests pass."
+python harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
+  "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
+
+(`MIGRATION.md` is inside the workspace, so the agent CAN read that one.)
 
 ## What to watch for (observed in live tuning runs, Sep 2026, GLM-5.3)
 

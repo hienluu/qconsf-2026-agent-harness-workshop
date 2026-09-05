@@ -1,8 +1,10 @@
-"""Build the naive harness: YOU write the agent loop and the tool dispatcher.
+"""Build the naive harness: fill in the TWO small gaps in the agent loop.
 
-Everything else — client setup, tool implementations, tool schemas — is
-provided. The two TODO blocks below are the beating heart of every agent
-harness ever shipped. They total ~30-40 lines.
+The loop structure, tool dispatcher, client setup, and tool schemas are all
+provided. You write the two moments that matter most:
+
+  TODO 1 — ask the model what to do next   (~4 lines)
+  TODO 2 — execute a tool and feed the result back   (~5 lines)
 
 Usage: python harness_skeleton.py <workspace_dir> "<task instructions>"
 
@@ -47,47 +49,67 @@ def run(workspace_dir: str, task: str) -> None:
     model = os.environ["MODEL"]
     ws = Workspace(workspace_dir)
 
-    # ------------------------------------------------------------------
-    # TODO 1 — the tool dispatcher (~10 lines)
-    #
-    # Build `dispatch`: a dict mapping each tool name from TOOL_SCHEMAS to
-    # a callable that takes the parsed arguments dict and invokes the right
-    # Workspace method:
-    #   list_files -> ws.list_files()
-    #   read_file  -> ws.read_file(args["path"])
-    #   write_file -> ws.write_file(args["path"], args["content"])
-    #   search     -> ws.search(args["pattern"])
-    #   run_tests  -> ws.run_tests()
-    # ------------------------------------------------------------------
-    dispatch = {}  # <-- your code here
+    # The tool dispatcher: the bridge between what the model SAYS and what
+    # actually HAPPENS. The model only ever emits a tool name plus JSON
+    # arguments — it cannot touch the filesystem itself. This dict maps each
+    # name from TOOL_SCHEMAS to the code that really runs. Every key here is
+    # a capability you've granted the agent; anything not in this dict, the
+    # agent simply cannot do. (In production harnesses this same idea grows
+    # into permissions, sandboxing, and guardrails.) You'll use it in TODO 2.
+    dispatch = {
+        "list_files": lambda args: ws.list_files(),
+        "read_file": lambda args: ws.read_file(args["path"]),
+        "write_file": lambda args: ws.write_file(args["path"], args["content"]),
+        "search": lambda args: ws.search(args["pattern"]),
+        "run_tests": lambda args: ws.run_tests(),
+    }
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": task},
     ]
 
-    # ------------------------------------------------------------------
-    # TODO 2 — the agent loop (~25 lines)
-    #
-    # For up to MAX_TURNS iterations:
-    #   1. Call client.chat.completions.create(model=model, messages=messages,
-    #      tools=TOOL_SCHEMAS, temperature=0.1)
-    #   2. Take response.choices[0].message; append it to `messages`
-    #      (msg.model_dump(exclude_none=True) converts it to a plain dict).
-    #   3. If the message has NO tool_calls, the agent is done: print
-    #      msg.content and return.
-    #   4. Otherwise, for each tool call:
-    #        - parse call.function.arguments with json.loads
-    #        - look up call.function.name in `dispatch` and invoke it
-    #        - if the tool raises, use f"tool error: {exc}" as the result
-    #        - append {"role": "tool", "tool_call_id": call.id,
-    #                  "content": result} to `messages`
-    #      Printing each tool name as it runs makes the agent watchable.
-    #
-    # That's it. No compaction, no truncation, no recovery, no memory —
-    # notice what you did NOT have to build, then watch what that costs.
-    # ------------------------------------------------------------------
-    raise NotImplementedError("write the agent loop")
+    for turn in range(1, MAX_TURNS + 1):
+        # ------------------------------------------------------------------
+        # TODO 1 — ask the model what to do next (~4 lines)
+        #
+        # Call the chat completions API, passing the FULL conversation so
+        # far and the tool schemas:
+        #
+        #   response = client.chat.completions.create(
+        #       model=model, messages=messages,
+        #       tools=TOOL_SCHEMAS, temperature=0.1)
+        #
+        # Notice: `messages` — the whole transcript — goes over the wire on
+        # EVERY turn. That fact will matter later today.
+        # ------------------------------------------------------------------
+        response = None  # <-- your code here
+
+        msg = response.choices[0].message
+        messages.append(msg.model_dump(exclude_none=True))
+
+        if not msg.tool_calls:
+            print(f"\n[turn {turn}] agent finished:\n{msg.content}")
+            return
+
+        for call in msg.tool_calls:
+            name = call.function.name
+            args = json.loads(call.function.arguments or "{}")
+            print(f"[turn {turn}] {name}({', '.join(f'{k}={str(v)[:40]!r}' for k, v in args.items())})")
+            # --------------------------------------------------------------
+            # TODO 2 — execute the tool, feed the result back (~5 lines)
+            #
+            # Look up `name` in `dispatch` and invoke it with `args`. If it
+            # raises, use f"tool error: {exc}" as the result instead. Then
+            # append the result so the model sees it next turn:
+            #
+            #   messages.append(
+            #       {"role": "tool", "tool_call_id": call.id,
+            #        "content": result})
+            # --------------------------------------------------------------
+            pass  # <-- your code here
+
+    print(f"\ngave up after {MAX_TURNS} turns without finishing")
 
 
 if __name__ == "__main__":

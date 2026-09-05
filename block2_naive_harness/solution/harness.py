@@ -45,6 +45,14 @@ def run(workspace_dir: str, task: str) -> None:
     )
     model = os.environ["MODEL"]
     ws = Workspace(workspace_dir)
+
+    # The tool dispatcher: the bridge between what the model SAYS and what
+    # actually HAPPENS. The model only ever emits a tool name plus JSON
+    # arguments — it cannot touch the filesystem itself. This dict maps each
+    # name from TOOL_SCHEMAS to the code that really runs. Every key here is
+    # a capability you've granted the agent; anything not in this dict, the
+    # agent simply cannot do. (In production harnesses this same idea grows
+    # into permissions, sandboxing, and guardrails.)
     dispatch = {
         "list_files": lambda args: ws.list_files(),
         "read_file": lambda args: ws.read_file(args["path"]),

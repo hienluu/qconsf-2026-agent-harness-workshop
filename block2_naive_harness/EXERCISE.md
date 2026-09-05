@@ -23,34 +23,80 @@ truncation, no size limits, no permissions. Remember that.
 Open `harness_skeleton.py`. The client, system prompt, and tool schemas are
 done. Two things are missing — the two things that make it an agent.
 
-## Step 2 — Write the harness (15–20 min)
+## Step 2 — Complete the harness (10 min)
 
-Complete the two TODO blocks in `harness_skeleton.py`:
+The agent loop is scaffolded in `harness_skeleton.py`; you fill in the two
+moments that matter:
 
-- **TODO 1 — the tool dispatcher** (~10 lines): map each tool name to the
-  matching `Workspace` method.
-- **TODO 2 — the agent loop** (~25 lines): call the model, execute its tool
-  calls, feed results back, repeat until it stops calling tools.
+- **TODO 1 — ask the model what to do next** (~4 lines): the API call that
+  sends the full conversation plus the tool schemas.
+- **TODO 2 — execute the tool and feed the result back** (~5 lines): look
+  up the tool, invoke it, append the result to the transcript.
 
-The comments in each block spell out every step. If you're stuck or short
+Each TODO comment shows you exactly what to write. If you're stuck or short
 on time, copy from `solution/harness.py` and move on — the point of this
 block is what happens next, not the typing.
 
 ## Step 3 — Run it on a small task (5 min)
 
-```
-python harness_skeleton.py tasks/short/01_fix_bug/workspace \
-  "Fix the failing test. See TASK.md in the workspace."
-```
-
-Watch the turns print. Expected: ~5 turns, under a minute, ending with a
-summary and green tests. Verify yourself:
+**First, see the bug with your own eyes.** Run the tests before the agent
+touches anything:
 
 ```
 python -m pytest tasks/short/01_fix_bug/workspace -q
 ```
 
-You just built a working coding agent in ~40 lines. Optional: run
+Expect `2 failed, 2 passed`. Read the first failure — the assertion diff
+tells you everything:
+
+```
+assert [1.5, 2.5] == [1.5, 2.5, 3.5]
+```
+
+`moving_average([1, 2, 3, 4], 2)` should slide a 2-wide window and average
+each one:
+
+```
+[ 1  2  3  4 ]
+  └──┘            (1+2)/2 = 1.5   ✓
+     └──┘         (2+3)/2 = 2.5   ✓
+        └──┘      (3+4)/2 = 3.5   ✗ never computed — the loop stops early
+```
+
+The last window is dropped. Want to poke the bug directly, no test
+framework in between?
+
+```
+cd tasks/short/01_fix_bug/workspace
+python -c "from stats import moving_average; print(moving_average([1, 2, 3, 4], 2))"
+cd ../../../..
+```
+
+It prints `[1.5, 2.5]` — two windows, not three. (Rerun it after the agent
+fixes the file and you'll get all three.)
+
+Don't fix it yourself — that's the agent's job. (Full spoiler in the
+task's `TASK.md` if you want it.)
+
+**Now unleash your agent on it:**
+
+```
+python harness_skeleton.py tasks/short/01_fix_bug/workspace \
+  "One test fails. Find the bug and fix it. Do not modify the tests."
+```
+
+Watch the turns print. Expected: ~5 turns, under a minute. Notice the agent
+does exactly what you just did — runs the tests, reads the diff, reads the
+loop — then edits.
+
+**Verify it yourself** (never take an agent's word for it):
+
+```
+python -m pytest tasks/short/01_fix_bug/workspace -q
+```
+
+`4 passed`. You saw red, the agent worked, you saw green. You just built a
+working coding agent in ~40 lines. Optional: run
 `tasks/short/02_add_function` and `03_small_rename` the same way (see each
 TASK.md for the run command).
 

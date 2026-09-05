@@ -7,9 +7,11 @@ components fix it measurably.
 
 ## Exercise flow
 
-1. Open `harness_skeleton.py` and complete the two TODO blocks
-   (the tool dispatcher and the agent loop, ~30–40 lines total).
-   `tools.py` — the tool implementations and schemas — is provided; read it.
+1. Open `harness_skeleton.py` and fill in the two small TODOs in the agent
+   loop: the model call (~4 lines) and the tool execution + result
+   feedback (~5 lines). The loop structure, dispatcher, and client are
+   provided. `tools.py` — the tool implementations and schemas — is also
+   provided; read it.
 2. Run the short tasks (see each `TASK.md` under `tasks/short/`). All three
    should finish green in under a minute each.
 3. Run the long-horizon task (`tasks/long_horizon/refactor_v2/TASK.md`).
