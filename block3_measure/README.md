@@ -7,6 +7,29 @@ tokens, and wall time. You leave with a score table you could defend to
 your team — and, more usefully, a method you can rerun against your own
 tasks when a vendor benchmark asks you to take its word for it.
 
+## What "vary only the harness" means
+
+| Held constant | Varied (the harness) |
+|---|---|
+| Model, temperature, provider endpoint | What a tool result looks like by the time the model sees it (truncation) |
+| Tasks: identical pristine workspace copies, identical prompts | What the resent history looks like (compaction/elision of old tool output) |
+| Tools: all harnesses import the same `Workspace` + schemas from Block 2 | What happens on a malformed tool call (crash vs recoverable error message) |
+| Base system prompt, `MAX_TURNS` (both in `harnesses/base.py`) | What the model is offered (h3's `update_notes`) and refused (h3's read-only `tests/`) |
+| The judge: pytest on the workspace, never the agent's self-report | |
+
+Note that h3 does change what the model sees — an extra tool, a pinned
+notes message. That isn't contamination; it's the definition. The harness
+is the thing that decides what the model observes, what it may do, and
+what happens to its output. The model weights never change; its
+environment does — and environment changes alone are what move the numbers.
+
+One confound remains: the model isn't deterministic, even at temperature
+0.1. The same harness on the same task has crashed at turn 11 on one run
+and completed in 31 turns on another. Single runs compare harness+luck
+against harness+luck — treat one-run differences as direction, not
+magnitude, and collect several runs per cell before quoting numbers.
+Every run is preserved in `results/results.jsonl` for exactly this reason.
+
 ## The task suite
 
 The same four tasks you ran in Block 2 — each is a small codebase with a
