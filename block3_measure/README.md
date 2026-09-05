@@ -86,11 +86,19 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    ```
    uv run eval/run_eval.py h1 --task refactor_v2
    ```
-3. **Read the h2 diff, then run the same task through it:**
+3. **Read the h2 diff, then run the same task through h2** — identical to
+   h1 except tool outputs are capped, malformed tool calls come back as
+   recoverable errors, and old tool outputs are elided past a budget.
+   Watch the live output for `compaction: elided N old tool output(s)`
+   lines — that's the harness managing context mid-run:
    ```
    uv run eval/run_eval.py h2 --task refactor_v2
    ```
-4. **And h3:**
+4. **Read the h3 diff, then run h3** — h2 plus a durable `update_notes`
+   tool (notes survive compaction) and a write guardrail on `tests/`.
+   Watch for the agent calling `update_notes` unprompted — the harness
+   only offers the tool; whether the model adopts it is part of the
+   result:
    ```
    uv run eval/run_eval.py h3 --task refactor_v2
    ```
