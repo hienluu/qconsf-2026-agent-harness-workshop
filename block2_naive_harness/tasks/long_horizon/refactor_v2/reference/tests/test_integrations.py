@@ -28,6 +28,21 @@ def test_registry_imports_every_exporter():
     assert len(registry.ALL_EXPORTERS) == 14
 
 
+def test_sampled_variants_work():
+    ledger = seeded()
+    from pyledger.integrations.auditor_cash import audit_cash
+    from pyledger.integrations.reconciler_cash import reconcile_cash
+    from pyledger.integrations.snapshot_sales_revenue import snapshot_sales_revenue
+    from pyledger.integrations.limits_owners_equity import within_limit_owners_equity
+    from pyledger.integrations.history_cash import history_cash
+
+    assert audit_cash(ledger)["clean"] == 2
+    assert reconcile_cash(ledger, "800.00")["delta"] == 0
+    assert snapshot_sales_revenue(ledger)["net"] == "-300.00"
+    assert within_limit_owners_equity(ledger)
+    assert history_cash(ledger) == [("2026-01", "debit", 50000), ("2026-02", "debit", 30000)]
+
+
 def test_cash_exporter():
     ledger = seeded()
     assert "cash: USD 800.00" in export_cash(ledger)

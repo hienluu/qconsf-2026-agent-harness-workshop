@@ -12,6 +12,7 @@ derive_workspace.py.
 Usage: python scripts/generate_modules.py
 """
 
+import shutil
 from pathlib import Path
 
 REFERENCE = Path(__file__).resolve().parent.parent / "block2_naive_harness" / "tasks" / "long_horizon" / "refactor_v2" / "reference"
@@ -24,7 +25,11 @@ ACCOUNTS = [
     "salaries_expense", "utilities_expense",
 ]
 
-EXPORTER = '''"""Exporter for the {account} account."""
+# Eight module variants per account. Volume is deliberate: the derived v1
+# workspace must be too large to read-and-rewrite inside one context window,
+# so a naive harness cannot one-pass the migration.
+VARIANTS = {
+    "exporter": '''"""Exporter for the {account} account."""
 
 from pyledger.core.ledger import get_balance, entries_for
 from pyledger.utils.money import format_amount
@@ -45,7 +50,115 @@ def debit_total_{account}(ledger) -> int:
 
 def credit_total_{account}(ledger) -> int:
     return sum(e.amount for e in entries_for(ledger, ACCOUNT) if e.kind == "credit")
-'''
+''',
+    "auditor": '''"""Audit pass for the {account} account."""
+
+from pyledger.core.ledger import entries_for
+from pyledger.core.validation import validate_entry
+from pyledger.errors import ValidationError
+
+ACCOUNT = "{account}"
+
+
+def audit_{account}(ledger) -> dict:
+    clean, flagged = 0, []
+    for e in entries_for(ledger, ACCOUNT):
+        try:
+            validate_entry(e)
+            clean += 1
+        except ValidationError as err:
+            flagged.append((e.entry_id, err.problems))
+    return {{"account": ACCOUNT, "clean": clean, "flagged": flagged}}
+''',
+    "reconciler": '''"""Reconcile the {account} account against an external statement."""
+
+from pyledger.core.ledger import get_balance
+from pyledger.utils.money import to_cents
+
+ACCOUNT = "{account}"
+
+
+def reconcile_{account}(ledger, statement_total: str) -> dict:
+    ours = get_balance(ledger, ACCOUNT)
+    theirs = to_cents(statement_total)
+    return {{"account": ACCOUNT, "ours": ours, "theirs": theirs, "delta": ours - theirs}}
+''',
+    "snapshot": '''"""Point-in-time snapshot of the {account} account."""
+
+from pyledger.core.ledger import entries_for, get_balance
+from pyledger.utils.money import from_cents
+
+ACCOUNT = "{account}"
+
+
+def snapshot_{account}(ledger) -> dict:
+    entries = entries_for(ledger, ACCOUNT)
+    return {{
+        "account": ACCOUNT,
+        "entry_count": len(entries),
+        "net": from_cents(get_balance(ledger, ACCOUNT)),
+        "last_date": entries[-1].date if entries else None,
+    }}
+''',
+    "forecast": '''"""Naive monthly run-rate forecast for the {account} account."""
+
+from pyledger.core.ledger import entries_for
+from pyledger.utils.dates import month_key
+
+ACCOUNT = "{account}"
+
+
+def run_rate_{account}(ledger) -> int:
+    months = {{}}
+    for e in entries_for(ledger, ACCOUNT):
+        months.setdefault(month_key(e.date), 0)
+        months[month_key(e.date)] += e.signed()
+    if not months:
+        return 0
+    return sum(months.values()) // len(months)
+''',
+    "notes": '''"""Memo index for the {account} account."""
+
+from pyledger.core.ledger import entries_for
+from pyledger.utils.money import format_amount
+
+ACCOUNT = "{account}"
+
+
+def memo_index_{account}(ledger) -> list:
+    out = []
+    for e in entries_for(ledger, ACCOUNT):
+        if e.memo:
+            out.append(f"{{e.entry_id}}: {{e.memo}} ({{format_amount(e.amount)}})")
+    return out
+''',
+    "limits": '''"""Exposure limit check for the {account} account."""
+
+from pyledger.core.ledger import get_balance
+from pyledger.utils.money import to_cents
+
+ACCOUNT = "{account}"
+DEFAULT_LIMIT = "1000000.00"
+
+
+def within_limit_{account}(ledger, limit: str = DEFAULT_LIMIT) -> bool:
+    return abs(get_balance(ledger, ACCOUNT)) <= to_cents(limit)
+''',
+    "history": '''"""Chronological activity trail for the {account} account."""
+
+from pyledger.core.ledger import entries_for
+from pyledger.utils.dates import month_key
+
+ACCOUNT = "{account}"
+
+
+def history_{account}(ledger) -> list:
+    trail = []
+    for e in entries_for(ledger, ACCOUNT):
+        trail.append((month_key(e.date), e.kind, e.amount))
+    return trail
+''',
+}
 
 ANALYZERS = {
     "activity": '''"""Cross-account activity analysis."""
@@ -179,6 +292,21 @@ def test_registry_imports_every_exporter():
     assert len(registry.ALL_EXPORTERS) == {n_accounts}
 
 
+def test_sampled_variants_work():
+    ledger = seeded()
+    from pyledger.integrations.auditor_cash import audit_cash
+    from pyledger.integrations.reconciler_cash import reconcile_cash
+    from pyledger.integrations.snapshot_sales_revenue import snapshot_sales_revenue
+    from pyledger.integrations.limits_owners_equity import within_limit_owners_equity
+    from pyledger.integrations.history_cash import history_cash
+
+    assert audit_cash(ledger)["clean"] == 2
+    assert reconcile_cash(ledger, "800.00")["delta"] == 0
+    assert snapshot_sales_revenue(ledger)["net"] == "-300.00"
+    assert within_limit_owners_equity(ledger)
+    assert history_cash(ledger) == [("2026-01", "debit", 50000), ("2026-02", "debit", 30000)]
+
+
 def test_cash_exporter():
     ledger = seeded()
     assert "cash: USD 800.00" in export_cash(ledger)
@@ -221,14 +349,17 @@ def test_webhook_post_is_not_ledger_api():
 
 
 def main() -> None:
+    if PKG.exists():
+        shutil.rmtree(PKG)
     PKG.mkdir(parents=True, exist_ok=True)
     (PKG / "__init__.py").write_text("")
 
     names = []
     for account in ACCOUNTS:
-        name = f"exporter_{account}"
-        (PKG / f"{name}.py").write_text(EXPORTER.format(account=account))
-        names.append(name)
+        for variant, template in VARIANTS.items():
+            name = f"{variant}_{account}"
+            (PKG / f"{name}.py").write_text(template.format(account=account))
+            names.append(name)
     for name, body in ANALYZERS.items():
         (PKG / f"{name}.py").write_text(body)
         names.append(name)
