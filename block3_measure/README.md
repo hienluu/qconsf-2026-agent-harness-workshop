@@ -27,7 +27,7 @@ guardrail. Each is a small, readable diff on the previous one.
 | | Adds | Block 2 failure mode addressed |
 |---|---|---|
 | `h1_naive` | nothing — the harness you built in Block 2, frozen and instrumented (turns, tokens, wall time, outcome) | — the baseline |
-| `h2_managed` | tool-output limits · malformed-call recovery · context compaction | tracebacks flooding context · the unhandled JSON crash · quadratic cost growth |
+| `h2_managed` | tool-output limits · malformed-call recovery · context compaction | one failing `run_tests` dumping 20k+ chars of pytest tracebacks into the transcript · the unhandled JSON crash · the whole growing transcript resent every call (quadratic cost) |
 | `h3_full` | durable working notes (survive compaction) · write-path guardrail on `tests/` | plan lost with the transcript · "don't modify tests" enforced by the harness instead of the prompt |
 
 The deltas are deliberately small. Read them as diffs — the diff is the lesson:
