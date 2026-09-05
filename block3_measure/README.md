@@ -140,6 +140,20 @@ are pennies. Run the long task once per harness.
   mv results/results.jsonl results/results.warmup.jsonl
   ```
 
+## Starting over
+
+Three kinds of state accumulate; reset each from the repo root:
+
+```
+git checkout -- block2_naive_harness/tasks/    # task workspaces -> pristine
+rm -rf block3_measure/results/runs             # per-run copies and wreckage
+mv block3_measure/results/results.jsonl \
+   block3_measure/results/results.archive.jsonl   # score table (archived, not lost)
+```
+
+Then rerun the exercise flow from step 1. The runner's pre-flight check
+will confirm the workspaces really are unsolved before spending tokens.
+
 ## Debrief questions
 
 1. What did ~40 lines of harness (h1→h2) buy, in solve rate, tokens, and
