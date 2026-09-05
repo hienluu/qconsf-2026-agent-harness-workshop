@@ -112,9 +112,10 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    uv run eval/run_eval.py h1 --task refactor_v2
    ```
 3. **Skim the three `[h2]`-marked blocks in `harnesses/h2_managed.py`**
-   (the capability matrix above tells you what you'll find: output caps,
-   recoverable bad calls, compaction — everything unmarked is identical to
-   h1), then run the same task through h2. Watch the live output for
+   (the capability matrix above tells you what you'll find: tool results
+   capped at 6k chars before the model sees them, recoverable bad calls,
+   compaction — everything unmarked is identical to h1), then run the same
+   task through h2. Watch the live output for
    `compaction: elided N old tool output(s)` lines — that's the harness
    managing context mid-run:
    ```
