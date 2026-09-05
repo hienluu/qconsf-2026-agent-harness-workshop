@@ -29,6 +29,17 @@ MAX_TURNS = 40
 
 
 def run(workspace_dir: str, task: str) -> None:
+    """Drive one agent session: give the model a task and a set of tools,
+    then loop — model call, tool execution, results fed back — until the
+    model stops calling tools (its way of saying "done") or MAX_TURNS runs
+    out.
+
+    `workspace_dir` is the directory the tools operate in; `task` is the
+    natural-language instruction that becomes the first user message. The
+    conversation transcript (`messages`) is the agent's entire memory: every
+    file read, tool result, and edit accumulates there, and the full list is
+    resent to the model on every turn.
+    """
     client = OpenAI(
         base_url=os.environ["PROVIDER_BASE_URL"],
         api_key=os.environ["PROVIDER_API_KEY"],
