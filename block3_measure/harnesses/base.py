@@ -1,0 +1,76 @@
+"""Shared plumbing for the measured harnesses.
+
+Every harness in this directory exposes the same function:
+
+    run(workspace_dir: str, task: str) -> RunResult
+
+The agent-facing behavior of each harness is what varies; this module holds
+only the neutral parts — the result record, the client factory, and access
+to the same tools Block 2 used. Tools are NOT the experimental variable, so
+all harnesses share them.
+"""
+
+import os
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+
+# The harnesses wrap the exact tools attendees used in Block 2.
+_BLOCK2 = Path(__file__).resolve().parents[2] / "block2_naive_harness"
+sys.path.insert(0, str(_BLOCK2))
+from tools import TOOL_SCHEMAS, Workspace  # noqa: E402
+
+SYSTEM_PROMPT = """You are a coding agent operating on a local workspace via tools.
+Work step by step: inspect files, make edits, and run the tests to check yourself.
+The task is complete only when run_tests reports that every test passed.
+When the tests are green, reply with a short summary instead of calling tools."""
+
+MAX_TURNS = 40
+
+
+@dataclass
+class RunResult:
+    """What a harness run reports back — the row in Block 3's score table."""
+
+    harness: str
+    task: str
+    status: str = "turn_capped"  # completed | crashed | turn_capped
+    turns: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    wall_seconds: float = 0.0
+    final_message: str = ""
+    error: str = ""
+    notes: dict = field(default_factory=dict)  # harness-specific extras
+
+
+def make_client() -> OpenAI:
+    return OpenAI(
+        base_url=os.environ["PROVIDER_BASE_URL"],
+        api_key=os.environ["PROVIDER_API_KEY"],
+    )
+
+
+def model_name() -> str:
+    return os.environ["MODEL"]
+
+
+def add_usage(result: RunResult, response) -> None:
+    usage = getattr(response, "usage", None)
+    if usage:
+        result.input_tokens += getattr(usage, "prompt_tokens", 0) or 0
+        result.output_tokens += getattr(usage, "completion_tokens", 0) or 0
+
+
+def transcript_chars(messages: list) -> int:
+    total = 0
+    for m in messages:
+        content = m.get("content") if isinstance(m, dict) else None
+        if isinstance(content, str):
+            total += len(content)
+    return total
