@@ -1,0 +1,4 @@
+openai>=1.50
+pytest>=8
+rich>=13
+python-dotenv>=1
