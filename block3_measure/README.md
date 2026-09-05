@@ -4,6 +4,22 @@ In Block 2 you watched one harness die on one task, once. An anecdote.
 This block turns it into evidence: three harnesses, four tasks, one model,
 one score table. The harness is the only variable.
 
+## The task suite
+
+The same four tasks you ran in Block 2 — each is a small codebase with a
+test suite, and "solved" always means the same thing: **pytest exits green
+afterward** (the agent is never asked whether it succeeded).
+
+| task | the agent must... | horizon |
+|---|---|---|
+| `fix_bug` | find and fix an off-by-one in a stats module (1 file, 4 tests) | short — a few turns |
+| `add_function` | implement a missing `slugify` from its 5 tests | short |
+| `small_rename` | rename two legacy functions across 2 files | short |
+| `refactor_v2` | migrate a ~150-file bookkeeping library to its v2 API using an *incomplete* changelog, 35 tests | long — this is the one that kills naive harnesses |
+
+Workspaces live under `../block2_naive_harness/tasks/` (each has a TASK.md
+with details); the prompts sent to the agent are in `eval/tasks.py`.
+
 ## The three harnesses
 
 | | Adds | Answers which Block 2 death |

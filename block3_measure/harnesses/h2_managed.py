@@ -34,7 +34,7 @@ NAME = "h2_managed"
 
 # [h2] Protection knobs.
 MAX_TOOL_RESULT_CHARS = 6_000     # per tool result fed back to the model
-TRANSCRIPT_CHAR_BUDGET = 200_000  # ~50k tokens; compaction kicks in above
+TRANSCRIPT_CHAR_BUDGET = 80_000   # ~20k tokens; keeps cumulative cost linear on long tasks
 KEEP_RECENT_MESSAGES = 12         # never compact the newest N messages
 ELIDED = "[tool output elided by the harness to save context — re-run the tool if you need it again]"
 

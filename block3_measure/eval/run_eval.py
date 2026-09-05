@@ -56,6 +56,7 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     shutil.copytree(REPO / task["workspace"], workspace)
 
     print(f"\n=== {HARNESSES[harness_key]} × {task_name} ===")
+    print(f"    task: {task['description']}")
     result = module.run(str(workspace), task["prompt"])
 
     tests_green, pytest_summary = check_tests(workspace)

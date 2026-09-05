@@ -125,10 +125,17 @@ While it runs, skim `tasks/long_horizon/refactor_v2/workspace/MIGRATION.md`
 to see what you asked for, and watch what the agent does: how many files it
 reads, what its searches return, how big its write batches get.
 
-Expected: the run **does not end well**. Typical deaths: a raw Python
-traceback mid-run (a truncated tool call the harness couldn't parse), a
-context-length error, or the 40-turn cap with tests still red. Check the
-wreckage:
+Expected: this **usually ends badly** — a raw Python traceback mid-run (a
+truncated tool call the harness couldn't parse), a context-length error, or
+the 40-turn cap with tests still red. But sometimes the agent limps
+through after 30+ turns and roughly a **million input tokens** (~$1 for
+one task!), because the naive harness resends the entire growing
+transcript on every single call.
+
+Both outcomes are data. The crash shows fragility; the expensive "success"
+shows the cost curve. Note which one YOU got, the turn count, and the
+wall time — you'll compare against protected harnesses in Block 3. Check
+the state:
 
 ```
 uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q

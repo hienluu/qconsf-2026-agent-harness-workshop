@@ -30,7 +30,7 @@ from base import (
 NAME = "h3_full"
 
 MAX_TOOL_RESULT_CHARS = 6_000
-TRANSCRIPT_CHAR_BUDGET = 200_000
+TRANSCRIPT_CHAR_BUDGET = 80_000   # ~20k tokens; keeps cumulative cost linear on long tasks
 KEEP_RECENT_MESSAGES = 12
 ELIDED = "[tool output elided by the harness to save context — re-run the tool if you need it again]"
 
