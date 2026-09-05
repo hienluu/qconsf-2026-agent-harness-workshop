@@ -132,7 +132,10 @@ are pennies. Run the long task once per harness.
   should share this property: external checkers on your tasks.
 - `results/results.jsonl` accumulates every run; `compare.py` shows the
   latest per cell (with a `when` column so you can tell recent rows from
-  old ones). Rerun a flaky cell and the table updates.
+  old ones). Rerunning a cell needs no reset — each run copies the
+  pristine source fresh — and simply appends another sample. One caveat:
+  a rerun replaces that cell's run directory, so inspect a failed run's
+  workspace under `results/runs/` *before* rerunning it.
 - To start the table over — say, to separate warm-up attempts from the
   runs you intend to keep — archive the file; nothing is lost:
 
