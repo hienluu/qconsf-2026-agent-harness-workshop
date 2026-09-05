@@ -8,10 +8,20 @@ the only variable, and here is what it was worth.
 """
 
 import json
+import time
 from pathlib import Path
 
 from rich.console import Console
 from rich.table import Table
+
+
+def age(timestamp: float) -> str:
+    seconds = int(time.time() - timestamp)
+    if seconds < 90:
+        return f"{seconds}s ago"
+    if seconds < 5400:
+        return f"{seconds // 60}m ago"
+    return f"{seconds // 3600}h ago"
 
 RESULTS = Path(__file__).resolve().parent.parent / "results" / "results.jsonl"
 HARNESS_ORDER = ["h1_naive", "h2_managed", "h3_full"]
@@ -38,6 +48,7 @@ def main() -> int:
     table.add_column("turns", justify="right")
     table.add_column("tokens in+out", justify="right")
     table.add_column("wall s", justify="right")
+    table.add_column("when")
     table.add_column("detail")
 
     for harness in HARNESS_ORDER:
@@ -58,6 +69,7 @@ def main() -> int:
                 str(row["turns"]),
                 f"{row['input_tokens']:,}+{row['output_tokens']:,}",
                 str(row["wall_seconds"]),
+                age(row["timestamp"]),
                 detail[:80],
             )
         table.add_section()
