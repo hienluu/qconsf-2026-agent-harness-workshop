@@ -23,8 +23,9 @@ Work step by step: inspect files, make edits, and run the tests to check yoursel
 The task is complete only when run_tests reports that every test passed.
 When the tests are green, reply with a short summary instead of calling tools."""
 
-# The only guardrail in this harness, and it protects the wallet, not the task.
-MAX_TURNS = 40
+# The only guardrail in this harness, and it protects the wallet, not the
+# task: 20 turns covers the short tasks; long-task completions need 25+.
+MAX_TURNS = 20
 
 
 def run(workspace_dir: str, task: str) -> None:

@@ -1,9 +1,10 @@
 """h1_naive — the Block 2 harness, frozen and instrumented.
 
-This is the loop attendees built, byte-for-byte in agent-facing behavior:
-same prompt, same tools, same absence of protections. The ONLY change is
-the observer — instead of just printing, it counts turns and tokens, times
-the run, and reports how it ended. Do not "improve" this file; it is the
+This is the loop attendees built: same prompt, same tools, same absence of
+protections. Two deliberate differences from Block 2: the observer (it
+counts turns and tokens, times the run, and reports how it ended, instead
+of just printing) and the turn budget (40 here, like every Block 3 harness,
+vs Block 2's 20 — see base.py). Do not "improve" this file; it is the
 experimental baseline that h2/h3 are diffed and measured against.
 
 Frozen from block2_naive_harness/solution/harness.py on 2026-09-05.

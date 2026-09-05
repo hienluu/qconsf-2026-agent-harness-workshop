@@ -134,19 +134,20 @@ uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
   "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
 
-This one costs ~$0.50–1 per attempt — **run it once**, not five times.
+This one costs roughly $0.50 per attempt (the 20-turn budget bounds it) —
+**run it once**, not five times.
 
 While it runs, skim `tasks/long_horizon/refactor_v2/workspace/MIGRATION.md`
 to see what you asked for, and watch what the agent does: how many files it
 reads, what its searches return, how big its write batches get.
 
-Expected outcome, based on our test runs, is one of two: the run fails
-outright — a raw Python traceback mid-run (a truncated tool call the
-harness couldn't parse), a context-length error, or the 40-turn cap with
-the suite still red — or it completes after 25–35 turns and roughly a
-million input tokens (about $1 for one task), because the harness resends
-the entire growing transcript on every call. Our runs have produced both
-outcomes; across a room of attendees, so will yours.
+Expected outcome: failure. Either a raw Python traceback mid-run (a
+truncated tool call the harness couldn't parse), or the 20-turn budget
+exhausted with the suite still red. In our test runs, completions of this
+task needed 25–35 turns and roughly a million input tokens (about $1),
+because the harness resends the entire growing transcript on every call —
+the 20-turn budget is a deliberate spend cap that this task cannot fit
+under. Which failure you get, and at which turn, varies run to run.
 
 Both outcomes are data. The crash demonstrates fragility; the expensive
 success demonstrates the cost curve. Record which you got, the turn

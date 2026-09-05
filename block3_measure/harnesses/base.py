@@ -30,6 +30,9 @@ Work step by step: inspect files, make edits, and run the tests to check yoursel
 The task is complete only when run_tests reports that every test passed.
 When the tests are green, reply with a short summary instead of calling tools."""
 
+# Block 2 caps the naive harness at 20 turns as a spend guardrail. Here the
+# budget is 40 for ALL harnesses — held constant and deliberately generous,
+# so the experiment measures the protections, never the budget.
 MAX_TURNS = 40
 
 

@@ -27,7 +27,10 @@ Work step by step: inspect files, make edits, and run the tests to check yoursel
 The task is complete only when run_tests reports that every test passed.
 When the tests are green, reply with a short summary instead of calling tools."""
 
-MAX_TURNS = 40
+# The loop budget — a real harness decision. 20 turns is plenty for the
+# short tasks and deliberately not enough for the long one: completions
+# there take 25+ turns and ~$1 of transcript resending.
+MAX_TURNS = 20
 
 
 def run(workspace_dir: str, task: str) -> None:
