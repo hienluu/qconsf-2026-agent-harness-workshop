@@ -1,5 +1,15 @@
 # Block 3 — Measure It
 
+**Why this block:** at some point your team will pick a harness — adopt
+one, extend one, or defend the one you have — and that decision will need
+numbers behind it. Vendor benchmarks can't supply them: as Block 1 showed,
+the same model scores 62.7% or 99.9% depending on the harness it runs in,
+so published scores tell you about the vendor's harness, not yours. The
+only numbers you can act on come from running your own tasks through the
+candidate harnesses with an external checker. This block is that method,
+practiced at a scale where you can see all the moving parts. Block 5's
+decision framework assumes you have it.
+
 Block 2 gave you a single data point: one harness, one task, one run.
 This block is the controlled experiment: hold the model, the tasks, and
 the tools constant; vary only the harness; measure solve rate, turns,
