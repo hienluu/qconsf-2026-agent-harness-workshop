@@ -6,7 +6,7 @@ Expected final line: ALL GREEN. Anything else: follow the hints, or bring
 the output to the workshop help desk (before 9am, not during).
 """
 
-import importlib
+import importlib.util
 import os
 import sys
 
