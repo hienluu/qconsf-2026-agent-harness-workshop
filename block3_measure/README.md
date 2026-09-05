@@ -1,7 +1,6 @@
 # Block 3 — Measure It
 
-Block 2 gave you a single data point: one harness, one task, one run. None
-of us would accept that in a design review, so let's not accept it here.
+Block 2 gave you a single data point: one harness, one task, one run.
 This block is the controlled experiment: hold the model, the tasks, and
 the tools constant; vary only the harness; measure solve rate, turns,
 tokens, and wall time. You leave with a score table you could defend to
