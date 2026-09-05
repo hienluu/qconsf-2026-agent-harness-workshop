@@ -24,6 +24,25 @@ guardrail. Each is a small, readable diff on the previous one.
 
 ## The three harnesses
 
+At a glance — same loop, same five workspace tools, same 40-turn budget;
+each ✓ is a capability the harness adds:
+
+| Capability | h1_naive | h2_managed | h3_full |
+|---|:-:|:-:|:-:|
+| Tool-output truncation (per-result 6k-char cap, head+tail) | – | ✓ | ✓ |
+| Malformed-tool-call recovery (error message instead of crash) | – | ✓ | ✓ |
+| Context compaction (elide old tool outputs past 80k chars) | – | ✓ | ✓ |
+| Durable working notes (`update_notes` tool + pinned message) | – | – | ✓ |
+| Write guardrail (`tests/` read-only at the dispatcher) | – | – | ✓ |
+
+In one line each: **h1** is the loop and nothing else — its only memory is
+the transcript and its only rule is the prompt. **h2** manages what the
+model *sees* (tool results capped, history compacted, bad calls survivable).
+**h3** additionally changes what the model *can do* — one action granted
+(persist notes that outlive compaction), one revoked (writing to tests).
+
+In more detail:
+
 | | Adds | Block 2 failure mode addressed |
 |---|---|---|
 | `h1_naive` | nothing — the harness you built in Block 2, frozen and instrumented (turns, tokens, wall time, outcome) | — the baseline |
