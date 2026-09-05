@@ -10,12 +10,15 @@ production harnesses through the same lens.
 
 ## Setup (do this at home — venue WiFi will not support it)
 
+Requires [uv](https://docs.astral.sh/uv/) (`brew install uv`, or
+`curl -LsSf https://astral.sh/uv/install.sh | sh`). No virtualenv to
+create or activate — `uv run` manages the environment itself.
+
 ```
 git clone <repo-url> && cd agent-harness-workshop
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r setup/requirements.txt
-cp .env.example .env       # fill in your provider API key + model
-python setup/check_setup.py   # expect: ALL GREEN
+uv sync                        # downloads dependencies — do this on real WiFi
+cp .env.example .env           # fill in your provider API key + model
+uv run setup/check_setup.py    # expect: ALL GREEN
 ```
 
 ## Layout

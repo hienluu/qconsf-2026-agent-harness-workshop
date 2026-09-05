@@ -11,7 +11,7 @@ the 14 rename rules. The agent must apply them across every file until
 Run it (from `block2_naive_harness/`):
 
 ```
-python harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
+uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
   "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
 
@@ -40,5 +40,5 @@ python harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
 
 `workspace/` is generated — never edit it by hand. The v2 ground truth lives
 in `reference/` (tests green by construction). To change the task, edit
-`reference/` and re-run `python scripts/derive_workspace.py` from the repo
+`reference/` and re-run `uv run scripts/derive_workspace.py` from the repo
 root.

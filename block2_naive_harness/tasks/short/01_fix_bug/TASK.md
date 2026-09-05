@@ -7,13 +7,13 @@ This file lives OUTSIDE the workspace — your agent can't read it. It only
 gets the instruction you pass on the command line (from `block2_naive_harness/`):
 
 ```
-python harness_skeleton.py tasks/short/01_fix_bug/workspace \
+uv run harness_skeleton.py tasks/short/01_fix_bug/workspace \
   "One test fails. Find the bug and fix it. Do not modify the tests."
 ```
 
 ## Before you run the agent
 
-Run `python -m pytest tasks/short/01_fix_bug/workspace -q` yourself first
+Run `uv run python -m pytest tasks/short/01_fix_bug/workspace -q` yourself first
 (from `block2_naive_harness/`). Seeing the red assertion diff — expected
 three averages, got two — is the point: you'll know exactly what the agent
 is up against, and the before/after is yours, not its word.

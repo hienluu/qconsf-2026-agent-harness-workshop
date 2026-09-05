@@ -8,6 +8,6 @@ implement it. Done means: `pytest` exits green, tests unmodified.
 Run it (from `block2_naive_harness/`):
 
 ```
-python harness_skeleton.py tasks/short/02_add_function/workspace \
+uv run harness_skeleton.py tasks/short/02_add_function/workspace \
   "Implement the unimplemented function so all tests pass. Do not modify the tests."
 ```

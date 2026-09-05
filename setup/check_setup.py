@@ -1,6 +1,6 @@
 """Pre-workshop setup check. Run this at home, on real WiFi.
 
-    python setup/check_setup.py
+    uv run setup/check_setup.py
 
 Expected final line: ALL GREEN. Anything else: follow the hints, or bring
 the output to the workshop help desk (before 9am, not during).
@@ -26,9 +26,26 @@ def main() -> int:
         sys.version_info >= (3, 11),
         "install Python 3.11+ and recreate your virtualenv",
     )
+
+    venv = os.environ.get("VIRTUAL_ENV")
+    running_in_venv = sys.prefix != getattr(sys, "base_prefix", sys.prefix)
+    if venv and not running_in_venv:
+        check(
+            f"interpreter matches the active virtualenv (running {sys.executable})",
+            False,
+            "a virtualenv is active but this python is NOT from it — you likely "
+            "have a shell alias (run: unalias python) or are using the wrong "
+            "interpreter; then retry",
+        )
+    else:
+        check(
+            "running inside the project environment",
+            running_in_venv,
+            "invoke via uv: uv run setup/check_setup.py",
+        )
     for module in ("openai", "pytest", "rich", "dotenv"):
         ok = importlib.util.find_spec(module) is not None
-        check(f"package: {module}", ok, "pip install -r setup/requirements.txt")
+        check(f"package: {module}", ok, "run: uv sync (then invoke via uv run)")
 
     try:
         from dotenv import load_dotenv

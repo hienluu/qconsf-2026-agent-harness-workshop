@@ -4,7 +4,7 @@ This is every team's first agent. It works on small tasks and falls apart on
 long ones, because it has no context management, no memory, no tool-output
 limits, no error recovery, and no plan. Block 3 fixes that — measurably.
 
-Usage: python solution/harness.py <workspace_dir> "<task instructions>"
+Usage: uv run solution/harness.py <workspace_dir> "<task instructions>"
 """
 
 import json
@@ -96,4 +96,20 @@ def run(workspace_dir: str, task: str) -> None:
 
 
 if __name__ == "__main__":
-    run(sys.argv[1], sys.argv[2])
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Run the naive agent harness on a task.",
+        epilog='Example: uv run solution/harness.py tasks/short/01_fix_bug/workspace '
+        '"One test fails. Find the bug and fix it."',
+    )
+    parser.add_argument(
+        "workspace",
+        help="directory the agent operates on — its tools can only see files under this root",
+    )
+    parser.add_argument(
+        "task",
+        help="natural-language instruction for the agent (quote it); becomes the first user message",
+    )
+    cli = parser.parse_args()
+    run(cli.workspace, cli.task)

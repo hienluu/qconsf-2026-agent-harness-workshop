@@ -3,13 +3,15 @@
 Time: ~55 minutes. Everything runs locally against your provider API key.
 Cost for the whole exercise: roughly $1–2.
 
-All commands below are run from this directory (`block2_naive_harness/`),
-with your virtualenv active.
+All commands below are run from this directory (`block2_naive_harness/`)
+via `uv run` — no virtualenv to create or activate, ever. uv finds the
+project environment itself and installs anything missing on first run, so
+shell aliases and forgotten activations can't bite you.
 
 ## Step 0 — Confirm you're ready (2 min)
 
 ```
-python ../setup/check_setup.py
+uv run ../setup/check_setup.py
 ```
 
 Expect `ALL GREEN`. If not, fix what it tells you (or flag a helper).
@@ -43,7 +45,7 @@ block is what happens next, not the typing.
 touches anything:
 
 ```
-python -m pytest tasks/short/01_fix_bug/workspace -q
+uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 ```
 
 Expect `2 failed, 2 passed`. Read the first failure — the assertion diff
@@ -68,7 +70,7 @@ framework in between?
 
 ```
 cd tasks/short/01_fix_bug/workspace
-python -c "from stats import moving_average; print(moving_average([1, 2, 3, 4], 2))"
+uv run python -c "from stats import moving_average; print(moving_average([1, 2, 3, 4], 2))"
 cd ../../../..
 ```
 
@@ -78,10 +80,12 @@ fixes the file and you'll get all three.)
 Don't fix it yourself — that's the agent's job. (Full spoiler in the
 task's `TASK.md` if you want it.)
 
-**Now unleash your agent on it:**
+**Now unleash your agent on it.** The harness takes two arguments — the
+workspace directory (the only files the agent's tools can see) and the task
+prompt (`uv run harness_skeleton.py --help` for details):
 
 ```
-python harness_skeleton.py tasks/short/01_fix_bug/workspace \
+uv run harness_skeleton.py tasks/short/01_fix_bug/workspace \
   "One test fails. Find the bug and fix it. Do not modify the tests."
 ```
 
@@ -90,9 +94,10 @@ does exactly what you just did — runs the tests, reads the diff, reads the
 loop — then edits.
 
 **Verify it yourself** (never take an agent's word for it):
+Run the following command from the block2_naive_harness directory
 
 ```
-python -m pytest tasks/short/01_fix_bug/workspace -q
+uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 ```
 
 `4 passed`. You saw red, the agent worked, you saw green. You just built a
@@ -105,7 +110,7 @@ TASK.md for the run command).
 Same harness. Same model. Same tools. Bigger horizon:
 
 ```
-python harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
+uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
   "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
 
@@ -121,7 +126,7 @@ context-length error, or the 40-turn cap with tests still red. Check the
 wreckage:
 
 ```
-python -m pytest tasks/long_horizon/refactor_v2/workspace -q
+uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 ```
 
 Half-migrated. Money spent. Agent gone.

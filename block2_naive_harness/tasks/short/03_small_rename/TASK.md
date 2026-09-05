@@ -8,6 +8,6 @@ Done means: `pytest` exits green. Do not modify the tests.
 Run it (from `block2_naive_harness/`):
 
 ```
-python harness_skeleton.py tasks/short/03_small_rename/workspace \
+uv run harness_skeleton.py tasks/short/03_small_rename/workspace \
   "The tests expect renamed functions. Rename the legacy functions everywhere until all tests pass. Do not modify the tests."
 ```

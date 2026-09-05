@@ -6,7 +6,7 @@ provided. You write the two moments that matter most:
   TODO 1 — ask the model what to do next   (~4 lines)
   TODO 2 — execute a tool and feed the result back   (~5 lines)
 
-Usage: python harness_skeleton.py <workspace_dir> "<task instructions>"
+Usage: uv run harness_skeleton.py <workspace_dir> "<task instructions>"
 
 Check yourself against solution/harness.py if you get stuck.
 """
@@ -113,4 +113,20 @@ def run(workspace_dir: str, task: str) -> None:
 
 
 if __name__ == "__main__":
-    run(sys.argv[1], sys.argv[2])
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Run the naive agent harness on a task.",
+        epilog='Example: uv run harness_skeleton.py tasks/short/01_fix_bug/workspace '
+        '"One test fails. Find the bug and fix it."',
+    )
+    parser.add_argument(
+        "workspace",
+        help="directory the agent operates on — its tools can only see files under this root",
+    )
+    parser.add_argument(
+        "task",
+        help="natural-language instruction for the agent (quote it); becomes the first user message",
+    )
+    cli = parser.parse_args()
+    run(cli.workspace, cli.task)
