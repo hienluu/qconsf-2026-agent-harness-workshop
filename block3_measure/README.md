@@ -7,6 +7,21 @@ tokens, and wall time. You leave with a score table you could defend to
 your team — and, more usefully, a method you can rerun against your own
 tasks when a vendor benchmark asks you to take its word for it.
 
+## The three harnesses
+
+| | Adds | Block 2 failure mode addressed |
+|---|---|---|
+| `h1_naive` | nothing — the harness you built in Block 2, frozen and instrumented (turns, tokens, wall time, outcome) | — the baseline |
+| `h2_managed` | tool-output limits · malformed-call recovery · context compaction | tracebacks flooding context · the unhandled JSON crash · quadratic cost growth |
+| `h3_full` | durable working notes (survive compaction) · write-path guardrail on `tests/` | plan lost with the transcript · "don't modify tests" enforced by the harness instead of the prompt |
+
+The deltas are deliberately small. Read them as diffs — the diff is the lesson:
+
+```
+diff harnesses/h1_naive.py harnesses/h2_managed.py
+diff harnesses/h2_managed.py harnesses/h3_full.py
+```
+
 ## What "vary only the harness" means
 
 | Held constant | Varied (the harness) |
@@ -45,21 +60,6 @@ afterward** (the agent is never asked whether it succeeded).
 
 Workspaces live under `../block2_naive_harness/tasks/` (each has a TASK.md
 with details); the prompts sent to the agent are in `eval/tasks.py`.
-
-## The three harnesses
-
-| | Adds | Answers which Block 2 death |
-|---|---|---|
-| `h1_naive` | nothing — the Block 2 harness, frozen and instrumented (turns, tokens, wall time, outcome) | — the baseline |
-| `h2_managed` | tool-output limits · malformed-call recovery · context compaction | tracebacks flooding context · the JSON crash · quadratic cost |
-| `h3_full` | durable working notes (survive compaction) · write-path guardrail on `tests/` | plan lost with the transcript · "don't modify tests" as hope |
-
-The deltas are deliberately small. Read them as diffs — the diff is the lesson:
-
-```
-diff harnesses/h1_naive.py harnesses/h2_managed.py
-diff harnesses/h2_managed.py harnesses/h3_full.py
-```
 
 ## Exercise flow (all commands from `block3_measure/`)
 
