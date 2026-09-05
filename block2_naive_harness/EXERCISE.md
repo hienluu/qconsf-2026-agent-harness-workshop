@@ -161,10 +161,11 @@ uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 On a failed run you'll typically find it partially migrated: work
 performed, then stranded when the process died.
 
-To reset the workspace for another attempt (from the repo root):
+To reset all task workspaces for another attempt (from anywhere in the
+repo):
 
 ```
-git checkout -- block2_naive_harness/tasks/long_horizon/refactor_v2/workspace
+uv run scripts/reset.py
 ```
 
 ## Step 5 — The postmortem (group debrief)

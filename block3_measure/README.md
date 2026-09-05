@@ -142,17 +142,18 @@ are pennies. Run the long task once per harness.
 
 ## Starting over
 
-Three kinds of state accumulate; reset each from the repo root:
+One command, run from anywhere in the repo:
 
 ```
-git checkout -- block2_naive_harness/tasks/    # task workspaces -> pristine
-rm -rf block3_measure/results/runs             # per-run copies and wreckage
-mv block3_measure/results/results.jsonl \
-   block3_measure/results/results.archive.jsonl   # score table (archived, not lost)
+uv run scripts/reset.py
 ```
 
-Then rerun the exercise flow from step 1. The runner's pre-flight check
-will confirm the workspaces really are unsolved before spending tokens.
+It restores the task workspaces to their committed state (including
+removing any files an agent created), clears the per-run copies under
+`results/runs/`, and archives the score table with a timestamp — then
+prints what it did. Then rerun the exercise flow from step 1; the runner's
+pre-flight check confirms the workspaces really are unsolved before
+spending tokens.
 
 ## Debrief questions
 
