@@ -39,13 +39,14 @@ def main() -> int:
 
     key = os.environ.get("PROVIDER_API_KEY", "")
     model = os.environ.get("MODEL", "")
+    base_url = os.environ.get("PROVIDER_BASE_URL", "")
     check("PROVIDER_API_KEY is set", bool(key), "copy .env.example to .env and fill it in")
     check("MODEL is set", bool(model), "copy .env.example to .env and fill it in")
+    check("PROVIDER_BASE_URL is set", bool(base_url), "copy .env.example to .env and fill it in")
 
-    if key and model and importlib.util.find_spec("openai"):
+    if key and model and base_url and importlib.util.find_spec("openai"):
         from openai import OpenAI
 
-        base_url = os.environ.get("PROVIDER_BASE_URL", "https://inference.baseten.co/v1")
         try:
             client = OpenAI(base_url=base_url, api_key=key)
             client.chat.completions.create(

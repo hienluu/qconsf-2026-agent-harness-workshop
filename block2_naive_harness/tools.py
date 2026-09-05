@@ -14,6 +14,7 @@ from pathlib import Path
 
 class Workspace:
     def __init__(self, root):
+        print(f"Workspace root: {Path(root).resolve()}")
         self.root = Path(root).resolve()
 
     def _path(self, rel: str) -> Path:

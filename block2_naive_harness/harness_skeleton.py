@@ -30,7 +30,7 @@ MAX_TURNS = 40
 
 def run(workspace_dir: str, task: str) -> None:
     client = OpenAI(
-        base_url=os.environ.get("PROVIDER_BASE_URL", "https://inference.baseten.co/v1"),
+        base_url=os.environ["PROVIDER_BASE_URL"],
         api_key=os.environ["PROVIDER_API_KEY"],
     )
     model = os.environ["MODEL"]
