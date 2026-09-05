@@ -8,6 +8,7 @@ measures the difference.
 """
 
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -53,7 +54,7 @@ class Workspace:
     def run_tests(self) -> str:
         """Run pytest in the workspace and return its FULL output, untruncated."""
         proc = subprocess.run(
-            ["python", "-m", "pytest", "--tb=long", "-q"],
+            [sys.executable, "-m", "pytest", "--tb=long", "-q"],
             cwd=self.root,
             capture_output=True,
             text=True,
