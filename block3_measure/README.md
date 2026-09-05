@@ -7,6 +7,11 @@ tokens, and wall time. You leave with a score table you could defend to
 your team — and, more usefully, a method you can rerun against your own
 tasks when a vendor benchmark asks you to take its word for it.
 
+We run the experiment with three harnesses: **`h1_naive`**, the harness you
+built in Block 2, unchanged in behavior; **`h2_managed`**, h1 plus three
+context/error protections; and **`h3_full`**, h2 plus durable memory and a
+guardrail. Each is a small, readable diff on the previous one.
+
 ## The three harnesses
 
 | | Adds | Block 2 failure mode addressed |
