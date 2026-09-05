@@ -1,14 +1,14 @@
 """Memo index for the equipment account."""
 
-from pyledger.core.ledger import entries_by_account
-from pyledger.utils.money import fmt_amt
+from pyledger.core.ledger import entries_for
+from pyledger.utils.money import format_amount
 
 ACCOUNT = "equipment"
 
 
 def memo_index_equipment(ledger) -> list:
     out = []
-    for e in entries_by_account(ledger, ACCOUNT):
+    for e in entries_for(ledger, ACCOUNT):
         if e.memo:
-            out.append(f"{e.entry_id}: {e.memo} ({fmt_amt(e.amt)})")
+            out.append(f"{e.entry_id}: {e.memo} ({format_amount(e.amount)})")
     return out

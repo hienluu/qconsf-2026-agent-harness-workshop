@@ -2,10 +2,10 @@
 
 import argparse
 
-from pyledger.core.ledger import make_ledger, post
-from pyledger.ledger_io.csv_io import load_entries_csv
+from pyledger.core.ledger import new_ledger, record
+from pyledger.ledger_io.csv_io import read_entries_csv
 from pyledger.reports.summary import render_summary
-from pyledger.reports.trial_balance import balanced
+from pyledger.reports.trial_balance import is_balanced
 
 
 def main(argv=None) -> int:
@@ -14,12 +14,12 @@ def main(argv=None) -> int:
     parser.add_argument("--name", default="ledger")
     args = parser.parse_args(argv)
 
-    ledger = make_ledger(args.name)
-    for entry in load_entries_csv(args.csv_path):
-        post(ledger, entry)
+    ledger = new_ledger(args.name)
+    for entry in read_entries_csv(args.csv_path):
+        record(ledger, entry)
 
     print(render_summary(ledger))
-    print("balanced" if balanced(ledger) else "NOT BALANCED")
+    print("balanced" if is_balanced(ledger) else "NOT BALANCED")
     return 0
 
 

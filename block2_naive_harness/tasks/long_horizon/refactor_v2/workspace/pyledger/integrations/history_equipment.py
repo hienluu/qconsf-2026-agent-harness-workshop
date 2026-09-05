@@ -1,6 +1,6 @@
 """Chronological activity trail for the equipment account."""
 
-from pyledger.core.ledger import entries_by_account
+from pyledger.core.ledger import entries_for
 from pyledger.utils.dates import month_key
 
 ACCOUNT = "equipment"
@@ -8,6 +8,6 @@ ACCOUNT = "equipment"
 
 def history_equipment(ledger) -> list:
     trail = []
-    for e in entries_by_account(ledger, ACCOUNT):
-        trail.append((month_key(e.date), e.side, e.amt))
+    for e in entries_for(ledger, ACCOUNT):
+        trail.append((month_key(e.date), e.kind, e.amount))
     return trail

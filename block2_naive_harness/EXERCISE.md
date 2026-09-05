@@ -140,12 +140,13 @@ While it runs, skim `tasks/long_horizon/refactor_v2/workspace/MIGRATION.md`
 to see what you asked for, and watch what the agent does: how many files it
 reads, what its searches return, how big its write batches get.
 
-Expected outcome, based on our tuning runs: this usually fails — a raw
-Python traceback mid-run (a truncated tool call the harness couldn't
-parse), a context-length error, or the 40-turn cap with the suite still
-red. Some runs instead complete after 30+ turns and roughly a million
-input tokens (about $1 for one task), because the harness resends the
-entire growing transcript on every call.
+Expected outcome, based on our test runs, is one of two: the run fails
+outright — a raw Python traceback mid-run (a truncated tool call the
+harness couldn't parse), a context-length error, or the 40-turn cap with
+the suite still red — or it completes after 25–35 turns and roughly a
+million input tokens (about $1 for one task), because the harness resends
+the entire growing transcript on every call. Our runs have produced both
+outcomes; across a room of attendees, so will yours.
 
 Both outcomes are data. The crash demonstrates fragility; the expensive
 success demonstrates the cost curve. Record which you got, the turn
