@@ -11,7 +11,7 @@ tasks when a vendor benchmark asks you to take its word for it.
 
 | Held constant | Varied (the harness) |
 |---|---|
-| Model, temperature, provider endpoint | What a tool result looks like by the time the model sees it (truncation) |
+| Model, temperature, provider endpoint | What a tool result looks like by the time the model sees it — the tool's return value is identical everywhere, but h1 forwards it whole (a mid-migration `run_tests` can be ~25k chars of tracebacks, resent every turn thereafter), while h2/h3 forward the first 4k + last 1.5k with a `[harness truncated N chars]` marker, keeping the leading failures and the summary line |
 | Tasks: identical pristine workspace copies, identical prompts | What the resent history looks like (compaction/elision of old tool output) |
 | Tools: all harnesses import the same `Workspace` + schemas from Block 2 | What happens on a malformed tool call (crash vs recoverable error message) |
 | Base system prompt, `MAX_TURNS` (both in `harnesses/base.py`) | What the model is offered (h3's `update_notes`) and refused (h3's read-only `tests/`) |
