@@ -1,5 +1,13 @@
 # Block 2 Exercise: Build a Minimal Harness and Find Its Limits
 
+**Why this block:** in Block 4 you'll evaluate production harnesses whose
+feature lists all read alike — compaction, hooks, sandboxing, memory,
+permissions. Those words only carry information once you've worked without
+them. The fastest way to get there is to build the harness that *lacks*
+every one of them, run it, and observe precisely what goes wrong. After
+this hour, every line in a vendor's feature list maps to a failure you
+have personally watched happen.
+
 Time: ~55 minutes. Everything runs locally against your provider API key.
 Cost for the whole exercise: roughly $1–2.
 
