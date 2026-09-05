@@ -115,6 +115,18 @@ are pennies. Run the long task once per harness.
 - Every run copies the pristine workspace to `results/runs/<harness>__<task>/`
   — runs never touch the repo or each other, and failed runs leave wreckage
   you can inspect.
+- Before copying, the runner verifies the source workspace is still in its
+  unsolved state and refuses to run otherwise. Block 2 exercises modify
+  the repo workspaces in place, so if you ran Block 2 first (you did),
+  reset before measuring:
+
+  ```
+  git checkout -- ../block2_naive_harness/tasks/
+  ```
+
+  A benchmark against an already-solved fixture produces small, plausible,
+  meaningless numbers — the runner failing loudly here is the same
+  eval-hygiene principle as not trusting the agent's self-report.
 - Solved means **pytest exits green on the workspace afterward**. The
   agent's self-report is never consulted. Your harness evaluation at work
   should share this property: external checkers on your tasks.

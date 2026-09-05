@@ -1,17 +1,17 @@
 """pyledger: a tiny double-entry bookkeeping library (v2 API)."""
 
 from pyledger.core.entry import Entry
-from pyledger.core.ledger import new_ledger, record, get_balance, entries_for
-from pyledger.core.validation import validate_entry
+from pyledger.core.ledger import make_ledger, post, balance_of, entries_by_account
+from pyledger.core.validation import check_entry
 from pyledger.errors import LedgerError, ValidationError
 
 __all__ = [
     "Entry",
-    "new_ledger",
-    "record",
-    "get_balance",
-    "entries_for",
-    "validate_entry",
+    "make_ledger",
+    "post",
+    "balance_of",
+    "entries_by_account",
+    "check_entry",
     "LedgerError",
     "ValidationError",
 ]

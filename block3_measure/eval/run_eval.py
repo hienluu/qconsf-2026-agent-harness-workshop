@@ -49,11 +49,24 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     module = importlib.import_module(HARNESSES[harness_key])
     task = TASKS[task_name]
 
+    # Pre-flight: the source workspace must be in its unsolved state, or the
+    # "measurement" is a no-op against an already-finished task. This
+    # happens in practice: a Block 2 run migrates the workspace in place.
+    source = REPO / task["workspace"]
+    already_green, _ = check_tests(source)
+    if already_green:
+        raise SystemExit(
+            f"source workspace is already solved: {task['workspace']}\n"
+            f"A previous run (Block 2?) modified it in place. Reset it first:\n"
+            f"  git checkout -- {task['workspace']}\n"
+            f"or, for the refactor task:  uv run scripts/derive_workspace.py"
+        )
+
     run_dir = out_dir / "runs" / f"{HARNESSES[harness_key]}__{task_name}"
     workspace = run_dir / "workspace"
     if run_dir.exists():
         shutil.rmtree(run_dir)
-    shutil.copytree(REPO / task["workspace"], workspace)
+    shutil.copytree(source, workspace)
 
     print(f"\n=== {HARNESSES[harness_key]} × {task_name} ===")
     print(f"    harness: {(module.__doc__ or '').strip().splitlines()[0]}")

@@ -1,5 +1,5 @@
 from pyledger.core.accounts import accounts_of_type
-from pyledger.core.ledger import get_balance
+from pyledger.core.ledger import balance_of
 
 
 def income_statement(ledger: dict) -> dict:
@@ -7,6 +7,6 @@ def income_statement(ledger: dict) -> dict:
 
     Revenue accounts carry credit balances, so signed totals are negated.
     """
-    revenue = -sum(get_balance(ledger, a) for a in accounts_of_type("revenue"))
-    expenses = sum(get_balance(ledger, a) for a in accounts_of_type("expense"))
+    revenue = -sum(balance_of(ledger, a) for a in accounts_of_type("revenue"))
+    expenses = sum(balance_of(ledger, a) for a in accounts_of_type("expense"))
     return {"revenue": revenue, "expenses": expenses, "net_income": revenue - expenses}
