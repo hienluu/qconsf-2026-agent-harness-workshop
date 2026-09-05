@@ -80,6 +80,11 @@ fixes the file and you'll get all three.)
 Don't fix it yourself — that's the agent's job. (Full spoiler in the
 task's `TASK.md` if you want it.)
 
+**Open `tasks/short/01_fix_bug/workspace/stats.py` in your editor and keep
+it visible.** Look at line 6 — the buggy loop bound. Your editor will
+reload the file the moment the agent rewrites it, so you'll see the fix
+land live.
+
 **Now unleash your agent on it.** The harness takes two arguments — the
 workspace directory (the only files the agent's tools can see) and the task
 prompt (`uv run harness_skeleton.py --help` for details):

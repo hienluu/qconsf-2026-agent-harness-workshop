@@ -80,6 +80,15 @@ def run(workspace_dir: str, task: str) -> None:
             print(f"\n[turn {turn}] agent finished:\n{msg.content}")
             return
 
+        # Models often narrate alongside their tool calls ("the tests expect
+        # X, so I'll..."), but on many turns content is empty and the intent
+        # lives only in the tool calls themselves. Show both: narration when
+        # present, plus which tools this turn reaches for. Makes the agent
+        # watchable — and lets you see the moment its plan starts to drift.
+        tool_names = ", ".join(c.function.name for c in msg.tool_calls)
+        narration = msg.content.strip() if msg.content else "(no commentary)"
+        print(f"\n[turn {turn}] agent says: {narration}  [tools: {tool_names}]")
+
         for call in msg.tool_calls:
             name = call.function.name
             args = json.loads(call.function.arguments or "{}")
