@@ -2,12 +2,9 @@
 
 **Why this block:** at some point your team will pick a harness — adopt
 one, extend one, or defend the one you have — and that decision will need
-numbers behind it. Vendor benchmarks can't supply them: the same model can score 62.7% or
-99.9% on the same benchmark depending on the harness it runs in — GPT-6
-Astra on ARC-AGI-3, default harness vs OpenAI's reasoning-state-preserving
-Provider Adapter harness ([details](https://simonwillison.net/2026/Sep/3/gpt6-astra/));
-covered in Block 1. Published scores tell you about the vendor's harness,
-not yours. The
+numbers behind it. Vendor benchmarks can't supply them: published scores are measured inside
+the vendor's harness and can swing dramatically with it (Block 1 covers
+the evidence), so they tell you about the vendor's harness, not yours. The
 only numbers you can act on come from running your own tasks through the
 candidate harnesses with an external checker. This block is that method,
 practiced at a scale where you can see all the moving parts. Block 5's
