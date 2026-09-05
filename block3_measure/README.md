@@ -49,12 +49,18 @@ In more detail:
 | `h2_managed` | tool-output limits · malformed-call recovery · context compaction | one failing `run_tests` dumping 20k+ chars of pytest tracebacks into the transcript · the unhandled JSON crash · the whole growing transcript resent every call (quadratic cost) |
 | `h3_full` | durable working notes (survive compaction) · write-path guardrail on `tests/` | plan lost with the transcript · "don't modify tests" enforced by the harness instead of the prompt |
 
-The deltas are deliberately small. Read them as diffs — the diff is the lesson:
+The deltas are deliberately small, and you don't need to diff anything to
+see them: every addition is tagged with a `[h2]` or `[h3]` comment marker
+in the source. Open the file, jump between markers, and everything
+unmarked is identical to the previous harness:
 
 ```
-diff harnesses/h1_naive.py harnesses/h2_managed.py
-diff harnesses/h2_managed.py harnesses/h3_full.py
+grep -n "\[h2\]" harnesses/h2_managed.py    # every h2-added block
+grep -n "\[h3\]" harnesses/h3_full.py       # every h3-added block
 ```
+
+(If you do prefer a diff, `diff harnesses/h1_naive.py harnesses/h2_managed.py`
+works — the files are kept structurally parallel for exactly that reason.)
 
 ## What "vary only the harness" means
 
@@ -105,19 +111,19 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    ```
    uv run eval/run_eval.py h1 --task refactor_v2
    ```
-3. **Read the h2 diff, then run the same task through h2** — identical to
-   h1 except tool outputs are capped, malformed tool calls come back as
-   recoverable errors, and old tool outputs are elided past a budget.
-   Watch the live output for `compaction: elided N old tool output(s)`
-   lines — that's the harness managing context mid-run:
+3. **Skim the three `[h2]`-marked blocks in `harnesses/h2_managed.py`**
+   (the capability matrix above tells you what you'll find: output caps,
+   recoverable bad calls, compaction — everything unmarked is identical to
+   h1), then run the same task through h2. Watch the live output for
+   `compaction: elided N old tool output(s)` lines — that's the harness
+   managing context mid-run:
    ```
    uv run eval/run_eval.py h2 --task refactor_v2
    ```
-4. **Read the h3 diff, then run h3** — h2 plus a durable `update_notes`
-   tool (notes survive compaction) and a write guardrail on `tests/`.
-   Watch for the agent calling `update_notes` unprompted — the harness
-   only offers the tool; whether the model adopts it is part of the
-   result:
+4. **Skim the `[h3]`-marked blocks in `harnesses/h3_full.py`** (durable
+   notes + the write guardrail), then run h3. Watch for the agent calling
+   `update_notes` unprompted — the harness only offers the tool; whether
+   the model adopts it is part of the result:
    ```
    uv run eval/run_eval.py h3 --task refactor_v2
    ```
