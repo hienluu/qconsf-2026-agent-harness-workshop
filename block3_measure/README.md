@@ -157,6 +157,15 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    Same truncated tool call into both harnesses: h1's path dies with an
    unhandled traceback; h2's path turns it into feedback the model can
    act on (a magenta ↻ line when it happens live).
+
+   Or trigger it in a *real* run: fault injection corrupts one tool
+   call's JSON at a turn you choose (simulating the model hitting its
+   output ceiling — the harness itself is untouched). Cheap on the short
+   task, and everything after the injection is live model behavior:
+   ```
+   INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h2 --task fix_bug   # recovers, still solves
+   INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h1 --task fix_bug   # crashes on the spot
+   ```
 4. **Skim the `[h3]`-marked blocks in `harnesses/h3_full.py`** (durable
    notes + the write guardrail), then run h3. Watch for the agent calling
    `update_notes` unprompted — the harness only offers the tool; whether

@@ -20,7 +20,9 @@ from base import (
     RunResult,
     Workspace,
     add_usage,
+    corrupt,
     make_client,
+    malformed_injection_turn,
     model_name,
 )
 
@@ -45,6 +47,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
     ]
 
     result = RunResult(harness=NAME, task=workspace_dir)
+    inject_turn = malformed_injection_turn()
     start = time.monotonic()
     try:
         for turn in range(1, MAX_TURNS + 1):
@@ -67,8 +70,16 @@ def run(workspace_dir: str, task: str) -> RunResult:
 
             for call in msg.tool_calls:
                 name = call.function.name
+                raw = call.function.arguments or "{}"
+                # [chaos] Demo-only fault injection (simulates a model-side
+                # truncation; see base.malformed_injection_turn). Off unless
+                # INJECT_MALFORMED_TURN is set — harness behavior unchanged.
+                if inject_turn == turn:
+                    inject_turn = None
+                    raw = corrupt(raw)
+                    print(f"\033[2m[fault injection] corrupting this {name} call's JSON (INJECT_MALFORMED_TURN={turn})\033[0m")
                 # Naive: unguarded parse — a truncated tool call kills the run.
-                args = json.loads(call.function.arguments or "{}")
+                args = json.loads(raw)
                 print(f"[{NAME} turn {turn}] {name}({', '.join(f'{k}={str(v)[:40]!r}' for k, v in args.items())})")
                 try:
                     result_text = dispatch[name](args)

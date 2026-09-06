@@ -22,7 +22,9 @@ from base import (
     RunResult,
     Workspace,
     add_usage,
+    corrupt,
     make_client,
+    malformed_injection_turn,
     model_name,
     transcript_chars,
 )
@@ -117,6 +119,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
     tool_schemas = TOOL_SCHEMAS + [NOTES_SCHEMA]
 
     result = RunResult(harness=NAME, task=workspace_dir)
+    inject_turn = malformed_injection_turn()
     start = time.monotonic()
     try:
         for turn in range(1, MAX_TURNS + 1):
@@ -139,8 +142,15 @@ def run(workspace_dir: str, task: str) -> RunResult:
 
             for call in msg.tool_calls:
                 name = call.function.name
+                raw = call.function.arguments or "{}"
+                # [chaos] Demo-only fault injection (model-side truncation
+                # simulation; off unless INJECT_MALFORMED_TURN is set).
+                if inject_turn == turn:
+                    inject_turn = None
+                    raw = corrupt(raw)
+                    print(f"\033[2m[fault injection] corrupting this {name} call's JSON (INJECT_MALFORMED_TURN={turn})\033[0m")
                 try:
-                    args = json.loads(call.function.arguments or "{}")
+                    args = json.loads(raw)
                 except json.JSONDecodeError as exc:
                     messages.append({
                         "role": "tool",

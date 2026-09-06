@@ -70,6 +70,21 @@ def add_usage(result: RunResult, response) -> None:
         result.output_tokens += getattr(usage, "completion_tokens", 0) or 0
 
 
+def malformed_injection_turn():
+    """Opt-in fault injection for demos: INJECT_MALFORMED_TURN=<n> corrupts
+    the first tool call of turn n (its JSON arguments are cut off mid-string,
+    reproducing a model that hit its output ceiling). This simulates a
+    MODEL-side failure — harness behavior is untouched — so h1 shows its
+    authentic crash and h2/h3 show authentic recovery, on demand."""
+    value = os.environ.get("INJECT_MALFORMED_TURN")
+    return int(value) if value else None
+
+
+def corrupt(arguments: str) -> str:
+    """Cut the JSON off mid-string, like an output-ceiling truncation."""
+    return arguments[: max(1, int(len(arguments) * 0.6))]
+
+
 def transcript_chars(messages: list) -> int:
     total = 0
     for m in messages:
