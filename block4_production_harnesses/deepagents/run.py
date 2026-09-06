@@ -31,6 +31,7 @@ workspace: Path
 
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
+    print(f"[{NAME}] tool: run_tests()")
     return ws_run_tests(workspace)
 
 

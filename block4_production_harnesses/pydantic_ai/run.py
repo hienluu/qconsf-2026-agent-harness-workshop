@@ -50,24 +50,28 @@ agent = Agent(
 @agent.tool_plain
 def list_files() -> str:
     """List every file in the workspace as relative paths."""
+    print(f"[{NAME}] tool: list_files()")
     return ws_list(workspace)
 
 
 @agent.tool_plain
 def read_file(path: str) -> str:
     """Read one file, path relative to the workspace."""
+    print(f"[{NAME}] tool: read_file({path})")
     return ws_read(workspace, path)
 
 
 @agent.tool_plain
 def write_file(path: str, content: str) -> str:
     """Overwrite one file, path relative to the workspace."""
+    print(f"[{NAME}] tool: write_file({path}, {len(content)} chars)")
     return ws_write(workspace, path, content)
 
 
 @agent.tool_plain
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
+    print(f"[{NAME}] tool: run_tests()")
     return ws_run_tests(workspace)
 
 
