@@ -5,7 +5,7 @@ decide — you built the loop, watched it fail, and measured five specific
 protections. The production harnesses decide those same things for you,
 differently, and their feature lists all read alike until you can map each
 feature to a failure you've seen. This block is that mapping: five
-harnesses, one task you know by heart, read side by side.
+harnesses, one controlled task, read side by side.
 
 ## The specimens
 
@@ -36,10 +36,10 @@ the Claude Agent SDK pip package bundles its own compiled Claude Code CLI
 
 ## Exercise flow (from `block4_production_harnesses/`)
 
-Fair warning about what you'll see: **all six runs succeed, in a few
-seconds each, and look almost identical.** That's the experimental design
-— outcome is the controlled variable. The information is in what each run
-*didn't require of you*, and that's what the **harness receipt** printed
+Fair warning about what you'll see: **all six runs succeed.** That's the
+experimental design — outcome is the controlled variable. The information
+is in *how* each harness got there and what each run didn't require of
+you, and that's what the **harness receipt** printed
 after every run captures: who owns the loop, what tools you wrote versus
 what the harness shipped, what provider friction you paid, how many lines
 the same job took. Receipts accumulate — after your sixth run, the table
@@ -132,5 +132,5 @@ weight-vs-horizon question from Q1, run in the other direction.
    OpenAI's). What does that predict about switching costs at your job?
 4. ADK couldn't even share a dependency resolution with OpenAI's SDK.
    What does your platform team do with that fact?
-5. Every one of these solved fix_bug. On what basis, then, would you
+5. Every one of these solved the task. On what basis, then, would you
    actually choose? (That's Block 5.)
