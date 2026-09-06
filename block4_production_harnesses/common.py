@@ -132,8 +132,10 @@ def receipt(
     """
     import json
 
+    task_name = _os.environ.get("BLOCK4_TASK", "fix_bug")
     row = {
         "specimen": specimen,
+        "task": task_name,
         "solved": solved,
         "wall_s": round(time.monotonic() - started, 1),
         "pedigree": pedigree,
@@ -154,20 +156,22 @@ def receipt(
     with receipts.open() as fh:
         for line in fh:
             r = json.loads(line)
-            latest[r["specimen"]] = r
+            # rows recorded before task tracking existed show as "?"
+            latest[(r["specimen"], r.get("task", "?"))] = r
 
     from rich.console import Console
     from rich.table import Table
 
     table = Table(
-        title="Harness receipts — same task, same model; everything below is the harness",
+        title="Harness receipts — same model throughout; per-row task in column 2; the rest is the harness",
         title_style="bold",
     )
-    for col in ("specimen", "wall s", "loop", "tools we wrote", "harness shipped", "provider friction", "lines"):
+    for col in ("specimen", "task", "wall s", "loop", "tools we wrote", "harness shipped", "provider friction", "lines"):
         table.add_column(col, overflow="fold")
     for r in latest.values():
         table.add_row(
             r["specimen"] + ("" if r["solved"] else " ✗"),
+            r.get("task", "?"),
             str(r["wall_s"]),
             r["loop_owner"],
             r["tools_we_wrote"],
@@ -175,7 +179,8 @@ def receipt(
             r["provider_friction"],
             str(r["code_lines"]),
         )
+    print(f"this run's task: {task_name}")
     Console().print(table)
-    remaining = 6 - len(latest)
+    remaining = 6 - sum(1 for (_, t) in latest if t == task_name)
     if remaining > 0:
-        print(f"({remaining} specimen(s) left — each adds a row)")
+        print(f"({remaining} specimen(s) left on {task_name} — each adds a row)")
