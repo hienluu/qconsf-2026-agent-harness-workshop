@@ -51,6 +51,15 @@ requires the Claude Code CLI to be installed (`npm install -g
    production harness engineering buys; anything else is the harness-model
    fit lesson from Block 1, live.
 
+   For calibration, the first live run (Sep 2026, GLM-5.3): SOLVED in 19
+   turns and 65 seconds — versus 117–208s for our h3 — with a tool profile
+   of 16× Bash, 1× Read, 1× Edit. One Edit, for a ~130-file migration:
+   given a shell, the model scripted the renames instead of rewriting
+   files one by one. The decisive advantage wasn't the loop or compaction;
+   it was tool design changing which algorithm the model chose. (The same
+   Bash tool is why production harnesses need sandboxing and permissions —
+   we ran `bypassPermissions` on a disposable copy, deliberately.)
+
 ## Debrief questions
 
 1. Which specimen required the least code — and what did that convenience
