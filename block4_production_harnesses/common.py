@@ -20,8 +20,8 @@ BUG_HUNT_SOURCE = REPO / "block2_naive_harness" / "tasks" / "medium" / "bug_hunt
 REFACTOR_SOURCE = REPO / "block2_naive_harness" / "tasks" / "long_horizon" / "refactor_v2" / "workspace"
 
 # The official Block 4 task is bug_hunt — three interacting bugs across 8
-# modules, enough work that harness character (exploration, planning,
-# batching) has room to show. BLOCK4_TASK=fix_bug switches to the trivial
+# modules, enough work that differences in how each harness works
+# (exploration, planning, batching) have room to show. BLOCK4_TASK=fix_bug switches to the trivial
 # Block 2 task as extra credit: watch the spread collapse when
 # there's nothing to differentiate on.
 import os as _os
@@ -185,7 +185,7 @@ def receipt(
     print(f"this run's task: {task_name}")
     Console().print(table)
     print(
-        "provenance — measured this run: wall s, solved, task, lines · "
+        "where these cells come from — measured this run: wall s, solved, task, lines · "
         "authored facts from the build record (hardcoded in each script's "
         "receipt() call; verify against its run.py): loop, tools, shipped, friction"
     )

@@ -11,8 +11,8 @@ harnesses, one controlled task, read side by side.
 
 Same task, same model, same provider key. The task is `bug_hunt`: a small
 order-pricing package (8 modules, 18 tests, 5 failing) with three seeded
-bugs that interact — real diagnosis, sized so each harness's character
-(exploration, planning, batching) has room to show. You haven't seen this
+bugs that interact — real diagnosis, sized so differences in how each harness
+works (exploration, planning, batching) have room to show. You haven't seen this
 task before (Blocks 2–3 used others), and knowing the bugs helps you read
 the traces — the agents have to find them the hard way:
 
@@ -86,7 +86,7 @@ each docstring says what to look for.
    uv run --group block4 deepagents/run.py
    uv run --group block4 deepagents/langgraph_escape_hatch.py
    ```
-4. **Read `COMPARISON.md`** — the full dimension matrix — and argue with
+4. **Read `COMPARISON.md`** — the full comparison table — and argue with
    it against your receipts.
 5. Presenter demo (watch, don't run — ~$1): `refactor_v2`, the task that
    killed the naive harness, through Claude Code's harness:
@@ -101,8 +101,8 @@ each docstring says what to look for.
    For calibration, two live runs (Sep 2026, GLM-5.3) agree: SOLVED in
    17–19 turns, ~16–18 tool calls, 65–97s wall — versus 117–208s for our
    h3 — with a Bash-dominated tool profile and a single Edit for a
-   ~130-file migration. Both runs chose the same algorithm: reconnoiter
-   via grep/cat, detect that MIGRATION.md is incomplete from the tests,
+   ~130-file migration. Both runs chose the same approach: survey the
+   code via grep/cat, detect that MIGRATION.md is incomplete from the tests,
    then *write a word-boundary-regex rename script* and run it — followed
    by collateral-damage checks on display strings. Given a shell, the
    model stopped rewriting files and started scripting; the decisive
@@ -140,7 +140,8 @@ BLOCK4_TASK=fix_bug uv run --group block4 pydantic_ai/run.py
 
 Watch what happens to the receipts table: on a task with nothing to
 differentiate on, the runs collapse toward the same few turns and
-seconds. Harness character needs work worth differing over — which is the
+seconds. Differences between harnesses only show on work hard enough to
+differ over — which is the
 weight-vs-horizon question from Q1, run in the other direction.
 
 ## Debrief questions

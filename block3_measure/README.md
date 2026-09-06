@@ -104,7 +104,7 @@ is the thing that decides what the model observes, what it may do, and
 what happens to its output. The model weights never change; its
 environment does — and environment changes alone are what move the numbers.
 
-One confound remains: the model isn't deterministic, even at temperature
+One variable we can't control remains: the model isn't deterministic, even at temperature
 0.1. The same harness on the same task has crashed at turn 11 on one run
 and completed in 31 turns on another. Single runs compare harness+luck
 against harness+luck — treat one-run differences as direction, not
@@ -194,8 +194,8 @@ are pennies. Run the long task once per harness.
 ## How scoring works (worth internalizing)
 
 - Every run copies the pristine workspace to `results/runs/<harness>__<task>/`
-  — runs never touch the repo or each other, and failed runs leave wreckage
-  you can inspect.
+  — runs never touch the repo or each other, and a failed run's workspace
+  is kept for you to inspect.
 - Before copying, the runner verifies the source workspace is still in its
   unsolved state and refuses to run otherwise. Block 2 exercises modify
   the repo workspaces in place, so if you ran Block 2 first (you did),
