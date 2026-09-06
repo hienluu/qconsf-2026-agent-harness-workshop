@@ -88,6 +88,24 @@ on your screen IS the five-harness comparison, built from your own runs.
    harnesses need sandboxing and permissions — we ran `bypassPermissions`
    on a disposable copy, deliberately.)
 
+## Clearing the receipts table
+
+Receipts accumulate in `runs/receipts.jsonl`; the table shows the latest
+run per (specimen, task). To start it over (from `block4_production_harnesses/`):
+
+```
+rm runs/receipts.jsonl
+```
+
+To keep a finished round for reference instead of deleting it:
+
+```
+mv runs/receipts.jsonl runs/receipts.round1.jsonl
+```
+
+`uv run scripts/reset.py` (from the repo root) also clears it, along with
+all run workspaces and the Block 3 state — the full start-over.
+
 ## Debrief questions
 
 1. Compare your wall-clock column with a neighbor's — the same specimen
