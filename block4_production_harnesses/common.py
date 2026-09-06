@@ -38,6 +38,18 @@ REFACTOR_TASK = (
 )
 
 
+def anthropic_compat_base_url() -> str:
+    """The provider's Anthropic-dialect endpoint, derived from the one
+    already-configured URL: the OpenAI dialect mounts at {host}/v1, the
+    Anthropic dialect wants the bare {host} (its client appends
+    /v1/messages). Holds for Baseten and Fireworks; set
+    ANTHROPIC_COMPAT_BASE_URL explicitly for a provider where it doesn't."""
+    override = _os.environ.get("ANTHROPIC_COMPAT_BASE_URL")
+    if override:
+        return override
+    return _os.environ["PROVIDER_BASE_URL"].removesuffix("/v1")
+
+
 def prepare_workspace(specimen: str, source: Path = FIX_BUG_SOURCE) -> Path:
     """Fresh copy of a task workspace under runs/<specimen>/."""
     run_dir = BLOCK4 / "runs" / specimen

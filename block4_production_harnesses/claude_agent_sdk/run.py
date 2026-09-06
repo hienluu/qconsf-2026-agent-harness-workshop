@@ -28,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify  # noqa: E402
+from common import anthropic_compat_base_url, TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -70,7 +70,7 @@ async def main() -> int:
         env={
             # The harness's home is Anthropic's API; we redirect it to the
             # workshop provider's Anthropic-compatible endpoint.
-            "ANTHROPIC_BASE_URL": os.environ["ANTHROPIC_COMPAT_BASE_URL"],
+            "ANTHROPIC_BASE_URL": anthropic_compat_base_url(),
             # Baseten's Anthropic-compatible endpoint wants Authorization:
             # Bearer, not the protocol's x-api-key — AUTH_TOKEN (not API_KEY)
             # makes Claude Code send Bearer. Found the hard way; see README.

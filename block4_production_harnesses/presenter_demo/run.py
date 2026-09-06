@@ -22,7 +22,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import REFACTOR_SOURCE, REFACTOR_TASK, prepare_workspace, verify  # noqa: E402
+from common import anthropic_compat_base_url, REFACTOR_SOURCE, REFACTOR_TASK, prepare_workspace, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -46,7 +46,7 @@ async def main() -> int:
         max_turns=60,
         permission_mode="bypassPermissions",
         env={
-            "ANTHROPIC_BASE_URL": os.environ["ANTHROPIC_COMPAT_BASE_URL"],
+            "ANTHROPIC_BASE_URL": anthropic_compat_base_url(),
             "ANTHROPIC_AUTH_TOKEN": os.environ["PROVIDER_API_KEY"],
             "ANTHROPIC_MODEL": os.environ["MODEL"],
             "ANTHROPIC_SMALL_FAST_MODEL": os.environ["MODEL"],
