@@ -181,6 +181,11 @@ def receipt(
         )
     print(f"this run's task: {task_name}")
     Console().print(table)
+    print(
+        "provenance — measured this run: wall s, solved, task, lines · "
+        "authored facts from the build record (hardcoded in each specimen's "
+        "receipt() call; verify against its run.py): loop, tools, shipped, friction"
+    )
     remaining = 6 - sum(1 for (_, t) in latest if t == task_name)
     if remaining > 0:
         print(f"({remaining} specimen(s) left on {task_name} — each adds a row)")
