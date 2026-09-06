@@ -16,17 +16,22 @@ from pathlib import Path
 BLOCK4 = Path(__file__).resolve().parent
 REPO = BLOCK4.parent
 FIX_BUG_SOURCE = REPO / "block2_naive_harness" / "tasks" / "short" / "01_fix_bug" / "workspace"
+REFACTOR_SOURCE = REPO / "block2_naive_harness" / "tasks" / "long_horizon" / "refactor_v2" / "workspace"
 
 TASK = "One test fails. Find the bug and fix it. Do not modify the tests."
+REFACTOR_TASK = (
+    "Migrate the source code to the v2 API following MIGRATION.md until all "
+    "tests pass. Do not modify the tests."
+)
 
 
-def prepare_workspace(specimen: str) -> Path:
-    """Fresh copy of the fix_bug workspace under runs/<specimen>/."""
+def prepare_workspace(specimen: str, source: Path = FIX_BUG_SOURCE) -> Path:
+    """Fresh copy of a task workspace under runs/<specimen>/."""
     run_dir = BLOCK4 / "runs" / specimen
     workspace = run_dir / "workspace"
     if run_dir.exists():
         shutil.rmtree(run_dir)
-    shutil.copytree(FIX_BUG_SOURCE, workspace)
+    shutil.copytree(source, workspace)
     return workspace
 
 
