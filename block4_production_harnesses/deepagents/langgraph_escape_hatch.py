@@ -22,7 +22,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
 
 from langchain.agents import create_agent  # noqa: E402
 from langchain_core.tools import tool  # noqa: E402
@@ -81,7 +81,14 @@ def main() -> int:
         config={"recursion_limit": 40},
     )
     print(f"[{NAME}] final: {str(result['messages'][-1].content)[:100]}")
-    return verify(NAME, workspace, started)
+    solved = verify(NAME, workspace, started) == 0
+    receipt(NAME, script=__file__, started=started, solved=solved,
+        pedigree="the runtime itself — one layer below Deep Agents",
+        loop_owner="ours to shape (bare create_agent graph)",
+        tools_we_wrote=["read_file", "write_file", "run_tests"],
+        tools_harness_shipped="nothing — dropping a layer put every tool back on our plate",
+        provider_friction="none for the model; API churned mid-build (create_react_agent renamed)")
+    return 0 if solved else 1
 
 
 if __name__ == "__main__":

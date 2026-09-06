@@ -46,3 +46,73 @@ def verify(specimen: str, workspace: Path, started: float) -> int:
     verdict = "SOLVED" if proc.returncode == 0 else "NOT SOLVED"
     print(f"\n--- {specimen}: {verdict} | wall={wall:.1f}s | {summary}")
     return 0 if proc.returncode == 0 else 1
+
+
+def receipt(
+    specimen: str,
+    *,
+    script: str,
+    started: float,
+    solved: bool,
+    pedigree: str,
+    loop_owner: str,
+    tools_we_wrote: list,
+    tools_harness_shipped: str,
+    provider_friction: str,
+) -> None:
+    """Print this run's harness receipt and the comparison table so far.
+
+    The six specimens produce nearly identical RESULTS on purpose — the
+    outcome is the controlled variable. What differs is everything on this
+    receipt, which is why it prints after every run and accumulates: by
+    your last specimen, the table IS the comparison.
+    """
+    import json
+
+    row = {
+        "specimen": specimen,
+        "solved": solved,
+        "wall_s": round(time.monotonic() - started, 1),
+        "pedigree": pedigree,
+        "loop_owner": loop_owner,
+        "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or '—'})",
+        "tools_harness_shipped": tools_harness_shipped,
+        "provider_friction": provider_friction,
+        "code_lines": Path(script).read_text().count("\n") + 1,
+        "timestamp": time.time(),
+    }
+
+    receipts = BLOCK4 / "runs" / "receipts.jsonl"
+    receipts.parent.mkdir(exist_ok=True)
+    with receipts.open("a") as fh:
+        fh.write(json.dumps(row) + "\n")
+
+    latest: dict = {}
+    with receipts.open() as fh:
+        for line in fh:
+            r = json.loads(line)
+            latest[r["specimen"]] = r
+
+    from rich.console import Console
+    from rich.table import Table
+
+    table = Table(
+        title="Harness receipts — same task, same model; everything below is the harness",
+        title_style="bold",
+    )
+    for col in ("specimen", "wall s", "loop", "tools we wrote", "harness shipped", "provider friction", "lines"):
+        table.add_column(col, overflow="fold")
+    for r in latest.values():
+        table.add_row(
+            r["specimen"] + ("" if r["solved"] else " ✗"),
+            str(r["wall_s"]),
+            r["loop_owner"],
+            r["tools_we_wrote"],
+            r["tools_harness_shipped"],
+            r["provider_friction"],
+            str(r["code_lines"]),
+        )
+    Console().print(table)
+    remaining = 6 - len(latest)
+    if remaining > 0:
+        print(f"({remaining} specimen(s) left — each adds a row)")

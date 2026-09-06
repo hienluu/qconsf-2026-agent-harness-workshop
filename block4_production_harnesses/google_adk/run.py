@@ -23,7 +23,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
 
 load_dotenv()
 # LiteLLM's OpenAI adapter reads these; set before ADK imports settle.
@@ -90,7 +90,14 @@ async def main() -> int:
             elif getattr(part, "text", None) and part.text.strip():
                 print(f"[{NAME}] says: {part.text.strip()[:100]}")
 
-    return verify(NAME, workspace, started)
+    solved = verify(NAME, workspace, started) == 0
+    receipt(NAME, script=__file__, started=started, solved=solved,
+        pedigree="construction kit (typed state, sessions, graph runtime)",
+        loop_owner="theirs — Runner + session services (most ceremony)",
+        tools_we_wrote=["read_file", "write_file", "run_tests"],
+        tools_harness_shipped="none for this task (rich ecosystem exists: executors, computer-use)",
+        provider_friction="LiteLLM env contract; own uv group (conflicts with openai-agents); 86 extra pkgs; transient 500s -> num_retries")
+    return 0 if solved else 1
 
 
 if __name__ == "__main__":

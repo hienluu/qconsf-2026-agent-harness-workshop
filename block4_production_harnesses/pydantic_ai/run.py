@@ -19,7 +19,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
 
 from pydantic_ai import Agent  # noqa: E402
 from pydantic_ai.models.openai import OpenAIChatModel  # noqa: E402
@@ -78,7 +78,14 @@ def main() -> int:
     result = agent.run_sync(TASK)
     print(f"[{NAME}] final: {str(result.output)[:100]}")
     print(f"[{NAME}] usage: {result.usage}")
-    return verify(NAME, workspace, started)
+    solved = verify(NAME, workspace, started) == 0
+    receipt(NAME, script=__file__, started=started, solved=solved,
+        pedigree="composable (typed core, capabilities a la carte)",
+        loop_owner="theirs — lean typed loop",
+        tools_we_wrote=["read_file", "write_file", "run_tests"],
+        tools_harness_shipped="none by default (capabilities opt-in); cost accounting free",
+        provider_friction="none — provider is a constructor argument")
+    return 0 if solved else 1
 
 
 if __name__ == "__main__":

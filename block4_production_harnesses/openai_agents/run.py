@@ -24,7 +24,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
 
 from agents import (  # noqa: E402
     Agent,
@@ -94,7 +94,14 @@ async def main() -> int:
     started = time.monotonic()
     result = await Runner.run(agent, TASK, max_turns=12)
     print(f"[{NAME}] final: {str(result.final_output)[:100]}")
-    return verify(NAME, workspace, started)
+    solved = verify(NAME, workspace, started) == 0
+    receipt(NAME, script=__file__, started=started, solved=solved,
+        pedigree="model-native (guardrails/handoffs as loop primitives)",
+        loop_owner="theirs — Runner owns it",
+        tools_we_wrote=["read_file", "write_file", "run_tests"],
+        tools_harness_shipped="none for this task (sandbox tools exist on OpenAI infra)",
+        provider_friction="1 workaround: explicit model object (org/model parses as provider prefix); tracing to OpenAI off by hand")
+    return 0 if solved else 1
 
 
 if __name__ == "__main__":

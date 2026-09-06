@@ -19,7 +19,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
 
 from deepagents import create_deep_agent  # noqa: E402
 from deepagents.backends import FilesystemBackend  # noqa: E402
@@ -68,7 +68,14 @@ def main() -> int:
     final = result["messages"][-1]
     print(f"[{NAME}] final: {str(final.content)[:100]}")
     print(f"[{NAME}] messages in transcript: {len(result['messages'])}")
-    return verify(NAME, workspace, started)
+    solved = verify(NAME, workspace, started) == 0
+    receipt(NAME, script=__file__, started=started, solved=solved,
+        pedigree="harness on a runtime (LangGraph underneath)",
+        loop_owner="theirs — ReAct + middleware onion",
+        tools_we_wrote=["run_tests"],
+        tools_harness_shipped="filesystem suite on the real workspace, write_todos, subagents",
+        provider_friction="none for the model; retries added for provider 500s")
+    return 0 if solved else 1
 
 
 if __name__ == "__main__":

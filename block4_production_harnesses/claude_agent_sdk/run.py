@@ -28,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -81,7 +81,14 @@ async def main() -> int:
                   f"cost=${message.total_cost_usd or 0:.4f} "
                   f"duration={message.duration_ms}ms")
 
-    return verify(NAME, workspace, started)
+    solved = verify(NAME, workspace, started) == 0
+    receipt(NAME, script=__file__, started=started, solved=solved,
+        pedigree="product-extracted (Claude Code as a library)",
+        loop_owner="theirs — closed; we only configure",
+        tools_we_wrote=[],
+        tools_harness_shipped="full Claude Code kit: Bash, Read, Edit, Grep, web...",
+        provider_friction="2 workarounds: Bearer auth via AUTH_TOKEN; warns unrecognized_model")
+    return 0 if solved else 1
 
 
 if __name__ == "__main__":

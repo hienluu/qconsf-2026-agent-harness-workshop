@@ -41,12 +41,15 @@ def main() -> None:
     else:
         print("[reset] task workspaces already pristine")
 
-    runs = RESULTS / "runs"
-    if runs.exists():
-        shutil.rmtree(runs)
-        print("[reset] eval run copies removed")
-    else:
-        print("[reset] no eval run copies to remove")
+    for runs, label in [
+        (RESULTS / "runs", "block 3 eval run copies"),
+        (REPO / "block4_production_harnesses" / "runs", "block 4 specimen runs + receipts"),
+    ]:
+        if runs.exists():
+            shutil.rmtree(runs)
+            print(f"[reset] {label} removed")
+        else:
+            print(f"[reset] no {label} to remove")
 
     table = RESULTS / "results.jsonl"
     if table.exists():

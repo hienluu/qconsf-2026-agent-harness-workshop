@@ -31,16 +31,31 @@ the Claude Agent SDK pip package bundles its own compiled Claude Code CLI
 
 ## Exercise flow (from `block4_production_harnesses/`)
 
-1. Pick any specimen. **Read its `run.py` first** — each is ~80 lines and
-   its docstring says what to notice. Then run it and watch the same
-   5-turn arc you know from Blocks 2–3, driven by someone else's harness.
-2. Repeat for the others, in any order. Total cost for all six: well
-   under $1.
-3. As you go, keep score against three questions:
-   - What did I have to write? (tools? loop? nothing?)
-   - What did the harness assume about my provider, my model, my trust?
-   - Which Block 2 failure does each built-in feature answer?
-4. Read `COMPARISON.md` — the dimension matrix — and argue with it.
+Fair warning about what you'll see: **all six runs succeed, in a few
+seconds each, and look almost identical.** That's the experimental design
+— outcome is the controlled variable. The information is in what each run
+*didn't require of you*, and that's what the **harness receipt** printed
+after every run captures: who owns the loop, what tools you wrote versus
+what the harness shipped, what provider friction you paid, how many lines
+the same job took. Receipts accumulate — after your sixth run, the table
+on your screen IS the five-harness comparison, built from your own runs.
+
+1. Run any specimen (order doesn't matter; all six cost well under $1
+   total). Read the receipt, not just the SOLVED line.
+2. Before the next one, spend sixty seconds in the current `run.py` on
+   ONE question the receipt raised — e.g. after Claude's SDK reports
+   "tools we wrote: 0," find the line that made that possible (there
+   isn't one — that's the point). Each docstring says what to look for.
+3. Repeat until the table is full. Sharpest contrasts to catch as rows
+   appear:
+   - `claude_agent_sdk` vs everyone: 0 tools written — and the most
+     provider friction. Convenience and coupling, same row.
+   - `deepagents` vs `langgraph_escape_hatch`: the same ecosystem one
+     layer apart — watch the "tools we wrote" count jump from 1 to 3.
+   - `pydantic_ai` vs `google_adk`: friction column "none" vs a
+     paragraph.
+4. Read `COMPARISON.md` — the full dimension matrix — and argue with it
+   against your receipts.
 5. Presenter demo (watch, don't run — ~$1): `refactor_v2`, the task that
    killed the naive harness, through Claude Code's harness:
    ```
