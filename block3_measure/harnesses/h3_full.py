@@ -1,7 +1,7 @@
 """h3_full — h2 plus durable memory and a real guardrail (marked [h3]).
 
   4. Durable working notes — a pinned message the agent updates via a new
-     `update_notes` tool. Compaction can elide any tool output, but the
+     `update_notes` tool. Compaction can drop any tool output, but the
      notes survive: the agent's plan and progress no longer live only in
      the transcript that dies with the context window.
   5. Write-path guardrail — "do not modify the tests" stops being a hope
@@ -32,10 +32,10 @@ NAME = "h3_full"
 MAX_TOOL_RESULT_CHARS = 6_000
 TRANSCRIPT_CHAR_BUDGET = 80_000   # ~20k tokens; keeps cumulative cost linear on long tasks
 KEEP_RECENT_MESSAGES = 12
-ELIDED = "[tool output elided by the harness to save context — re-run the tool if you need it again]"
+DROPPED_MARKER = "[old tool output dropped by the harness to save context — re-run the tool if you need it again]"
 
 # [h3] The notes prompt lives at messages[1], refreshed in place.
-NOTES_PREFIX = "YOUR WORKING NOTES (persist even when old tool output is elided — keep plan and per-file progress here):\n"
+NOTES_PREFIX = "YOUR WORKING NOTES (persist even when old tool output is dropped — keep plan and per-file progress here):\n"
 
 # [h3] One more tool: overwrite the durable notes.
 NOTES_SCHEMA = {
@@ -68,15 +68,15 @@ def truncate(text: str) -> str:
 
 
 def compact(messages: list) -> int:
-    elided = 0
+    dropped = 0
     for m in messages[:-KEEP_RECENT_MESSAGES]:
         if transcript_chars(messages) <= TRANSCRIPT_CHAR_BUDGET:
             break
-        # [h3] Never elide system messages — the durable notes live there.
-        if m.get("role") == "tool" and len(m.get("content") or "") > len(ELIDED):
-            m["content"] = ELIDED
-            elided += 1
-    return elided
+        # [h3] Never drop system messages — the durable notes live there.
+        if m.get("role") == "tool" and len(m.get("content") or "") > len(DROPPED_MARKER):
+            m["content"] = DROPPED_MARKER
+            dropped += 1
+    return dropped
 
 
 def run(workspace_dir: str, task: str) -> RunResult:
@@ -162,10 +162,10 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     "content": truncate(result_text),
                 })
 
-            elided = compact(messages)
-            if elided:
-                result.notes["elided_messages"] = result.notes.get("elided_messages", 0) + elided
-                print(f"[{NAME} turn {turn}] compaction: elided {elided} old tool output(s)")
+            dropped = compact(messages)
+            if dropped:
+                result.notes["dropped_tool_outputs"] = result.notes.get("dropped_tool_outputs", 0) + dropped
+                print(f"[{NAME} turn {turn}] compaction: dropped {dropped} old tool output(s)")
     except Exception as exc:
         result.status = "crashed"
         result.error = f"{type(exc).__name__}: {exc}"

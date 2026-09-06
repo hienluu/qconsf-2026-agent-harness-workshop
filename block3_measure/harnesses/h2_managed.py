@@ -7,7 +7,7 @@ Each addition answers a death we watched h1 die in live runs (marked [h2]):
   2. Malformed-call retry — a tool call truncated at the model's output
                             ceiling becomes an error the model can react
                             to, instead of an unhandled crash.
-  3. Context compaction   — old tool outputs are elided once the
+  3. Context compaction   — old tool outputs are dropped once the
                             transcript exceeds a budget, so cost stops
                             growing quadratically and the window never
                             fills with stale file dumps.
@@ -36,7 +36,7 @@ NAME = "h2_managed"
 MAX_TOOL_RESULT_CHARS = 6_000     # per tool result fed back to the model
 TRANSCRIPT_CHAR_BUDGET = 80_000   # ~20k tokens; keeps cumulative cost linear on long tasks
 KEEP_RECENT_MESSAGES = 12         # never compact the newest N messages
-ELIDED = "[tool output elided by the harness to save context — re-run the tool if you need it again]"
+DROPPED_MARKER = "[old tool output dropped by the harness to save context — re-run the tool if you need it again]"
 
 
 def truncate(text: str) -> str:
@@ -49,19 +49,19 @@ def truncate(text: str) -> str:
 
 
 def compact(messages: list) -> int:
-    """[h2] Elide the oldest large tool outputs until under budget.
+    """[h2] Drop the oldest large tool outputs until under budget.
 
     System and user messages are never touched; the newest messages are
     never touched. Deterministic and cheap — no extra model calls.
     """
-    elided = 0
+    dropped = 0
     for m in messages[:-KEEP_RECENT_MESSAGES]:
         if transcript_chars(messages) <= TRANSCRIPT_CHAR_BUDGET:
             break
-        if m.get("role") == "tool" and len(m.get("content") or "") > len(ELIDED):
-            m["content"] = ELIDED
-            elided += 1
-    return elided
+        if m.get("role") == "tool" and len(m.get("content") or "") > len(DROPPED_MARKER):
+            m["content"] = DROPPED_MARKER
+            dropped += 1
+    return dropped
 
 
 def run(workspace_dir: str, task: str) -> RunResult:
@@ -134,10 +134,10 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 })
 
             # [h2] End-of-turn compaction pass.
-            elided = compact(messages)
-            if elided:
-                result.notes["elided_messages"] = result.notes.get("elided_messages", 0) + elided
-                print(f"[{NAME} turn {turn}] compaction: elided {elided} old tool output(s)")
+            dropped = compact(messages)
+            if dropped:
+                result.notes["dropped_tool_outputs"] = result.notes.get("dropped_tool_outputs", 0) + dropped
+                print(f"[{NAME} turn {turn}] compaction: dropped {dropped} old tool output(s)")
     except Exception as exc:
         result.status = "crashed"
         result.error = f"{type(exc).__name__}: {exc}"

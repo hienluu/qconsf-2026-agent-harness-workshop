@@ -31,7 +31,7 @@ each ✓ is a capability the harness adds:
 |---|:-:|:-:|:-:|
 | Tool-output truncation (per-result 6k-char cap, head+tail) | – | ✓ | ✓ |
 | Malformed-tool-call recovery (error message instead of crash) | – | ✓ | ✓ |
-| Context compaction (elide old tool outputs past 80k chars) | – | ✓ | ✓ |
+| Context compaction (drop old tool outputs past 80k chars) | – | ✓ | ✓ |
 | Durable working notes (`update_notes` tool + pinned message) | – | – | ✓ |
 | Write guardrail (`tests/` read-only at the dispatcher) | – | – | ✓ |
 
@@ -67,7 +67,7 @@ works — the files are kept structurally parallel for exactly that reason.)
 | Held constant | Varied (the harness) |
 |---|---|
 | Model, temperature, provider endpoint | What a tool result looks like by the time the model sees it — the tool's return value is identical everywhere, but h1 forwards it whole (a mid-migration `run_tests` can be ~25k chars of tracebacks, resent every turn thereafter), while h2/h3 forward the first 4k + last 1.5k with a `[harness truncated N chars]` marker, keeping the leading failures and the summary line |
-| Tasks: identical pristine workspace copies, identical prompts | What the resent history looks like — h1 resends every message forever; h2/h3 elide old tool outputs once the transcript passes an 80k-char budget |
+| Tasks: identical pristine workspace copies, identical prompts | What the resent history looks like — h1 resends every message forever; h2/h3 drop old tool outputs once the transcript passes an 80k-char budget |
 | Tools: all harnesses import the same `Workspace` + schemas from Block 2 | What happens on a malformed tool call — h1 raises and the run dies; h2/h3 feed the model a recoverable error message and continue |
 | Base system prompt, `MAX_TURNS` (both in `harnesses/base.py`; the budget is 40 for every harness here — above Block 2's 20-turn cap, deliberately generous so the experiment measures protections, never the budget) | What the model is offered and refused — h3 only: the `update_notes` tool and pinned notes message are offered; writes to `tests/` are refused |
 | The judge: pytest on the workspace, never the agent's self-report | |
@@ -116,7 +116,7 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    capped at 6k chars before the model sees them, recoverable bad calls,
    compaction — everything unmarked is identical to h1), then run the same
    task through h2. Watch the live output for
-   `compaction: elided N old tool output(s)` lines — that's the harness
+   `compaction: dropped N old tool output(s)` lines — that's the harness
    managing context mid-run:
    ```
    uv run eval/run_eval.py h2 --task refactor_v2
@@ -189,7 +189,7 @@ spending tokens.
 1. What did ~40 lines of harness (h1→h2) buy, in solve rate, tokens, and
    dollars?
 2. Which h2 protection did the heavy lifting on `refactor_v2`? (Check
-   `notes` in the table: `malformed_calls` recovered, `elided_messages`.)
+   `notes` in the table: `malformed_calls` recovered, `dropped_tool_outputs`.)
 3. What does h3's guardrail change about how much you must trust the
    *prompt*? (Try h1 on a task and count how many times "do not modify the
    tests" was load-bearing.)
