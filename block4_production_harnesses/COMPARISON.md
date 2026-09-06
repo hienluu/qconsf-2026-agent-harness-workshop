@@ -24,7 +24,8 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 | **Guardrails/permissions** | permission modes (we ran bypassPermissions in a sandbox copy) | first-class guardrail primitives | callbacks/plugins — mechanisms, not policies | filesystem permissions, interrupt_on | opt-in capability (limits, masking) |
 | **Provider coupling** | Anthropic env contract (`ANTHROPIC_*`); worked on the compat endpoint but announced `unrecognized_model`, and auth needed Bearer via `AUTH_TOKEN` | OpenAI-shaped; `org/model` strings parse as provider prefixes — explicit model object required | agnostic via LiteLLM (env-var contract) | any LangChain model — constructor argument | none — provider is a constructor argument |
 | **Cost visibility** | `total_cost_usd` on every result | you | you | you | built-in (`RunUsage.cost`) |
-| **Install weight** | pip pkg + requires Claude Code CLI | light | heavy — 86 packages (k8s, botocore, llama-index); **cannot co-resolve with openai-agents** (own uv group) | LangChain ecosystem | light |
+| **Install weight** | pip pkg bundles a compiled Claude Code CLI (~190MB) | light | heavy — 86 packages (k8s, botocore, llama-index); **cannot co-resolve with openai-agents** (own uv group) | LangChain ecosystem | light |
+
 Wall times are deliberately NOT a matrix row: single-run wall clock on
 short tasks is provider-latency noise (see below). Your receipts table
 carries per-run times with their task labels; treat them as direction,
@@ -46,8 +47,8 @@ dependency weight, code size. Those columns don't vary with the
 provider's mood.
 
 The horizon question survives in weaker, honest form: a rich harness's
-machinery (middleware, planning, subagents) is overhead a 5-turn task
-can't use — its measured payoff so far is on the long task, where the
+machinery (middleware, planning, subagents) is overhead a short task
+can't fully use — its measured payoff so far is on the long task, where the
 heavy Claude harness beat every hand-built harness 2–3× (presenter demo:
 19 turns, 65s, by scripting the migration through Bash). Whether harness
 weight has a measurable toy-task latency cost needs October's multi-run
