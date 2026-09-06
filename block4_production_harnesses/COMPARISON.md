@@ -28,17 +28,27 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 
 Single runs — character evidence, not a benchmark. Every harness solved it.
 
-## The wall-clock finding: harness weight is a fixed cost; harness value scales with horizon
+## On the wall-clock column: mostly noise — and that's the lesson
 
-On this 5-turn toy task, the two most batteries-included harnesses were
-the *slowest* (observed receipts: deepagents ~23s with its middleware
-onion wrapping every model call, claude_agent_sdk ~18s, vs ~9–10s for the
-lean ones — and the bare-runtime escape hatch at ~9.5s). Yet on the
-long-horizon migration, the same heavy Claude harness beat every
-hand-built harness by 2–3× (presenter demo: 19 turns, 65s). Short tasks
-punish rich harnesses; long tasks reward them. When you evaluate a
-harness, your task-horizon profile is a first-order input — which is
-exactly where Block 5's rubric picks up.
+Do not rank harnesses by the `wall s` column. On a ~10-second task,
+provider latency swamps harness overhead: the same deepagents specimen
+measured 23.3s in one dry run and 10.6s on the immediate rerun. (The
+workshop author briefly enshrined "heavy harnesses are slow on toy tasks"
+from that single 23.3s sample — falsified by the next run. Single runs
+are harness+luck; Block 3's rule applies to Block 4 too.)
+
+What the receipts DO establish is structural, and stable across every
+run: who owns the loop, tools written vs shipped, provider friction,
+dependency weight, code size. Those columns don't vary with the
+provider's mood.
+
+The horizon question survives in weaker, honest form: a rich harness's
+machinery (middleware, planning, subagents) is overhead a 5-turn task
+can't use — its measured payoff so far is on the long task, where the
+heavy Claude harness beat every hand-built harness 2–3× (presenter demo:
+19 turns, 65s, by scripting the migration through Bash). Whether harness
+weight has a measurable toy-task latency cost needs October's multi-run
+sampling before anyone quotes it.
 
 ## What the specimens teach, one line each
 

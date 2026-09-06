@@ -77,11 +77,13 @@ on your screen IS the five-harness comparison, built from your own runs.
 
 ## Debrief questions
 
-1. Look at your receipts' wall-clock column next to the presenter demo's
-   result: the heaviest harnesses were slowest on the toy task and the
-   heavy Claude harness dominated the long one. What does "harness weight
-   is a fixed cost; harness value scales with horizon" imply about
-   choosing a harness for *your* workload's task-length profile?
+1. Compare your wall-clock column with a neighbor's — the same specimen
+   has measured 23.3s and 10.6s on back-to-back runs. Which receipt
+   columns are noise on a 10-second task, and which are stable structural
+   facts? (Then: the heavy Claude harness *did* dominate the long-horizon
+   presenter demo. What experiment would you run to establish how harness
+   weight relates to task horizon — and what would Block 3 say about
+   sample size?)
 2. Which specimen required the least code — and what did that convenience
    cost in provider coupling?
 3. Two harnesses needed an explicit workaround to run on our provider at
