@@ -48,6 +48,7 @@ def main() -> int:
             model=os.environ["MODEL"],
             base_url=os.environ["PROVIDER_BASE_URL"],
             api_key=os.environ["PROVIDER_API_KEY"],
+            max_retries=5,  # the workshop provider throws occasional 500s
         ),
         # The harness's own file tools, aimed at the real workspace.
         backend=FilesystemBackend(root_dir=workspace, virtual_mode=False),

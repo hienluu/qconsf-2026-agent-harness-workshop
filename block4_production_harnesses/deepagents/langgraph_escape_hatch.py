@@ -65,6 +65,7 @@ def main() -> int:
             model=os.environ["MODEL"],
             base_url=os.environ["PROVIDER_BASE_URL"],
             api_key=os.environ["PROVIDER_API_KEY"],
+            max_retries=5,  # the workshop provider throws occasional 500s
         ),
         tools=[read_file, write_file, run_tests],
         system_prompt=(
