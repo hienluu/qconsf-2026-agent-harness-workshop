@@ -129,15 +129,14 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
 
 ## Exercise flow (all commands from `block3_measure/`)
 
-1. **Baseline the short task** — confirm h1 is the harness you built:
-   ```
-   uv run eval/run_eval.py h1 --task fix_bug
-   ```
-2. **Reproduce the Block 2 failure, instrumented this time:**
+1. **Reproduce the Block 2 failure, instrumented this time.** This is the
+   same naive harness you already ran — no need to re-verify it on the
+   short tasks — but now every run reports turns, tokens, wall time, and
+   outcome:
    ```
    uv run eval/run_eval.py h1 --task refactor_v2
    ```
-3. **Skim the three `[h2]`-marked blocks in `harnesses/h2_managed.py`**
+2. **Skim the three `[h2]`-marked blocks in `harnesses/h2_managed.py`**
    (the capability matrix above tells you what you'll find: tool results
    capped at 6k chars before the model sees them, recoverable bad calls,
    compaction — everything unmarked is identical to h1), then run the same
@@ -166,7 +165,7 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h2 --task fix_bug   # recovers, still solves
    INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h1 --task fix_bug   # crashes on the spot
    ```
-4. **Skim the `[h3]`-marked blocks in `harnesses/h3_full.py`** (durable
+3. **Skim the `[h3]`-marked blocks in `harnesses/h3_full.py`** (durable
    notes + the write guardrail), then run h3. Watch for the agent calling
    `update_notes` unprompted — the harness only offers the tool; whether
    the model adopts it is part of the result:
@@ -182,7 +181,7 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    undocumented renames it discovered? Per-file progress? Its notes are a
    window into what the model considered worth keeping when it knew the
    transcript wouldn't last.
-5. **Review the comparison table.** It prints automatically after every
+4. **Review the comparison table.** It prints automatically after every
    run, so by now you've watched it grow row by row. To re-render it at
    any time without running anything:
    ```
