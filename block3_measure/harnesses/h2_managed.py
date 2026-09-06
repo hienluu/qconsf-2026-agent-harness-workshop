@@ -133,11 +133,12 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     "content": truncate(result_text),
                 })
 
-            # [h2] End-of-turn compaction pass.
+            # [h2] End-of-turn compaction pass. Highlighted (yellow, scissors)
+            # so the room can see the harness act, not just the agent.
             dropped = compact(messages)
             if dropped:
                 result.notes["dropped_tool_outputs"] = result.notes.get("dropped_tool_outputs", 0) + dropped
-                print(f"[{NAME} turn {turn}] compaction: dropped {dropped} old tool output(s)")
+                print(f"\033[33m✂  [{NAME} turn {turn}] compaction: dropped {dropped} old tool output(s)\033[0m")
     except Exception as exc:
         result.status = "crashed"
         result.error = f"{type(exc).__name__}: {exc}"

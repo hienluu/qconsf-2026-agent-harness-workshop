@@ -151,7 +151,12 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     result.notes["malformed_calls"] = result.notes.get("malformed_calls", 0) + 1
                     print(f"[{NAME} turn {turn}] {name}(<malformed — recovered>)")
                     continue
-                print(f"[{NAME} turn {turn}] {name}({', '.join(f'{k}={str(v)[:40]!r}' for k, v in args.items())})")
+                if name == "update_notes":
+                    # [h3] Highlighted (cyan, pencil): the agent is choosing
+                    # to persist memory — the behavior worth watching for.
+                    print(f"\033[36m✎  [{NAME} turn {turn}] update_notes({str(args.get('notes', ''))[:60]!r}...)\033[0m")
+                else:
+                    print(f"[{NAME} turn {turn}] {name}({', '.join(f'{k}={str(v)[:40]!r}' for k, v in args.items())})")
                 try:
                     result_text = dispatch[name](args)
                 except Exception as exc:
@@ -165,7 +170,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
             dropped = compact(messages)
             if dropped:
                 result.notes["dropped_tool_outputs"] = result.notes.get("dropped_tool_outputs", 0) + dropped
-                print(f"[{NAME} turn {turn}] compaction: dropped {dropped} old tool output(s)")
+                print(f"\033[33m✂  [{NAME} turn {turn}] compaction: dropped {dropped} old tool output(s)\033[0m")
     except Exception as exc:
         result.status = "crashed"
         result.error = f"{type(exc).__name__}: {exc}"
