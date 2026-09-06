@@ -56,6 +56,15 @@ on your screen IS the five-harness comparison, built from your own runs.
      paragraph.
 4. Read `COMPARISON.md` — the full dimension matrix — and argue with it
    against your receipts.
+   **Round two (optional, recommended for fast finishers):** rerun two or
+   three specimens against the medium task — three interacting bugs,
+   ~8–15 turns, real diagnosis instead of a one-line fix — and watch
+   whether more demanding work changes the harnesses' character (does
+   Deep Agents reach for `write_todos`? does Claude's grep kit earn its
+   keep?):
+   ```
+   BLOCK4_TASK=bug_hunt uv run --group block4 deepagents/run.py
+   ```
 5. Presenter demo (watch, don't run — ~$1): `refactor_v2`, the task that
    killed the naive harness, through Claude Code's harness:
    ```

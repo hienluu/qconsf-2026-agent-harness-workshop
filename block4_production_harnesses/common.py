@@ -16,9 +16,20 @@ from pathlib import Path
 BLOCK4 = Path(__file__).resolve().parent
 REPO = BLOCK4.parent
 FIX_BUG_SOURCE = REPO / "block2_naive_harness" / "tasks" / "short" / "01_fix_bug" / "workspace"
+BUG_HUNT_SOURCE = REPO / "block2_naive_harness" / "tasks" / "medium" / "bug_hunt" / "workspace"
 REFACTOR_SOURCE = REPO / "block2_naive_harness" / "tasks" / "long_horizon" / "refactor_v2" / "workspace"
 
-TASK = "One test fails. Find the bug and fix it. Do not modify the tests."
+# Round two: BLOCK4_TASK=bug_hunt reruns any specimen against the medium
+# task (3 interacting bugs, ~8-15 turns) — enough work that harness
+# character (planning, batching, todos) has room to show.
+import os as _os
+
+if _os.environ.get("BLOCK4_TASK") == "bug_hunt":
+    FIX_BUG_SOURCE = BUG_HUNT_SOURCE
+    TASK = ("Several tests fail. Diagnose and fix all the bugs until every "
+            "test passes. Do not modify the tests.")
+else:
+    TASK = "One test fails. Find the bug and fix it. Do not modify the tests."
 REFACTOR_TASK = (
     "Migrate the source code to the v2 API following MIGRATION.md until all "
     "tests pass. Do not modify the tests."

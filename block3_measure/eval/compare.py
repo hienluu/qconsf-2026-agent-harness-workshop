@@ -25,7 +25,7 @@ def age(timestamp: float) -> str:
 
 RESULTS = Path(__file__).resolve().parent.parent / "results" / "results.jsonl"
 HARNESS_ORDER = ["h1_naive", "h2_managed", "h3_full"]
-TASK_ORDER = ["fix_bug", "add_function", "small_rename", "refactor_v2"]
+TASK_ORDER = ["fix_bug", "add_function", "small_rename", "bug_hunt", "refactor_v2"]
 
 
 def main() -> int:

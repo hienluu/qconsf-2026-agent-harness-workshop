@@ -22,6 +22,11 @@ TASKS = {
         "workspace": "block2_naive_harness/tasks/short/03_small_rename/workspace",
         "prompt": "The tests expect renamed functions. Rename the legacy functions everywhere until all tests pass. Do not modify the tests.",
     },
+    "bug_hunt": {
+        "description": "Diagnose and fix 3 interacting bugs in a 6-file pricing package (14 tests, 5 failing). Medium horizon.",
+        "workspace": "block2_naive_harness/tasks/medium/bug_hunt/workspace",
+        "prompt": "Several tests fail. Diagnose and fix all the bugs until every test passes. Do not modify the tests.",
+    },
     "refactor_v2": {
         "description": "Migrate a ~150-file bookkeeping library to its v2 API from an incomplete changelog (35 tests). The long-horizon harness-killer.",
         "workspace": "block2_naive_harness/tasks/long_horizon/refactor_v2/workspace",
