@@ -66,14 +66,18 @@ on your screen IS the five-harness comparison, built from your own runs.
    production harness engineering buys; anything else is the harness-model
    fit lesson from Block 1, live.
 
-   For calibration, the first live run (Sep 2026, GLM-5.3): SOLVED in 19
-   turns and 65 seconds — versus 117–208s for our h3 — with a tool profile
-   of 16× Bash, 1× Read, 1× Edit. One Edit, for a ~130-file migration:
-   given a shell, the model scripted the renames instead of rewriting
-   files one by one. The decisive advantage wasn't the loop or compaction;
-   it was tool design changing which algorithm the model chose. (The same
-   Bash tool is why production harnesses need sandboxing and permissions —
-   we ran `bypassPermissions` on a disposable copy, deliberately.)
+   For calibration, two live runs (Sep 2026, GLM-5.3) agree: SOLVED in
+   17–19 turns, ~16–18 tool calls, 65–97s wall — versus 117–208s for our
+   h3 — with a Bash-dominated tool profile and a single Edit for a
+   ~130-file migration. Both runs chose the same algorithm: reconnoiter
+   via grep/cat, detect that MIGRATION.md is incomplete from the tests,
+   then *write a word-boundary-regex rename script* and run it — followed
+   by collateral-damage checks on display strings. Given a shell, the
+   model stopped rewriting files and started scripting; the decisive
+   advantage wasn't the loop or compaction but tool design changing which
+   algorithm the model chose. (The same Bash tool is why production
+   harnesses need sandboxing and permissions — we ran `bypassPermissions`
+   on a disposable copy, deliberately.)
 
 ## Debrief questions
 
