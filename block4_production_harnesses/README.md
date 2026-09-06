@@ -7,7 +7,7 @@ differently, and their feature lists all read alike until you can map each
 feature to a failure you've seen. This block is that mapping: five
 harnesses, one controlled task, read side by side.
 
-## The specimens
+## The five harnesses (and one escape hatch)
 
 Same task, same model, same provider key. The task is `bug_hunt`: a small
 order-pricing package (8 modules, 18 tests, 5 failing) with three seeded
@@ -15,25 +15,24 @@ bugs that interact — real diagnosis, sized so each harness's character
 (exploration, planning, batching) has room to show. Details and spoilers:
 `../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`.
 
-Each `run.py` is meant to be read as much as run — notice what you had to
-write, what came free, and what the harness assumed about who you are.
+One specimen script per harness, organized in three teaching beats:
 
-| Beat | Specimen | Run with |
-|---|---|---|
-| Kit vs composable | `google_adk/` | `uv run --group block4-adk google_adk/run.py` |
-| | `pydantic_ai/` | `uv run --group block4 pydantic_ai/run.py` |
-| Two roads to opinionated | `claude_agent_sdk/` | `uv run --group block4 claude_agent_sdk/run.py` |
-| | `openai_agents/` | `uv run --group block4 openai_agents/run.py` |
-| Harness on a runtime | `deepagents/` | `uv run --group block4 deepagents/run.py` |
-| — its escape hatch | `deepagents/langgraph_escape_hatch.py` | `uv run --group block4 deepagents/langgraph_escape_hatch.py` |
+| Beat | Specimens |
+|---|---|
+| Kit vs composable | `google_adk/` · `pydantic_ai/` |
+| Two roads to opinionated | `claude_agent_sdk/` · `openai_agents/` |
+| Harness on a runtime | `deepagents/` · its escape hatch, `deepagents/langgraph_escape_hatch.py` |
 
-(ADK runs from its own dependency group — it cannot co-resolve with
-openai-agents. That fact is part of the lesson; see COMPARISON.md.)
+Each `run.py` is ~100 lines, meant to be read as much as run — notice what
+you had to write, what came free, and what the harness assumed about who
+you are.
 
-No prerequisites beyond the usual `.env` and `uv sync --group block4`:
-the Claude Agent SDK pip package bundles its own compiled Claude Code CLI
-(an ~90MB wheel download, ~190MB installed — one more reason the sync
-happens at home, not on venue WiFi).
+Setup: the usual `.env` plus `uv sync --group block4`. Two notes baked
+into that sync, both part of the lesson: ADK lives in a separate
+dependency group because it cannot co-resolve with openai-agents, and the
+Claude Agent SDK wheel bundles a compiled Claude Code CLI (~90MB download,
+~190MB installed — one more reason the sync happens at home, not on venue
+WiFi).
 
 ## Exercise flow (from `block4_production_harnesses/`)
 
@@ -46,22 +45,34 @@ what the harness shipped, what provider friction you paid, how many lines
 the same job took. Receipts accumulate — after your sixth run, the table
 on your screen IS the five-harness comparison, built from your own runs.
 
-1. Run any specimen (order doesn't matter; all six cost well under $1
-   total). Read the receipt, not just the SOLVED line.
-2. Before the next one, spend sixty seconds in the current `run.py` on
-   ONE question the receipt raised — e.g. after Claude's SDK reports
-   "tools we wrote: 0," find the line that made that possible (there
-   isn't one — that's the point). Each docstring says what to look for.
-3. Repeat until the table is full. Sharpest contrasts to catch as rows
-   appear:
-   - `claude_agent_sdk` vs everyone: 0 tools written — and the most
-     provider friction. Convenience and coupling, same row.
-   - `deepagents` vs `langgraph_escape_hatch`: the same ecosystem one
-     layer apart — watch the "tools we wrote" count jump from 1 to 3.
-   - `pydantic_ai` vs `google_adk`: friction column "none" vs a
-     paragraph.
-4. Read `COMPARISON.md` — the full dimension matrix — and argue with it
-   against your receipts.
+All six runs together cost well under $1. Between runs, spend sixty
+seconds in the specimen you just ran on ONE question its receipt raised —
+each docstring says what to look for.
+
+1. **Beat 1 — kit vs composable.** Run both, and compare their friction
+   cells: "none — a constructor argument" vs a paragraph plus its own
+   dependency group:
+   ```
+   uv run --group block4-adk google_adk/run.py
+   uv run --group block4 pydantic_ai/run.py
+   ```
+2. **Beat 2 — two roads to opinionated.** Claude's receipt will say
+   "tools we wrote: 0" — go find the line that made that possible (there
+   isn't one; that's the point). Then notice it also has the most
+   provider friction: convenience and coupling, same row:
+   ```
+   uv run --group block4 claude_agent_sdk/run.py
+   uv run --group block4 openai_agents/run.py
+   ```
+3. **Beat 3 — a harness on a runtime, then the layer below it.** Watch
+   "tools we wrote" jump from 1 to 4 when you drop from Deep Agents to
+   bare LangGraph — the price of the escape hatch, as a number:
+   ```
+   uv run --group block4 deepagents/run.py
+   uv run --group block4 deepagents/langgraph_escape_hatch.py
+   ```
+4. **Read `COMPARISON.md`** — the full dimension matrix — and argue with
+   it against your receipts.
 5. Presenter demo (watch, don't run — ~$1): `refactor_v2`, the task that
    killed the naive harness, through Claude Code's harness:
    ```
