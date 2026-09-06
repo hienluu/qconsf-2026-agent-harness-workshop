@@ -28,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
+from common import TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -43,13 +43,28 @@ load_dotenv()
 NAME = "claude_agent_sdk"
 
 
+
+async def _stream(options) -> None:
+    async for message in query(prompt=TASK, options=options):
+        if isinstance(message, AssistantMessage):
+            for block in message.content:
+                if isinstance(block, ToolUseBlock):
+                    print(f"[{NAME}] tool: {block.name}({str(block.input)[:60]})")
+                elif isinstance(block, TextBlock) and block.text.strip():
+                    print(f"[{NAME}] says: {block.text.strip()[:100]}")
+        elif isinstance(message, ResultMessage):
+            print(f"[{NAME}] result: turns={message.num_turns} "
+                  f"cost=${message.total_cost_usd or 0:.4f} "
+                  f"duration={message.duration_ms}ms")
+
+
 async def main() -> int:
     workspace = prepare_workspace(NAME)
 
     options = ClaudeAgentOptions(
         cwd=str(workspace),
         model=os.environ["MODEL"],
-        max_turns=12,
+        max_turns=TASK_MAX_TURNS,
         # Headless: auto-approve edits inside the copied workspace.
         permission_mode="bypassPermissions",
         env={
@@ -69,17 +84,10 @@ async def main() -> int:
     )
 
     started = time.monotonic()
-    async for message in query(prompt=TASK, options=options):
-        if isinstance(message, AssistantMessage):
-            for block in message.content:
-                if isinstance(block, ToolUseBlock):
-                    print(f"[{NAME}] tool: {block.name}({str(block.input)[:60]})")
-                elif isinstance(block, TextBlock) and block.text.strip():
-                    print(f"[{NAME}] says: {block.text.strip()[:100]}")
-        elif isinstance(message, ResultMessage):
-            print(f"[{NAME}] result: turns={message.num_turns} "
-                  f"cost=${message.total_cost_usd or 0:.4f} "
-                  f"duration={message.duration_ms}ms")
+    try:
+        await _stream(options)
+    except Exception as exc:  # turn-cap and API errors are outcomes, not crashes
+        print(f"[{NAME}] run ended without finishing: {exc}")
 
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,

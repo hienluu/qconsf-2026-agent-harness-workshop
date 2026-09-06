@@ -24,7 +24,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
+from common import TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify  # noqa: E402
 
 from agents import (  # noqa: E402
     Agent,
@@ -92,8 +92,11 @@ async def main() -> int:
     )
 
     started = time.monotonic()
-    result = await Runner.run(agent, TASK, max_turns=12)
-    print(f"[{NAME}] final: {str(result.final_output)[:100]}")
+    try:
+        result = await Runner.run(agent, TASK, max_turns=TASK_MAX_TURNS)
+        print(f"[{NAME}] final: {str(result.final_output)[:100]}")
+    except Exception as exc:  # turn-cap etc. are outcomes, not crashes
+        print(f"[{NAME}] run ended without finishing: {exc}")
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
         pedigree="model-native (guardrails/handoffs as loop primitives)",

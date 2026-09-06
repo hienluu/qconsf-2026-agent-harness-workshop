@@ -28,8 +28,10 @@ if _os.environ.get("BLOCK4_TASK") == "bug_hunt":
     FIX_BUG_SOURCE = BUG_HUNT_SOURCE
     TASK = ("Several tests fail. Diagnose and fix all the bugs until every "
             "test passes. Do not modify the tests.")
+    TASK_MAX_TURNS = 24  # medium task: diagnosis across 8 modules
 else:
     TASK = "One test fails. Find the bug and fix it. Do not modify the tests."
+    TASK_MAX_TURNS = 12
 REFACTOR_TASK = (
     "Migrate the source code to the v2 API following MIGRATION.md until all "
     "tests pass. Do not modify the tests."
