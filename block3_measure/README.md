@@ -62,6 +62,32 @@ grep -n "\[h3\]" harnesses/h3_full.py       # every h3-added block
 (If you do prefer a diff, `diff harnesses/h1_naive.py harnesses/h2_managed.py`
 works — the files are kept structurally parallel for exactly that reason.)
 
+### How h3's durable notes work, and why they exist
+
+**Motivation:** h2's compaction creates a tension. It controls cost by
+dropping old tool outputs — but the transcript is the agent's only memory,
+so the cost fix deletes things the agent may still need (the dropped-output
+marker admits as much: "re-run the tool if you need it again"). On a
+30-turn task, re-running tools to recover dropped information costs turns
+and re-injects large outputs. h3 resolves the tension by giving memory a
+home compaction is not allowed to touch.
+
+**Core logic (three pieces, all in the `[h3]` blocks):**
+1. A second system message is pinned near the top of the conversation:
+   `"YOUR WORKING NOTES (persist even when old tool output is dropped...)"`.
+2. One extra tool, `update_notes`, overwrites that message's content —
+   the agent curates its own memory.
+3. Compaction only ever drops `tool` messages, so the notes are resent to
+   the model on every turn, intact, no matter how much history is trimmed.
+
+**What to expect:** whether and *when* the agent uses this is part of the
+result, not a given — the harness offers the capability; adoption is the
+model's choice. After a run, the final notes are saved to
+`results/runs/<cell>/agent_notes.md`, and the cyan ✎ lines in the console
+show when each update happened. Runs that bank their notes early tend to
+re-read far less than runs that treat notes as an end-of-run summary —
+check your own trace against that claim.
+
 ## What "vary only the harness" means
 
 | Held constant | Varied (the harness) |
