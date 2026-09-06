@@ -72,7 +72,10 @@ def compact(messages: list) -> int:
     for m in messages[:-KEEP_RECENT_MESSAGES]:
         if transcript_chars(messages) <= TRANSCRIPT_CHAR_BUDGET:
             break
-        # [h3] Never drop system messages — the durable notes live there.
+        # [h3] This role filter is unchanged from h2, but here it is
+        # load-bearing: the durable notes live in a system message, so
+        # widening compaction beyond tool messages would silently break
+        # the memory guarantee.
         if m.get("role") == "tool" and len(m.get("content") or "") > len(DROPPED_MARKER):
             m["content"] = DROPPED_MARKER
             dropped += 1
