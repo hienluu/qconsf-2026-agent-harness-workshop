@@ -28,6 +28,18 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 
 Single runs — character evidence, not a benchmark. Every harness solved it.
 
+## The wall-clock finding: harness weight is a fixed cost; harness value scales with horizon
+
+On this 5-turn toy task, the two most batteries-included harnesses were
+the *slowest* (observed receipts: deepagents ~23s with its middleware
+onion wrapping every model call, claude_agent_sdk ~18s, vs ~9–10s for the
+lean ones — and the bare-runtime escape hatch at ~9.5s). Yet on the
+long-horizon migration, the same heavy Claude harness beat every
+hand-built harness by 2–3× (presenter demo: 19 turns, 65s). Short tasks
+punish rich harnesses; long tasks reward them. When you evaluate a
+harness, your task-horizon profile is a first-order input — which is
+exactly where Block 5's rubric picks up.
+
 ## What the specimens teach, one line each
 
 - **Claude Agent SDK**: the "define nothing" experience — and the price is

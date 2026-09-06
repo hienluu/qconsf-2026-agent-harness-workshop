@@ -77,12 +77,17 @@ on your screen IS the five-harness comparison, built from your own runs.
 
 ## Debrief questions
 
-1. Which specimen required the least code — and what did that convenience
+1. Look at your receipts' wall-clock column next to the presenter demo's
+   result: the heaviest harnesses were slowest on the toy task and the
+   heavy Claude harness dominated the long one. What does "harness weight
+   is a fixed cost; harness value scales with horizon" imply about
+   choosing a harness for *your* workload's task-length profile?
+2. Which specimen required the least code — and what did that convenience
    cost in provider coupling?
-2. Two harnesses needed an explicit workaround to run on our provider at
+3. Two harnesses needed an explicit workaround to run on our provider at
    all (Bearer auth for Claude's SDK, an explicit model object for
    OpenAI's). What does that predict about switching costs at your job?
-3. ADK couldn't even share a dependency resolution with OpenAI's SDK.
+4. ADK couldn't even share a dependency resolution with OpenAI's SDK.
    What does your platform team do with that fact?
-4. Every one of these solved fix_bug. On what basis, then, would you
+5. Every one of these solved fix_bug. On what basis, then, would you
    actually choose? (That's Block 5.)
