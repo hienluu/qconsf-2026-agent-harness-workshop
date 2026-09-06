@@ -1,7 +1,8 @@
 # Five Production Harnesses, One Lens
 
-Every specimen in this directory solves the same task (`fix_bug`) with the
-same model and the same provider key. The rows below are the dimensions
+Every specimen in this directory solves the same task (`bug_hunt` — three
+interacting bugs in a small pricing package; `fix_bug` is the extra-credit
+variant) with the same model and the same provider key. The rows below are the dimensions
 you practiced in Blocks 2–3 — each one maps to a failure you watched and
 a fix you measured. Where a cell says "you", the harness leaves that
 decision to your code.
@@ -17,23 +18,25 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 |---|---|---|---|---|---|
 | **Pedigree** | product-extracted (Claude Code as a library) | model-native (co-designed with vendor models) | construction kit (typed state, sessions, graph runtime) | harness on a runtime (LangGraph underneath) | composable typed core, capabilities à la carte |
 | **The loop** | Claude Code's, closed — you configure, not modify | SDK-owned; handoffs + guardrails are loop primitives | Runner + session services; graph workflows in 2.x | LangGraph ReAct + middleware stack | lean typed loop; capabilities hook it |
-| **Tools out of the box** | full Claude Code set (Bash, Read, Edit, search, web) — our specimen defined zero tools | none for this task — we wrote all three | none for this task — we wrote all three | filesystem suite + planning todos + subagents; we wrote only run_tests | none for this task — we wrote all three (typed; schema from signatures) |
+| **Tools out of the box** | full Claude Code set (Bash, Read, Edit, search, web) — our specimen defined zero tools | none for this task — we wrote all four | none for this task — we wrote all four | filesystem suite + planning todos + subagents; we wrote only run_tests | none for this task — we wrote all four (typed; schema from signatures) |
 | **Context management** | automatic compaction, product-tuned | session-managed | you (kit primitives available) | summarization/offload middleware | opt-in capability |
 | **Durable memory** | CLAUDE.md conventions | sessions/state | session state; you design it | filesystem + AGENTS.md conventions | opt-in capability (notebooks) |
 | **Guardrails/permissions** | permission modes (we ran bypassPermissions in a sandbox copy) | first-class guardrail primitives | callbacks/plugins — mechanisms, not policies | filesystem permissions, interrupt_on | opt-in capability (limits, masking) |
 | **Provider coupling** | Anthropic env contract (`ANTHROPIC_*`); worked on the compat endpoint but announced `unrecognized_model`, and auth needed Bearer via `AUTH_TOKEN` | OpenAI-shaped; `org/model` strings parse as provider prefixes — explicit model object required | agnostic via LiteLLM (env-var contract) | any LangChain model — constructor argument | none — provider is a constructor argument |
 | **Cost visibility** | `total_cost_usd` on every result | you | you | you | built-in (`RunUsage.cost`) |
 | **Install weight** | pip pkg + requires Claude Code CLI | light | heavy — 86 packages (k8s, botocore, llama-index); **cannot co-resolve with openai-agents** (own uv group) | LangChain ecosystem | light |
-| **Specimen wall time (1 run each)** | 9.1s | 7.7s | 8.3s | 8.8s | 6.6s |
-
-Single runs — character evidence, not a benchmark. Every harness solved it.
+Wall times are deliberately NOT a matrix row: single-run wall clock on
+short tasks is provider-latency noise (see below). Your receipts table
+carries per-run times with their task labels; treat them as direction,
+never magnitude. Every harness solved both tasks in every observed run.
 
 ## On the wall-clock column: mostly noise — and that's the lesson
 
-Do not rank harnesses by the `wall s` column. On a ~10-second task,
+Do not rank harnesses by the `wall s` column. On a short task (the
+extra-credit `fix_bug` especially),
 provider latency swamps harness overhead: the same deepagents specimen
 measured 23.3s in one dry run and 10.6s on the immediate rerun. (The
-workshop author briefly enshrined "heavy harnesses are slow on toy tasks"
+workshop author briefly enshrined "heavy harnesses are slow on trivial tasks"
 from that single 23.3s sample — falsified by the next run. Single runs
 are harness+luck; Block 3's rule applies to Block 4 too.)
 
