@@ -9,9 +9,14 @@ harnesses, one task you know by heart, read side by side.
 
 ## The specimens
 
-Same task (`fix_bug`), same model, same provider key. Each `run.py` is
-meant to be read as much as run — notice what you had to write, what came
-free, and what the harness assumed about who you are.
+Same task, same model, same provider key. The task is `bug_hunt`: a small
+order-pricing package (8 modules, 18 tests, 5 failing) with three seeded
+bugs that interact — real diagnosis, sized so each harness's character
+(exploration, planning, batching) has room to show. Details and spoilers:
+`../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`.
+
+Each `run.py` is meant to be read as much as run — notice what you had to
+write, what came free, and what the harness assumed about who you are.
 
 | Beat | Specimen | Run with |
 |---|---|---|
@@ -56,15 +61,6 @@ on your screen IS the five-harness comparison, built from your own runs.
      paragraph.
 4. Read `COMPARISON.md` — the full dimension matrix — and argue with it
    against your receipts.
-   **Round two (optional, recommended for fast finishers):** rerun two or
-   three specimens against the medium task — three interacting bugs,
-   ~8–15 turns, real diagnosis instead of a one-line fix — and watch
-   whether more demanding work changes the harnesses' character (does
-   Deep Agents reach for `write_todos`? does Claude's grep kit earn its
-   keep?):
-   ```
-   BLOCK4_TASK=bug_hunt uv run --group block4 deepagents/run.py
-   ```
 5. Presenter demo (watch, don't run — ~$1): `refactor_v2`, the task that
    killed the naive harness, through Claude Code's harness:
    ```
@@ -105,6 +101,20 @@ mv runs/receipts.jsonl runs/receipts.round1.jsonl
 
 `uv run scripts/reset.py` (from the repo root) also clears it, along with
 all run workspaces and the Block 3 state — the full start-over.
+
+## Extra credit: the trivial task
+
+Rerun any specimens against `fix_bug` — the one-line Block 2 bug you know
+by heart:
+
+```
+BLOCK4_TASK=fix_bug uv run --group block4 pydantic_ai/run.py
+```
+
+Watch what happens to the receipts table: on a task with nothing to
+differentiate on, the specimens collapse toward the same few turns and
+seconds. Harness character needs work worth differing over — which is the
+weight-vs-horizon question from Q1, run in the other direction.
 
 ## Debrief questions
 

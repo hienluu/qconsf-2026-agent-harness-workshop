@@ -1,10 +1,10 @@
 """Shared plumbing for the Block 4 specimens.
 
-Every specimen runs the SAME task — fix the off-by-one in stats.py from
-Block 2 — against a fresh copy of the workspace, and is judged the same
-way: pytest afterward, never the agent's self-report. What varies is the
-harness driving the run; the specimen scripts exist to be read side by
-side.
+Every specimen runs the SAME task — by default bug_hunt, three interacting
+bugs in a small pricing package — against a fresh copy of the workspace,
+and is judged the same way: pytest afterward, never the agent's
+self-report. What varies is the harness driving the run; the specimen
+scripts exist to be read side by side.
 """
 
 import shutil
@@ -19,19 +19,22 @@ FIX_BUG_SOURCE = REPO / "block2_naive_harness" / "tasks" / "short" / "01_fix_bug
 BUG_HUNT_SOURCE = REPO / "block2_naive_harness" / "tasks" / "medium" / "bug_hunt" / "workspace"
 REFACTOR_SOURCE = REPO / "block2_naive_harness" / "tasks" / "long_horizon" / "refactor_v2" / "workspace"
 
-# Round two: BLOCK4_TASK=bug_hunt reruns any specimen against the medium
-# task (3 interacting bugs, ~8-15 turns) — enough work that harness
-# character (planning, batching, todos) has room to show.
+# The official Block 4 task is bug_hunt — three interacting bugs across 8
+# modules, enough work that harness character (exploration, planning,
+# batching) has room to show. BLOCK4_TASK=fix_bug switches to the trivial
+# Block 2 task as extra credit: watch the specimen spread collapse when
+# there's nothing to differentiate on.
 import os as _os
 
-if _os.environ.get("BLOCK4_TASK") == "bug_hunt":
-    FIX_BUG_SOURCE = BUG_HUNT_SOURCE
-    TASK = ("Several tests fail. Diagnose and fix all the bugs until every "
-            "test passes. Do not modify the tests.")
-    TASK_MAX_TURNS = 24  # medium task: diagnosis across 8 modules
-else:
+if _os.environ.get("BLOCK4_TASK") == "fix_bug":
+    TASK_SOURCE = FIX_BUG_SOURCE
     TASK = "One test fails. Find the bug and fix it. Do not modify the tests."
     TASK_MAX_TURNS = 12
+else:
+    TASK_SOURCE = BUG_HUNT_SOURCE
+    TASK = ("Several tests fail. Diagnose and fix all the bugs until every "
+            "test passes. Do not modify the tests.")
+    TASK_MAX_TURNS = 24
 REFACTOR_TASK = (
     "Migrate the source code to the v2 API following MIGRATION.md until all "
     "tests pass. Do not modify the tests."
@@ -88,7 +91,7 @@ def anthropic_compat_base_url() -> str:
     return _os.environ["PROVIDER_BASE_URL"].removesuffix("/v1")
 
 
-def prepare_workspace(specimen: str, source: Path = FIX_BUG_SOURCE) -> Path:
+def prepare_workspace(specimen: str, source: Path = TASK_SOURCE) -> Path:
     """Fresh copy of a task workspace under runs/<specimen>/."""
     run_dir = BLOCK4 / "runs" / specimen
     workspace = run_dir / "workspace"
@@ -132,7 +135,7 @@ def receipt(
     """
     import json
 
-    task_name = _os.environ.get("BLOCK4_TASK", "fix_bug")
+    task_name = _os.environ.get("BLOCK4_TASK", "bug_hunt")
     row = {
         "specimen": specimen,
         "task": task_name,
