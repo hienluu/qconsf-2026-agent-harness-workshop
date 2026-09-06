@@ -25,9 +25,9 @@ free, and what the harness assumed about who you are.
 (ADK runs from its own dependency group — it cannot co-resolve with
 openai-agents. That fact is part of the lesson; see COMPARISON.md.)
 
-Prerequisites beyond the usual `.env`: the Claude Agent SDK specimen
-requires the Claude Code CLI to be installed (`npm install -g
-@anthropic-ai/claude-code` — in the pre-conference setup email).
+No prerequisites beyond the usual `.env` and `uv sync --group block4`:
+the Claude Agent SDK pip package bundles its own compiled Claude Code CLI
+(~190MB — one more reason the sync happens at home, not on venue WiFi).
 
 ## Exercise flow (from `block4_production_harnesses/`)
 

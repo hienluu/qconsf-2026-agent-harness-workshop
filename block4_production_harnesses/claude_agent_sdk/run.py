@@ -14,7 +14,9 @@ point them at the workshop provider's Anthropic-compatible endpoint and
 pass the open model's name. Whether a product-extracted harness performs
 off its home model is part of what this specimen demonstrates.
 
-Prerequisite: the Claude Code CLI must be installed (the SDK drives it).
+The SDK drives the Claude Code CLI — a compiled copy is bundled inside the
+pip package itself (checked before any system install), so `uv sync` is
+the only setup.
 """
 
 import asyncio
