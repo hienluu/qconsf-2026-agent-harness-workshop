@@ -1,0 +1,97 @@
+"""fix_bug through Google ADK.
+
+    uv run --group block4-adk google_adk/run.py      (from block4_production_harnesses/)
+
+Pedigree: harness construction kit — maximum structure (typed state,
+sessions, services, a graph runtime in 2.x), with the opinions left to
+you. Notice the ceremony this smallest-possible agent still requires:
+a Runner, a session service, a session, typed Content parts. And notice
+the import weight — ADK could not share a dependency resolution with the
+other four harnesses (that's why it runs from its own uv group).
+
+Provider note: ADK is model-agnostic via LiteLLM, which reads the
+OpenAI-compatible endpoint from environment variables we set below.
+"""
+
+import asyncio
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from common import TASK, prepare_workspace, verify  # noqa: E402
+
+load_dotenv()
+# LiteLLM's OpenAI adapter reads these; set before ADK imports settle.
+os.environ["OPENAI_API_KEY"] = os.environ["PROVIDER_API_KEY"]
+os.environ["OPENAI_API_BASE"] = os.environ["PROVIDER_BASE_URL"]
+
+from google.adk import Agent  # noqa: E402
+from google.adk.models.lite_llm import LiteLlm  # noqa: E402
+from google.adk.runners import InMemoryRunner  # noqa: E402
+from google.genai import types  # noqa: E402
+
+NAME = "google_adk"
+workspace: Path
+
+
+def read_file(path: str) -> str:
+    """Read one file, path relative to the workspace."""
+    return (workspace / path).read_text()
+
+
+def write_file(path: str, content: str) -> str:
+    """Overwrite one file, path relative to the workspace."""
+    (workspace / path).write_text(content)
+    return f"wrote {len(content)} chars"
+
+
+def run_tests() -> str:
+    """Run pytest in the workspace; done means all tests pass."""
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q"],
+        cwd=workspace, capture_output=True, text=True, timeout=120,
+    )
+    return proc.stdout + proc.stderr
+
+
+async def main() -> int:
+    global workspace
+    workspace = prepare_workspace(NAME)
+
+    agent = Agent(
+        name="bug_fixer",
+        model=LiteLlm(model=f"openai/{os.environ['MODEL']}", num_retries=3),
+        instruction=(
+            "You fix bugs in a small Python workspace using the provided "
+            "tools. The task is complete only when run_tests reports every "
+            "test passing. Do not modify the tests."
+        ),
+        tools=[read_file, write_file, run_tests],
+    )
+
+    runner = InMemoryRunner(agent=agent, app_name="block4")
+    session = await runner.session_service.create_session(
+        app_name="block4", user_id="attendee"
+    )
+
+    started = time.monotonic()
+    message = types.Content(role="user", parts=[types.Part(text=TASK)])
+    async for event in runner.run_async(
+        user_id="attendee", session_id=session.id, new_message=message
+    ):
+        for part in (event.content.parts if event.content else []):
+            if getattr(part, "function_call", None):
+                print(f"[{NAME}] tool: {part.function_call.name}")
+            elif getattr(part, "text", None) and part.text.strip():
+                print(f"[{NAME}] says: {part.text.strip()[:100]}")
+
+    return verify(NAME, workspace, started)
+
+
+if __name__ == "__main__":
+    raise SystemExit(asyncio.run(main()))
