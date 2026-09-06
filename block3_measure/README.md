@@ -147,6 +147,16 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    ```
    uv run eval/run_eval.py h2 --task refactor_v2
    ```
+   One h2 protection you probably *won't* see fire: malformed-call
+   recovery is tail-risk insurance (it triggered in roughly 1 of 4 naive
+   long runs during tuning). To see it work without waiting for luck,
+   replay the real triggering event offline — no API calls, no cost:
+   ```
+   uv run eval/demo_recovery.py
+   ```
+   Same truncated tool call into both harnesses: h1's path dies with an
+   unhandled traceback; h2's path turns it into feedback the model can
+   act on (a magenta ↻ line when it happens live).
 4. **Skim the `[h3]`-marked blocks in `harnesses/h3_full.py`** (durable
    notes + the write guardrail), then run h3. Watch for the agent calling
    `update_notes` unprompted — the harness only offers the tool; whether

@@ -119,7 +119,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                         ),
                     })
                     result.notes["malformed_calls"] = result.notes.get("malformed_calls", 0) + 1
-                    print(f"[{NAME} turn {turn}] {name}(<malformed — recovered>)")
+                    print(f"\033[35m↻  [{NAME} turn {turn}] {name}: malformed tool call — fed back as a recoverable error (h1 crashes here)\033[0m")
                     continue
                 print(f"[{NAME} turn {turn}] {name}({', '.join(f'{k}={str(v)[:40]!r}' for k, v in args.items())})")
                 try:
