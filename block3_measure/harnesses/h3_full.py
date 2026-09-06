@@ -172,5 +172,9 @@ def run(workspace_dir: str, task: str) -> RunResult:
         print(f"\n[{NAME}] CRASHED: {result.error}")
 
     result.wall_seconds = round(time.monotonic() - start, 1)
-    result.notes["final_notes_chars"] = len(messages[1]["content"]) - len(NOTES_PREFIX)
+    # [h3] Report the notes content itself, not just its size — what the
+    # agent chose to remember is a first-class result of the run.
+    final_notes = messages[1]["content"][len(NOTES_PREFIX):]
+    result.notes["final_notes_chars"] = len(final_notes)
+    result.notes["final_notes_text"] = final_notes
     return result

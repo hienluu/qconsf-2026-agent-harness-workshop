@@ -128,6 +128,15 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    ```
    uv run eval/run_eval.py h3 --task refactor_v2
    ```
+   Afterward, read what the agent chose to remember — the final state of
+   its durable notes is saved as a run artifact:
+   ```
+   cat results/runs/h3_full__refactor_v2/agent_notes.md
+   ```
+   Compare it against the task: did the agent record the rename map? The
+   undocumented renames it discovered? Per-file progress? Its notes are a
+   window into what the model considered worth keeping when it knew the
+   transcript wouldn't last.
 5. **The comparison table:**
    ```
    uv run eval/compare.py

@@ -95,6 +95,14 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
 
     tests_green, pytest_summary = check_tests(workspace)
     row = asdict(result)
+
+    # If the harness kept durable notes, persist them as a readable run
+    # artifact (and keep the bulky text out of the score table).
+    notes_text = row.get("notes", {}).pop("final_notes_text", None)
+    if notes_text is not None:
+        notes_path = run_dir / "agent_notes.md"
+        notes_path.write_text(notes_text + "\n")
+        print(f"    agent notes saved: {notes_path.relative_to(BLOCK3)}")
     row.update(
         task=task_name,
         tests_green=tests_green,
