@@ -137,7 +137,9 @@ with details); the prompts sent to the agent are in `eval/tasks.py`.
    undocumented renames it discovered? Per-file progress? Its notes are a
    window into what the model considered worth keeping when it knew the
    transcript wouldn't last.
-5. **The comparison table:**
+5. **Review the comparison table.** It prints automatically after every
+   run, so by now you've watched it grow row by row. To re-render it at
+   any time without running anything:
    ```
    uv run eval/compare.py
    ```

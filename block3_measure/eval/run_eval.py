@@ -141,7 +141,9 @@ def main() -> int:
                 fh.write(json.dumps(row) + "\n")
 
     print(f"\nresults appended to {results_file}")
-    print("render the comparison table:  uv run eval/compare.py")
+    import compare
+
+    compare.main()
     return 0
 
 
