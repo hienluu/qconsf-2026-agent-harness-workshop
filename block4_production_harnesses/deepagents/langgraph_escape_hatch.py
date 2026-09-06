@@ -4,6 +4,9 @@
 
 This is Block 5's build-vs-adopt escape hatch, live: when a pre-built
 harness doesn't fit, you drop one layer down to the runtime it's built on.
+(The entry point itself just churned — `create_react_agent` moved from
+langgraph.prebuilt to `langchain.agents.create_agent` in LangGraph 1.0.
+Building at the runtime layer means riding that churn yourself.)
 Notice what came back onto our plate the moment we did — every tool must
 be defined by hand again, and there are no planning todos, no filesystem
 conventions, no subagents unless we build them. The runtime gives control;
@@ -21,9 +24,9 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import TASK, prepare_workspace, verify  # noqa: E402
 
+from langchain.agents import create_agent  # noqa: E402
 from langchain_core.tools import tool  # noqa: E402
 from langchain_openai import ChatOpenAI  # noqa: E402
-from langgraph.prebuilt import create_react_agent  # noqa: E402
 
 load_dotenv()
 NAME = "langgraph_escape_hatch"
@@ -57,14 +60,14 @@ def main() -> int:
     global workspace
     workspace = prepare_workspace(NAME)
 
-    agent = create_react_agent(
+    agent = create_agent(
         ChatOpenAI(
             model=os.environ["MODEL"],
             base_url=os.environ["PROVIDER_BASE_URL"],
             api_key=os.environ["PROVIDER_API_KEY"],
         ),
         tools=[read_file, write_file, run_tests],
-        prompt=(
+        system_prompt=(
             "You fix bugs in a small Python workspace using the provided "
             "tools. The task is complete only when run_tests reports every "
             "test passing. Do not modify the tests."
