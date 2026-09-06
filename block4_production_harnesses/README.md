@@ -32,7 +32,8 @@ openai-agents. That fact is part of the lesson; see COMPARISON.md.)
 
 No prerequisites beyond the usual `.env` and `uv sync --group block4`:
 the Claude Agent SDK pip package bundles its own compiled Claude Code CLI
-(~190MB — one more reason the sync happens at home, not on venue WiFi).
+(an ~90MB wheel download, ~190MB installed — one more reason the sync
+happens at home, not on venue WiFi).
 
 ## Exercise flow (from `block4_production_harnesses/`)
 

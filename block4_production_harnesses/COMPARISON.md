@@ -24,7 +24,7 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 | **Guardrails/permissions** | permission modes (we ran bypassPermissions in a sandbox copy) | first-class guardrail primitives | callbacks/plugins — mechanisms, not policies | filesystem permissions, interrupt_on | opt-in capability (limits, masking) |
 | **Provider coupling** | Anthropic env contract (`ANTHROPIC_*`); worked on the compat endpoint but announced `unrecognized_model`, and auth needed Bearer via `AUTH_TOKEN` | OpenAI-shaped; `org/model` strings parse as provider prefixes — explicit model object required | agnostic via LiteLLM (env-var contract) | any LangChain model — constructor argument | none — provider is a constructor argument |
 | **Cost visibility** | `total_cost_usd` on every result | you | you | you | built-in (`RunUsage.cost`) |
-| **Install weight** | pip pkg bundles a compiled Claude Code CLI (~190MB) | light | heavy — 86 packages (k8s, botocore, llama-index); **cannot co-resolve with openai-agents** (own uv group) | LangChain ecosystem | light |
+| **Install weight** | pip pkg bundles a compiled Claude Code CLI per platform (~90MB wheel, ~190MB installed) | light | heavy — 86 packages (k8s, botocore, llama-index); **cannot co-resolve with openai-agents** (own uv group) | LangChain ecosystem | light |
 
 Wall times are deliberately NOT a matrix row: single-run wall clock on
 short tasks is provider-latency noise (see below). Your receipts table
