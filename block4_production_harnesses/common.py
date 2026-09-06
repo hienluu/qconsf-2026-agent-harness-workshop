@@ -38,6 +38,44 @@ REFACTOR_TASK = (
 )
 
 
+def ws_list(workspace: Path) -> str:
+    """Relative paths of every file in the workspace."""
+    return "\n".join(
+        str(p.relative_to(workspace))
+        for p in sorted(workspace.rglob("*"))
+        if p.is_file() and "__pycache__" not in p.parts and ".pytest_cache" not in p.parts
+    )
+
+
+def ws_read(workspace: Path, path: str) -> str:
+    """Read a file; errors come back as messages the model can act on,
+    never exceptions — some harnesses (ADK) crash the whole run on a
+    raised tool error, which is the h2 lesson in reverse."""
+    target = workspace / path
+    if target.is_dir():
+        return f"error: {path!r} is a directory, not a file. Files:\n{ws_list(workspace)}"
+    if not target.is_file():
+        return f"error: {path!r} not found. Files:\n{ws_list(workspace)}"
+    return target.read_text()
+
+
+def ws_write(workspace: Path, path: str, content: str) -> str:
+    target = workspace / path
+    if target.is_dir():
+        return f"error: {path!r} is a directory"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content)
+    return f"wrote {len(content)} chars"
+
+
+def ws_run_tests(workspace: Path) -> str:
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q"],
+        cwd=workspace, capture_output=True, text=True, timeout=120,
+    )
+    return proc.stdout + proc.stderr
+
+
 def anthropic_compat_base_url() -> str:
     """The provider's Anthropic-dialect endpoint, derived from the one
     already-configured URL: the OpenAI dialect mounts at {host}/v1, the

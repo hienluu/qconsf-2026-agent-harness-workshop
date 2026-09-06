@@ -11,7 +11,6 @@ task's definition of done.
 """
 
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -19,7 +18,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify, ws_run_tests  # noqa: E402
 
 from deepagents import create_deep_agent  # noqa: E402
 from deepagents.backends import FilesystemBackend  # noqa: E402
@@ -32,11 +31,7 @@ workspace: Path
 
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
-    proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q"],
-        cwd=workspace, capture_output=True, text=True, timeout=120,
-    )
-    return proc.stdout + proc.stderr
+    return ws_run_tests(workspace)
 
 
 def main() -> int:

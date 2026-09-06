@@ -15,7 +15,6 @@ OpenAI-compatible endpoint from environment variables we set below.
 
 import asyncio
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -23,7 +22,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 load_dotenv()
 # LiteLLM's OpenAI adapter reads these; set before ADK imports settle.
@@ -39,24 +38,24 @@ NAME = "google_adk"
 workspace: Path
 
 
+def list_files() -> str:
+    """List every file in the workspace as relative paths."""
+    return ws_list(workspace)
+
+
 def read_file(path: str) -> str:
     """Read one file, path relative to the workspace."""
-    return (workspace / path).read_text()
+    return ws_read(workspace, path)
 
 
 def write_file(path: str, content: str) -> str:
     """Overwrite one file, path relative to the workspace."""
-    (workspace / path).write_text(content)
-    return f"wrote {len(content)} chars"
+    return ws_write(workspace, path, content)
 
 
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
-    proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q"],
-        cwd=workspace, capture_output=True, text=True, timeout=120,
-    )
-    return proc.stdout + proc.stderr
+    return ws_run_tests(workspace)
 
 
 async def main() -> int:
@@ -71,7 +70,7 @@ async def main() -> int:
             "tools. The task is complete only when run_tests reports every "
             "test passing. Do not modify the tests."
         ),
-        tools=[read_file, write_file, run_tests],
+        tools=[list_files, read_file, write_file, run_tests],
     )
 
     runner = InMemoryRunner(agent=agent, app_name="block4")
@@ -94,7 +93,7 @@ async def main() -> int:
     receipt(NAME, script=__file__, started=started, solved=solved,
         pedigree="construction kit (typed state, sessions, graph runtime)",
         loop_owner="theirs — Runner + session services (most ceremony)",
-        tools_we_wrote=["read_file", "write_file", "run_tests"],
+        tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="none for this task (rich ecosystem exists: executors, computer-use)",
         provider_friction="LiteLLM env contract; own uv group (conflicts with openai-agents); 86 extra pkgs; transient 500s -> num_retries")
     return 0 if solved else 1

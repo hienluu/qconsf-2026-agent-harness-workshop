@@ -11,7 +11,6 @@ retryable validation error, not a runtime surprise.
 """
 
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -19,7 +18,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, receipt, verify  # noqa: E402
+from common import TASK, prepare_workspace, receipt, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 from pydantic_ai import Agent  # noqa: E402
 from pydantic_ai.models.openai import OpenAIChatModel  # noqa: E402
@@ -49,26 +48,27 @@ agent = Agent(
 
 
 @agent.tool_plain
+def list_files() -> str:
+    """List every file in the workspace as relative paths."""
+    return ws_list(workspace)
+
+
+@agent.tool_plain
 def read_file(path: str) -> str:
     """Read one file, path relative to the workspace."""
-    return (workspace / path).read_text()
+    return ws_read(workspace, path)
 
 
 @agent.tool_plain
 def write_file(path: str, content: str) -> str:
     """Overwrite one file, path relative to the workspace."""
-    (workspace / path).write_text(content)
-    return f"wrote {len(content)} chars"
+    return ws_write(workspace, path, content)
 
 
 @agent.tool_plain
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
-    proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q"],
-        cwd=workspace, capture_output=True, text=True, timeout=120,
-    )
-    return proc.stdout + proc.stderr
+    return ws_run_tests(workspace)
 
 
 def main() -> int:
@@ -82,7 +82,7 @@ def main() -> int:
     receipt(NAME, script=__file__, started=started, solved=solved,
         pedigree="composable (typed core, capabilities a la carte)",
         loop_owner="theirs — lean typed loop",
-        tools_we_wrote=["read_file", "write_file", "run_tests"],
+        tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="none by default (capabilities opt-in); cost accounting free",
         provider_friction="none — provider is a constructor argument")
     return 0 if solved else 1
