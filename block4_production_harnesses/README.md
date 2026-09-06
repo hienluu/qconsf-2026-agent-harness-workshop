@@ -30,9 +30,9 @@ the traces — the agents have to find them the hard way:
 into the green reference; task details in
 `../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`.)
 
-One specimen script per harness, organized in three teaching beats:
+One runner script per harness, organized as three side-by-side comparisons:
 
-| Beat | Specimens |
+| Comparison | Scripts |
 |---|---|
 | Kit vs composable | `google_adk/` · `pydantic_ai/` |
 | Two roads to opinionated | `claude_agent_sdk/` · `openai_agents/` |
@@ -61,17 +61,17 @@ the same job took. Receipts accumulate — after your sixth run, the table
 on your screen IS the five-harness comparison, built from your own runs.
 
 All six runs together cost well under $1. Between runs, spend sixty
-seconds in the specimen you just ran on ONE question its receipt raised —
+seconds in the script you just ran on ONE question its receipt raised —
 each docstring says what to look for.
 
-1. **Beat 1 — kit vs composable.** Run both, and compare their friction
+1. **Kit vs composable.** Run both, and compare their friction
    cells: "none — a constructor argument" vs a paragraph plus its own
    dependency group:
    ```
    uv run --group block4-adk google_adk/run.py
    uv run --group block4 pydantic_ai/run.py
    ```
-2. **Beat 2 — two roads to opinionated.** Claude's receipt will say
+2. **Two roads to an opinionated harness.** Claude's receipt will say
    "tools we wrote: 0" — go find the line that made that possible (there
    isn't one; that's the point). Then notice it also has the most
    provider friction: convenience and coupling, same row:
@@ -79,7 +79,7 @@ each docstring says what to look for.
    uv run --group block4 claude_agent_sdk/run.py
    uv run --group block4 openai_agents/run.py
    ```
-3. **Beat 3 — a harness on a runtime, then the layer below it.** Watch
+3. **A harness on a runtime, then the layer below it.** Watch
    "tools we wrote" jump from 1 to 4 when you drop from Deep Agents to
    bare LangGraph — the price of the escape hatch, as a number:
    ```
@@ -114,7 +114,7 @@ each docstring says what to look for.
 ## Clearing the receipts table
 
 Receipts accumulate in `runs/receipts.jsonl`; the table shows the latest
-run per (specimen, task). To start it over (from `block4_production_harnesses/`):
+run per (harness, task). To start it over (from `block4_production_harnesses/`):
 
 ```
 rm runs/receipts.jsonl
@@ -131,7 +131,7 @@ all run workspaces and the Block 3 state — the full start-over.
 
 ## Extra credit: the trivial task
 
-Rerun any specimens against `fix_bug` — the one-line Block 2 bug you know
+Rerun any of the scripts against `fix_bug` — the one-line Block 2 bug you know
 by heart:
 
 ```
@@ -139,20 +139,20 @@ BLOCK4_TASK=fix_bug uv run --group block4 pydantic_ai/run.py
 ```
 
 Watch what happens to the receipts table: on a task with nothing to
-differentiate on, the specimens collapse toward the same few turns and
+differentiate on, the runs collapse toward the same few turns and
 seconds. Harness character needs work worth differing over — which is the
 weight-vs-horizon question from Q1, run in the other direction.
 
 ## Debrief questions
 
-1. Compare your wall-clock column with a neighbor's — the same specimen
+1. Compare your wall-clock column with a neighbor's — the same script
    has measured 23.3s and 10.6s on back-to-back runs. Which receipt
    columns are noise on a 10-second task, and which are stable structural
    facts? (Then: the heavy Claude harness *did* dominate the long-horizon
    presenter demo. What experiment would you run to establish how harness
    weight relates to task horizon — and what would Block 3 say about
    sample size?)
-2. Which specimen required the least code — and what did that convenience
+2. Which harness required the least code — and what did that convenience
    cost in provider coupling?
 3. Two harnesses needed an explicit workaround to run on our provider at
    all (Bearer auth for Claude's SDK, an explicit model object for

@@ -1,9 +1,9 @@
-"""Shared plumbing for the Block 4 specimens.
+"""Shared plumbing for the Block 4 harness scripts.
 
-Every specimen runs the SAME task — by default bug_hunt, three interacting
+Every script runs the SAME task — by default bug_hunt, three interacting
 bugs in a small pricing package — against a fresh copy of the workspace,
 and is judged the same way: pytest afterward, never the agent's
-self-report. What varies is the harness driving the run; the specimen
+self-report. What varies is the harness driving the run; the runner
 scripts exist to be read side by side.
 """
 
@@ -22,7 +22,7 @@ REFACTOR_SOURCE = REPO / "block2_naive_harness" / "tasks" / "long_horizon" / "re
 # The official Block 4 task is bug_hunt — three interacting bugs across 8
 # modules, enough work that harness character (exploration, planning,
 # batching) has room to show. BLOCK4_TASK=fix_bug switches to the trivial
-# Block 2 task as extra credit: watch the specimen spread collapse when
+# Block 2 task as extra credit: watch the spread collapse when
 # there's nothing to differentiate on.
 import os as _os
 
@@ -128,10 +128,10 @@ def receipt(
 ) -> None:
     """Print this run's harness receipt and the comparison table so far.
 
-    The six specimens produce nearly identical RESULTS on purpose — the
+    The six scripts produce nearly identical RESULTS on purpose — the
     outcome is the controlled variable. What differs is everything on this
     receipt, which is why it prints after every run and accumulates: by
-    your last specimen, the table IS the comparison.
+    your last run, the table IS the comparison.
     """
     import json
 
@@ -169,7 +169,7 @@ def receipt(
         title="Harness receipts — same model throughout; per-row task in column 2; the rest is the harness",
         title_style="bold",
     )
-    for col in ("specimen", "task", "wall s", "loop", "tools we wrote", "harness shipped", "provider friction", "lines"):
+    for col in ("harness", "task", "wall s", "loop", "tools we wrote", "harness shipped", "provider friction", "lines"):
         table.add_column(col, overflow="fold")
     for r in latest.values():
         table.add_row(
@@ -186,9 +186,9 @@ def receipt(
     Console().print(table)
     print(
         "provenance — measured this run: wall s, solved, task, lines · "
-        "authored facts from the build record (hardcoded in each specimen's "
+        "authored facts from the build record (hardcoded in each script's "
         "receipt() call; verify against its run.py): loop, tools, shipped, friction"
     )
     remaining = 6 - sum(1 for (_, t) in latest if t == task_name)
     if remaining > 0:
-        print(f"({remaining} specimen(s) left on {task_name} — each adds a row)")
+        print(f"({remaining} harness(es) left on {task_name} — each adds a row)")

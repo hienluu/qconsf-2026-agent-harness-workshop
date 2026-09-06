@@ -12,7 +12,7 @@ Provider note: the SDK reads ANTHROPIC_BASE_URL / ANTHROPIC_API_KEY (names
 the SDK dictates — provider coupling made visible in env-var form). We
 point them at the workshop provider's Anthropic-compatible endpoint and
 pass the open model's name. Whether a product-extracted harness performs
-off its home model is part of what this specimen demonstrates.
+off its home model is part of what this script demonstrates.
 
 The SDK drives the Claude Code CLI — a compiled copy is bundled inside the
 pip package itself (checked before any system install), so `uv sync` is

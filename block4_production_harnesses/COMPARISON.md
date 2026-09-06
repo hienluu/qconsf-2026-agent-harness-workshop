@@ -1,6 +1,6 @@
 # Five Production Harnesses, One Lens
 
-Every specimen in this directory solves the same task (`bug_hunt` — three
+Every runner script in this directory solves the same task (`bug_hunt` — three
 interacting bugs in a small pricing package; `fix_bug` is the extra-credit
 variant) with the same model and the same provider key. The rows below are the dimensions
 you practiced in Blocks 2–3 — each one maps to a failure you watched and
@@ -18,7 +18,7 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 |---|---|---|---|---|---|
 | **Pedigree** | product-extracted (Claude Code as a library) | model-native (co-designed with vendor models) | construction kit (typed state, sessions, graph runtime) | harness on a runtime (LangGraph underneath) | composable typed core, capabilities à la carte |
 | **The loop** | Claude Code's, closed — you configure, not modify | SDK-owned; handoffs + guardrails are loop primitives | Runner + session services; graph workflows in 2.x | LangGraph ReAct + middleware stack | lean typed loop; capabilities hook it |
-| **Tools out of the box** | full Claude Code set (Bash, Read, Edit, search, web) — our specimen defined zero tools | none for this task — we wrote all four | none for this task — we wrote all four | filesystem suite + planning todos + subagents; we wrote only run_tests | none for this task — we wrote all four (typed; schema from signatures) |
+| **Tools out of the box** | full Claude Code set (Bash, Read, Edit, search, web) — our script defined zero tools | none for this task — we wrote all four | none for this task — we wrote all four | filesystem suite + planning todos + subagents; we wrote only run_tests | none for this task — we wrote all four (typed; schema from signatures) |
 | **Context management** | automatic compaction, product-tuned | session-managed | you (kit primitives available) | summarization/offload middleware | opt-in capability |
 | **Durable memory** | CLAUDE.md conventions | sessions/state | session state; you design it | filesystem + AGENTS.md conventions | opt-in capability (notebooks) |
 | **Guardrails/permissions** | permission modes (we ran bypassPermissions in a sandbox copy) | first-class guardrail primitives | callbacks/plugins — mechanisms, not policies | filesystem permissions, interrupt_on | opt-in capability (limits, masking) |
@@ -35,7 +35,7 @@ never magnitude. Every harness solved both tasks in every observed run.
 
 Do not rank harnesses by the `wall s` column. On a short task (the
 extra-credit `fix_bug` especially),
-provider latency swamps harness overhead: the same deepagents specimen
+provider latency swamps harness overhead: the same deepagents script
 measured 23.3s in one dry run and 10.6s on the immediate rerun. (The
 workshop author briefly enshrined "heavy harnesses are slow on trivial tasks"
 from that single 23.3s sample — falsified by the next run. Single runs
@@ -54,7 +54,7 @@ heavy Claude harness beat every hand-built harness 2–3× (presenter demo:
 weight has a measurable toy-task latency cost needs October's multi-run
 sampling before anyone quotes it.
 
-## What the specimens teach, one line each
+## What the scripts show, one line each
 
 - **Claude Agent SDK**: the "define nothing" experience — and the price is
   an environment contract that assumes Anthropic (the auth dance and the
