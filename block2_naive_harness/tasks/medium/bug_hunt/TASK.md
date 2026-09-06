@@ -1,6 +1,6 @@
 # Medium task: the ordercalc bug hunt
 
-A small order-pricing package (6 files, 14 tests, 5 failing) with
+A small order-pricing package (8 modules, 18 tests, 5 failing) with
 **three seeded bugs that interact** — sized between `fix_bug` (one obvious
 bug, a few turns) and `refactor_v2` (bulk migration, dozens of turns).
 The work here is *diagnosis*: no single file read reveals everything, and
