@@ -46,9 +46,7 @@ async def main() -> int:
         max_turns=60,
         permission_mode="bypassPermissions",
         env={
-            "ANTHROPIC_BASE_URL": os.environ.get(
-                "ANTHROPIC_COMPAT_BASE_URL", "https://inference.baseten.co"
-            ),
+            "ANTHROPIC_BASE_URL": os.environ["ANTHROPIC_COMPAT_BASE_URL"],
             "ANTHROPIC_AUTH_TOKEN": os.environ["PROVIDER_API_KEY"],
             "ANTHROPIC_MODEL": os.environ["MODEL"],
             "ANTHROPIC_SMALL_FAST_MODEL": os.environ["MODEL"],

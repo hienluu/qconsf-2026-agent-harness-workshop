@@ -70,9 +70,7 @@ async def main() -> int:
         env={
             # The harness's home is Anthropic's API; we redirect it to the
             # workshop provider's Anthropic-compatible endpoint.
-            "ANTHROPIC_BASE_URL": os.environ.get(
-                "ANTHROPIC_COMPAT_BASE_URL", "https://inference.baseten.co"
-            ),
+            "ANTHROPIC_BASE_URL": os.environ["ANTHROPIC_COMPAT_BASE_URL"],
             # Baseten's Anthropic-compatible endpoint wants Authorization:
             # Bearer, not the protocol's x-api-key — AUTH_TOKEN (not API_KEY)
             # makes Claude Code send Bearer. Found the hard way; see README.
