@@ -12,8 +12,23 @@ harnesses, one controlled task, read side by side.
 Same task, same model, same provider key. The task is `bug_hunt`: a small
 order-pricing package (8 modules, 18 tests, 5 failing) with three seeded
 bugs that interact — real diagnosis, sized so each harness's character
-(exploration, planning, batching) has room to show. Details and spoilers:
-`../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`.
+(exploration, planning, batching) has room to show. You haven't seen this
+task before (Blocks 2–3 used others), and knowing the bugs helps you read
+the traces — the agents have to find them the hard way:
+
+1. **A rounding bug with a shared blast radius:** `discounts.percent_off`
+   floors instead of rounding half-up, and `tax.py` reuses the same
+   helper — failures across two modules, one root cause.
+2. **An order-of-operations bug that hides:** `pricing.price_cart` taxes
+   the pre-discount subtotal. Invisible on carts with no discount (one
+   passing test is the clue), compounding with bug 1 everywhere else.
+3. **A crash as misdirection:** `receipt.format_receipt` lost its
+   empty-cart guard — a ZeroDivisionError that tops the pytest output
+   while having nothing to do with the arithmetic.
+
+(The exact diffs live in `scripts/derive_bug_hunt.py`, which injects them
+into the green reference; task details in
+`../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`.)
 
 One specimen script per harness, organized in three teaching beats:
 
