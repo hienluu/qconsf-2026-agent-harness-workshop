@@ -29,6 +29,14 @@ class Scoreboard:
         self.last_turn = 0
         self.said = set()
 
+    def legend(self) -> None:
+        print(
+            "\033[2m   ┈ scoreboard: read/write/search/tests = how many times the agent has\n"
+            "     called each tool so far · transcript = the size of the conversation,\n"
+            "     which is re-sent to the model on every turn · sent = tokens billed,\n"
+            "     input vs output. The agent sees none of these numbers.\033[0m\n"
+        )
+
     # --- recording (called by the harness as it runs) --------------------
 
     def record_usage(self, response) -> None:

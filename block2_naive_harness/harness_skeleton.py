@@ -76,6 +76,7 @@ def run(workspace_dir: str, task: str) -> None:
     # Commentary for you, not for the agent — see trace.py. Nothing below
     # changes what the model sees or what the loop does.
     board = Scoreboard(MAX_TURNS)
+    board.legend()
 
     for turn in range(1, MAX_TURNS + 1):
         # ------------------------------------------------------------------

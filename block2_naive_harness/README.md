@@ -269,6 +269,16 @@ tokens (about $1)** for a task whose entire codebase is a fraction of
 that size — because the transcript is re-sent on every single call. Crash
 or expensive success, the harness is the reason.
 
+**Reset before any second attempt.** The agent edits files on disk, so a
+stranded run leaves real work behind — and if you re-run without
+resetting, the next agent inherits it and may finish what the first one
+started. That looks like success but isn't: it's two runs' worth of turns
+and tokens to do one task, with neither agent aware the other existed.
+(We did exactly this by accident while building the workshop: run one
+stranded 56 files, run two picked them up and reported "all 35 tests
+pass.") `uv run scripts/reset.py` from the repo root, then
+`uv run scripts/check_fixtures.py` to confirm.
+
 **Record three numbers before moving on**: which outcome you got, the turn
 it ended on, and the wall time. Block 3 runs this same task through
 protected harnesses and compares against exactly these.
