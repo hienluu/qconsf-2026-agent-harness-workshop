@@ -28,9 +28,10 @@ uv run setup/check_setup.py    # expect: ALL GREEN
 |---|---|
 | `block1_why_harness_matters/` | Reference card: what a harness is, its components, the vendor spectrum (no code — Block 1 is slides) |
 | `block2_naive_harness/` | Build a minimal harness (loop + tool dispatch), run it on short tasks, break it on a long-horizon one |
-| `block3_measure/` | *(coming)* Same model + tasks through three harness configs; compare scores and traces |
-| `block4_production_harnesses/` | *(coming)* Claude Agent SDK, OpenAI Agents, Google ADK, Deep Agents, Pydantic AI — one task each |
+| `block3_measure/` | Same model + tasks through three harness configs; compare scores, costs, and traces |
+| `block4_production_harnesses/` | Claude Agent SDK, OpenAI Agents, Google ADK, Deep Agents, Pydantic AI — one task each |
 | `block5_framework/` | *(coming)* The harness decision rubric |
-| `scripts/derive_workspace.py` | Regenerates the long-horizon task workspace from its reference solution |
+| `scripts/` | `reset.py` (start any block over), plus the generators that rebuild task workspaces from their green references |
 
-Start at `block2_naive_harness/README.md`.
+Start at `block1_why_harness_matters/README.md` for the vocabulary, then
+`block2_naive_harness/README.md` for the first hands-on block.
