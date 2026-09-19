@@ -31,10 +31,16 @@ class Scoreboard:
 
     def legend(self) -> None:
         print(
-            "\033[2m   ┈ scoreboard: read/write/search/tests = how many times the agent has\n"
-            "     called each tool so far · transcript = the size of the conversation,\n"
-            "     which is re-sent to the model on every turn · sent = tokens billed,\n"
-            "     input vs output. The agent sees none of these numbers.\033[0m\n"
+            "\033[2m   ┈ scoreboard legend\n"
+            "     read/write/search/tests — how many times the agent has called each\n"
+            "       tool so far, cumulative.\n"
+            "     transcript — the whole conversation so far: your task, every message\n"
+            "       the model produced, and every tool result it got back (all the file\n"
+            "       contents, search hits, and test output). It is the agent's only\n"
+            "       memory, AND it is re-sent to the model on every single turn.\n"
+            "     sent so far — tokens billed, input vs output. Input climbs far faster\n"
+            "       than the transcript grows, because each turn re-sends all of it.\n"
+            "     The agent sees none of these numbers.\033[0m\n"
         )
 
     # --- recording (called by the harness as it runs) --------------------

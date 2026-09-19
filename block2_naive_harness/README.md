@@ -239,6 +239,13 @@ transcript has grown, and how many tokens have gone over the wire so far
    ▸ first edit — 13 turns went to reading before anything changed
 ```
 
+The number to watch is **transcript** — the whole conversation: your task,
+every message the model produced, and every tool result it got back. It is
+the agent's only memory, and the model is stateless, so all of it is
+re-sent on every turn. That's why "sent so far" climbs much faster than
+the transcript grows: in one of our runs the conversation ended at ~19,000
+tokens, but 320,000 input tokens had been billed to get there.
+
 None of that is visible to the agent. It has no fuel gauge, no map of what
 it has already covered, and no idea how much budget is left — which is
 most of the explanation for what you're about to watch. (The scoreboard is
