@@ -186,10 +186,11 @@ repo):
 uv run scripts/reset.py
 ```
 
-### Step 5 — The postmortem (group debrief)
+## Debrief questions
 
-Standard incident-review questions, applied to your run. Before the group
-debrief, answer for yourself:
+Standard incident-review questions, applied to your run — a postmortem on
+an agent instead of an outage. Answer for yourself before the group
+discussion:
 
 1. What was the *proximate* cause of death in YOUR run? (Read the last few
    lines of output.)
