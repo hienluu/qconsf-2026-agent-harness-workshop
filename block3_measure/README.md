@@ -141,13 +141,25 @@ pwd                 # .../agent-harness-workshop/block3_measure
 Every command on this page, including the reset script, runs from here —
 nothing requires switching directories mid-exercise.
 
-1. **Reproduce the Block 2 failure, instrumented this time.** This is the
-   same naive harness you already ran — no need to re-verify it on the
-   short tasks — but now every run reports turns, tokens, wall time, and
-   outcome:
+**Before you start:** you'll run the long task three times, once per
+harness. Budget about 3–5 minutes and $0.50–1.50 each, so ~10 minutes and
+~$3 in total. Run each one once — the point is the comparison, not
+repetition.
+
+**One difference from Block 2 worth knowing up front:** these harnesses
+get a 40-turn budget, not Block 2's 20. The budget is held constant and
+deliberately generous across all three so the experiment measures the
+protections rather than the turn cap. That means h1 may well *finish*
+here, where it ran out of room in Block 2 — watch what it costs to do so.
+
+1. **Run the same naive harness you built, now instrumented.** No need to
+   re-verify it on the short tasks; this is the long one, and every run
+   now reports turns, tokens, wall time, and outcome:
    ```
    uv run eval/run_eval.py h1 --task refactor_v2
    ```
+   Expect several minutes of scrolling tool calls, then a one-line verdict
+   and the comparison table with its first row.
 2. **Skim the three `[h2]`-marked blocks in `harnesses/h2_managed.py`**
    (the capability matrix above tells you what you'll find: tool results
    capped at 6k chars before the model sees them, recoverable bad calls,
@@ -157,25 +169,6 @@ nothing requires switching directories mid-exercise.
    managing context mid-run:
    ```
    uv run eval/run_eval.py h2 --task refactor_v2
-   ```
-   One h2 protection you probably *won't* see fire: malformed-call
-   recovery is tail-risk insurance (it triggered in roughly 1 of 4 naive
-   long runs during tuning). To see it work without waiting for luck,
-   replay the real triggering event offline — no API calls, no cost:
-   ```
-   uv run eval/demo_recovery.py
-   ```
-   Same truncated tool call into both harnesses: h1's path dies with an
-   unhandled traceback; h2's path turns it into feedback the model can
-   act on (a magenta ↻ line when it happens live).
-
-   Or trigger it in a *real* run: fault injection corrupts one tool
-   call's JSON at a turn you choose (simulating the model hitting its
-   output ceiling — the harness itself is untouched). Cheap on the short
-   task, and everything after the injection is live model behavior:
-   ```
-   INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h2 --task fix_bug   # recovers, still solves
-   INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h1 --task fix_bug   # crashes on the spot
    ```
 3. **Skim the `[h3]`-marked blocks in `harnesses/h3_full.py`** (durable
    notes + the write guardrail), then run h3. Watch for the agent calling
@@ -200,8 +193,30 @@ nothing requires switching directories mid-exercise.
    uv run eval/compare.py
    ```
 
-Cost note: each `refactor_v2` run is roughly $0.50–1.50; the short tasks
-are pennies. Run the long task once per harness.
+## Seeing the protection that doesn't fire
+
+One of h2's three protections — malformed-call recovery — is tail-risk
+insurance, not something you'll usually watch happen (it triggered in
+roughly 1 of 4 naive long runs during tuning). Two ways to see it anyway.
+
+Replay the real triggering event offline. No API calls, no cost:
+
+```
+uv run eval/demo_recovery.py
+```
+
+The same truncated tool call goes into both harnesses: h1's path dies with
+an unhandled traceback, h2's turns it into feedback the model can act on.
+
+Or trigger it inside a real run. Fault injection corrupts one tool call's
+JSON at a turn you choose, simulating the model hitting its output ceiling
+— the harness code itself is untouched, so what follows is live model
+behavior. Cheap, because it uses the short task:
+
+```
+INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h2 --task fix_bug   # recovers, still solves
+INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h1 --task fix_bug   # crashes on the spot
+```
 
 ## How scoring works (worth internalizing)
 
@@ -209,17 +224,12 @@ are pennies. Run the long task once per harness.
   — runs never touch the repo or each other, and a failed run's workspace
   is kept for you to inspect.
 - Before copying, the runner verifies the source workspace is still in its
-  unsolved state and refuses to run otherwise. Block 2 exercises modify
-  the repo workspaces in place, so if you ran Block 2 first (you did),
-  reset before measuring:
-
-  ```
-  git checkout -- ../block2_naive_harness/tasks/
-  ```
-
-  A benchmark against an already-solved fixture produces small, plausible,
-  meaningless numbers — the runner failing loudly here is the same
-  eval-hygiene principle as not trusting the agent's self-report.
+  unsolved state and refuses to run otherwise. Block 2's exercises edit
+  those workspaces in place, so if you came from Block 2 (you did), reset
+  before measuring — see "Starting over" below. A benchmark against an
+  already-solved fixture produces small, plausible, meaningless numbers;
+  the runner failing loudly here is the same principle as not trusting the
+  agent's self-report.
 - Solved means **pytest exits green on the workspace afterward**. The
   agent's self-report is never consulted. Your harness evaluation at work
   should share this property: external checkers on your tasks.
@@ -238,18 +248,27 @@ are pennies. Run the long task once per harness.
 
 ## Starting over
 
-One command, run from anywhere in the repo:
+The tasks are fixtures: a codebase that must still be on the old API, a
+bug that must still be there. Agents edit them, so after a run they're no
+longer in their starting state. Two scripts keep that straight, and both
+run from this directory:
 
 ```
-uv run ../scripts/reset.py
+uv run ../scripts/reset.py          # restore the fixtures
+uv run ../scripts/check_fixtures.py # confirm: ALL FIXTURES OK
 ```
 
-It restores the task workspaces to their committed state (including
-removing any files an agent created), clears the per-run copies under
-`results/runs/`, and archives the score table with a timestamp — then
-prints what it did. Then rerun the exercise flow from step 1; the runner's
-pre-flight check confirms the workspaces really are unsolved before
-spending tokens.
+**`reset.py`** restores every task workspace to its committed state
+(including deleting files an agent created), clears the per-run copies
+under `results/runs/`, and archives your score table with a timestamp
+rather than deleting it. It prints what it changed.
+
+**`check_fixtures.py`** asserts each workspace's tests still *fail* — a
+fixture that passes is a solved task, and measuring against it is
+meaningless — confirms the reference copies still pass, and re-derives the
+long task into a temp directory to check the committed one hasn't drifted.
+
+Then rerun the exercise flow from step 1.
 
 ## Debrief questions
 
