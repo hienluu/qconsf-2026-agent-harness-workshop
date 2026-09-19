@@ -43,6 +43,56 @@ def is_green(path: Path) -> bool:
     return proc.returncode == 0
 
 
+def drift_check(problems: list) -> None:
+    """Catch a fixture that is still red but no longer the task it should be.
+
+    The red/green check above passes even if a workspace has been partly
+    solved and committed — the suite still fails, but the job is smaller
+    than designed. (That happened: a stray `git add -A` shrank the
+    refactor task by ~40%, and two runs "succeeded" on the remnant.)
+
+    So: derive a fresh copy from the reference into a temp directory and
+    compare. Skipped when the workspace has uncommitted edits, since an
+    agent run in progress is expected to differ.
+    """
+    import filecmp
+    import tempfile
+
+    sys.path.insert(0, str(REPO / "scripts"))
+    import derive_workspace
+
+    workspace = TASKS / "long_horizon" / "refactor_v2" / "workspace"
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", str(workspace.relative_to(REPO))],
+        cwd=REPO, capture_output=True, text=True,
+    ).stdout.strip()
+    if dirty:
+        print("[skip] drift check — refactor_v2 workspace has uncommitted edits "
+              "(an agent run, probably). Reset first to check it.")
+        return
+
+    with tempfile.TemporaryDirectory() as tmp:
+        fresh = Path(tmp) / "workspace"
+        import io, contextlib
+        with contextlib.redirect_stdout(io.StringIO()):
+            derive_workspace.main(target=fresh)
+
+        here = {p.relative_to(workspace) for p in workspace.rglob("*")
+                if p.is_file() and "__pycache__" not in p.parts and ".pytest_cache" not in p.parts}
+        there = {p.relative_to(fresh) for p in fresh.rglob("*") if p.is_file()}
+        differing = [r for r in sorted(here & there)
+                     if not filecmp.cmp(workspace / r, fresh / r, shallow=False)]
+
+        if here != there or differing:
+            problems.append(
+                f"DRIFTED  refactor_v2 workspace differs from a fresh derivation "
+                f"({len(differing)} file(s) differ, {len(here ^ there)} missing/extra) — "
+                f"it is probably partly solved. Run: uv run scripts/derive_workspace.py"
+            )
+        else:
+            print("[ok  ] refactor_v2 workspace matches a fresh derivation")
+
+
 def main() -> int:
     problems = []
 
@@ -61,6 +111,8 @@ def main() -> int:
             problems.append(f"BROKEN   {label} — the reference must be green; fix it before re-deriving")
         else:
             print(f"[ok  ] green:    {path.relative_to(REPO)}")
+
+    drift_check(problems)
 
     print()
     if problems:

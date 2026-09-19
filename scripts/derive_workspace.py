@@ -51,16 +51,16 @@ def to_v1(text: str) -> str:
     return text
 
 
-def main() -> None:
-    if WORKSPACE.exists():
-        shutil.rmtree(WORKSPACE)
-    WORKSPACE.mkdir(parents=True)
+def main(target: Path = WORKSPACE) -> None:
+    if target.exists():
+        shutil.rmtree(target)
+    target.mkdir(parents=True)
 
     for src in REFERENCE.rglob("*"):
         if "__pycache__" in src.parts or not src.is_file():
             continue
         rel = src.relative_to(REFERENCE)
-        dst = WORKSPACE / rel
+        dst = target / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         in_tests = rel.parts[0] == "tests" or rel.name == "conftest.py"
         exempt = str(rel) in RENAME_EXEMPT
@@ -70,7 +70,7 @@ def main() -> None:
             dst.write_text(to_v1(src.read_text()))
 
     rows = "\n".join(f"| `{v1}` | `{v2}` |" for v1, v2, doc in RENAMES if doc)
-    (WORKSPACE / "MIGRATION.md").write_text(
+    (target / "MIGRATION.md").write_text(
         "# pyledger v2 API migration\n\n"
         "The test suite under `tests/` is written against the **v2** API.\n"
         "The source under `pyledger/` and `cli.py` still uses the legacy v1\n"
@@ -85,7 +85,7 @@ def main() -> None:
         "is the HTTP verb, not the ledger API. Do not rename anything there.\n\n"
         "Done means: `pytest` exits green.\n"
     )
-    print(f"workspace derived at {WORKSPACE}")
+    print(f"workspace derived at {target}")
 
 
 if __name__ == "__main__":
