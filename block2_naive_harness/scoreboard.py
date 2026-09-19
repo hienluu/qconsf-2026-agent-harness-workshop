@@ -23,6 +23,7 @@ class Scoreboard:
     def __init__(self, max_turns: int):
         self.max_turns = max_turns
         self.counts: dict = {}
+        self.paths_read: dict = {}
         self.input_tokens = 0
         self.output_tokens = 0
         self.first_write_turn = None
@@ -40,6 +41,9 @@ class Scoreboard:
             "       memory, AND it is re-sent to the model on every single turn.\n"
             "     sent so far — tokens billed, input vs output. Input climbs far faster\n"
             "       than the transcript grows, because each turn re-sends all of it.\n"
+            "     re-read — files fetched again that the agent had already read. Appears\n"
+            "       only when it happens; it is the price of information the agent no\n"
+            "       longer has.\n"
             "     The agent sees none of these numbers.\033[0m\n"
         )
 
@@ -51,10 +55,19 @@ class Scoreboard:
             self.input_tokens += getattr(usage, "prompt_tokens", 0) or 0
             self.output_tokens += getattr(usage, "completion_tokens", 0) or 0
 
-    def record_tool(self, name: str, turn: int) -> None:
+    def record_tool(self, name: str, turn: int, args: dict | None = None) -> None:
         self.counts[name] = self.counts.get(name, 0) + 1
         if name == "write_file" and self.first_write_turn is None:
             self.first_write_turn = turn
+        # Re-reads are the cost of forgetting: a file the agent already had
+        # in context, fetched again because that context is gone.
+        if name == "read_file" and args and args.get("path"):
+            path = args["path"]
+            self.paths_read[path] = self.paths_read.get(path, 0) + 1
+
+    @property
+    def rereads(self) -> int:
+        return sum(n - 1 for n in self.paths_read.values() if n > 1)
 
     # --- commentary ------------------------------------------------------
 
@@ -65,6 +78,8 @@ class Scoreboard:
             f"{n.replace('_file', '').replace('run_', '')} {self.counts.get(n, 0)}"
             for n in ("read_file", "write_file", "search", "run_tests")
         )
+        if self.rereads:
+            tally += f"  \033[35mre-read {self.rereads}\033[0m\033[2m"
         print(
             f"\033[2m   ┈ turn {turn}/{self.max_turns} │ {tally} │ "
             f"transcript {chars:,} chars (~{chars // 4:,} tokens) │ "
@@ -90,6 +105,9 @@ class Scoreboard:
             f"{self.input_tokens:,} input tokens sent "
             f"(the whole transcript went over the wire on every one of them)."
         )
+        if self.rereads:
+            print(f"   ── it re-read {self.rereads} file(s) it had already seen: "
+                  f"information it had, then didn't.")
         if not self.counts.get("run_tests"):
             print("   ── it never ran the tests. It had the tool the whole time.")
         elif not finished:

@@ -75,18 +75,22 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
         raise SystemExit(
             f"source workspace is already solved: {task['workspace']}\n"
             f"A previous run (Block 2?) modified it in place. Reset it first:\n"
-            f"  git checkout -- {task['workspace']}\n"
-            f"or, for the refactor task:  uv run scripts/derive_workspace.py"
+            f"  uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py"
         )
 
-    run_dir = out_dir / "runs" / f"{HARNESSES[harness_key]}__{task_name}"
+    # Use the module's own NAME — h3 renames itself under ablation, and its
+    # artifacts must not overwrite the unmodified run's.
+    label = getattr(module, "NAME", HARNESSES[harness_key])
+
+    run_dir = out_dir / "runs" / f"{label}__{task_name}"
     workspace = run_dir / "workspace"
     if run_dir.exists():
         shutil.rmtree(run_dir)
     shutil.copytree(source, workspace)
-
-    print(f"\n=== {HARNESSES[harness_key]} × {task_name} ===")
+    print(f"\n=== {label} × {task_name} ===")
     print(f"    harness: {(module.__doc__ or '').strip().splitlines()[0]}")
+    if label != HARNESSES[harness_key]:
+        print(f"    ablation: running {HARNESSES[harness_key]} with a capability removed")
     print(f"    task: {task['description']}")
     log_path = run_dir / "console.log"
     with log_path.open("w") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):

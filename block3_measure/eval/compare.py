@@ -24,7 +24,7 @@ def age(timestamp: float) -> str:
     return f"{seconds // 3600}h ago"
 
 RESULTS = Path(__file__).resolve().parent.parent / "results" / "results.jsonl"
-HARNESS_ORDER = ["h1_naive", "h2_managed", "h3_full"]
+HARNESS_ORDER = ["h1_naive", "h2_managed", "h3_full", "h3_no_notes"]
 TASK_ORDER = ["fix_bug", "add_function", "small_rename", "bug_hunt", "refactor_v2"]
 
 

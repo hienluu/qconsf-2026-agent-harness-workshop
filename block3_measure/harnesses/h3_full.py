@@ -31,7 +31,14 @@ from base import (
 # base puts block2 on sys.path (for tools); reuse its scoreboard too.
 from scoreboard import Scoreboard  # noqa: E402
 
-NAME = "h3_full"
+# Ablation switch for measuring what the notes are actually worth:
+# H3_NO_NOTES=1 removes the update_notes tool and the pinned notes message,
+# leaving everything else in h3 identical. Runs report as a separate
+# harness so both appear in the comparison table.
+import os as _os
+
+NOTES_ENABLED = _os.environ.get("H3_NO_NOTES") != "1"
+NAME = "h3_full" if NOTES_ENABLED else "h3_no_notes"
 
 MAX_TOOL_RESULT_CHARS = 6_000
 TRANSCRIPT_CHAR_BUDGET = 80_000   # ~20k tokens; keeps cumulative cost linear on long tasks
@@ -101,13 +108,14 @@ def run(workspace_dir: str, task: str) -> RunResult:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         # [h3] Pinned durable notes, updated in place by update_notes.
-        {"role": "system", "content": NOTES_PREFIX + "(empty)"},
+        *([{"role": "system", "content": NOTES_PREFIX + "(empty)"}] if NOTES_ENABLED else []),
         {"role": "user", "content": task},
     ]
+    notes_index = 1 if NOTES_ENABLED else None
 
     # [h3] update_notes rewrites the pinned message and confirms.
     def update_notes(args):
-        messages[1]["content"] = NOTES_PREFIX + args["notes"]
+        messages[notes_index]["content"] = NOTES_PREFIX + args["notes"]
         return "notes updated"
 
     dispatch = {
@@ -116,9 +124,10 @@ def run(workspace_dir: str, task: str) -> RunResult:
         "write_file": guarded_write,
         "search": lambda args: ws.search(args["pattern"]),
         "run_tests": lambda args: ws.run_tests(),
-        "update_notes": update_notes,
     }
-    tool_schemas = TOOL_SCHEMAS + [NOTES_SCHEMA]
+    if NOTES_ENABLED:
+        dispatch["update_notes"] = update_notes
+    tool_schemas = TOOL_SCHEMAS + ([NOTES_SCHEMA] if NOTES_ENABLED else [])
 
     result = RunResult(harness=NAME, task=workspace_dir)
     board = Scoreboard(MAX_TURNS)
@@ -174,7 +183,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     # to persist memory — the behavior worth watching for.
                     print(f"\033[36m✎  [{NAME} turn {turn}] update_notes({str(args.get('notes', ''))[:60]!r}...)\033[0m")
                 else:
-                    board.record_tool(name, turn)
+                    board.record_tool(name, turn, args)
                     print(f"[{NAME} turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
                 try:
                     result_text = dispatch[name](args)
@@ -197,10 +206,13 @@ def run(workspace_dir: str, task: str) -> RunResult:
         print(f"\n[{NAME}] CRASHED: {result.error}")
 
     board.summary(finished=result.status == "completed")
+    if board.rereads:
+        result.notes["rereads"] = board.rereads
     result.wall_seconds = round(time.monotonic() - start, 1)
     # [h3] Report the notes content itself, not just its size — what the
     # agent chose to remember is a first-class result of the run.
-    final_notes = messages[1]["content"][len(NOTES_PREFIX):]
-    result.notes["final_notes_chars"] = len(final_notes)
-    result.notes["final_notes_text"] = final_notes
+    if NOTES_ENABLED:
+        final_notes = messages[notes_index]["content"][len(NOTES_PREFIX):]
+        result.notes["final_notes_chars"] = len(final_notes)
+        result.notes["final_notes_text"] = final_notes
     return result

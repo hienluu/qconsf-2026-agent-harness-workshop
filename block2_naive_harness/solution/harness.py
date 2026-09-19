@@ -101,7 +101,7 @@ def run(workspace_dir: str, task: str) -> None:
         for call in msg.tool_calls:
             name = call.function.name
             args = json.loads(call.function.arguments or "{}")
-            board.record_tool(name, turn)
+            board.record_tool(name, turn, args)
             print(f"[turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
             try:
                 result = dispatch[name](args)

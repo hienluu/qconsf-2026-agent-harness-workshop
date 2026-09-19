@@ -85,7 +85,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     print(f"\033[2m[fault injection] corrupting this {name} call's JSON (INJECT_MALFORMED_TURN={turn})\033[0m")
                 # Naive: unguarded parse — a truncated tool call kills the run.
                 args = json.loads(raw)
-                board.record_tool(name, turn)
+                board.record_tool(name, turn, args)
                 print(f"[{NAME} turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
                 try:
                     result_text = dispatch[name](args)
@@ -101,5 +101,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
         print(f"\n[{NAME}] CRASHED: {result.error}")
 
     board.summary(finished=result.status == "completed")
+    if board.rereads:
+        result.notes["rereads"] = board.rereads
     result.wall_seconds = round(time.monotonic() - start, 1)
     return result

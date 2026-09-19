@@ -19,8 +19,17 @@ tasks when a vendor benchmark asks you to take its word for it.
 
 We run the experiment with three harnesses: **`h1_naive`**, the harness you
 built in Block 2, unchanged in behavior; **`h2_managed`**, h1 plus three
-context/error protections; and **`h3_full`**, h2 plus durable memory and a
-guardrail. Each is a small, readable diff on the previous one.
+context/error protections; and **`h3_full`**, h2 plus two capabilities that
+every production harness ships — durable memory and a write guardrail.
+Each is a small, readable diff on the previous one.
+
+A word on h3 before you run it: **it is a question, not an upgrade.** h2's
+protections are mechanical, so their savings are near-guaranteed. h3's
+headline capability is *offered* to the model — the harness provides a
+place to keep notes, but whether the model uses it, and when, is the
+model's choice. In our own runs that produced a 3× spread in cost. If your
+h3 run comes out worse than h2, you haven't done it wrong; you've measured
+something real about capabilities that depend on adoption.
 
 ## The three harnesses
 
@@ -188,6 +197,12 @@ here, where it ran out of room in Block 2 — watch what it costs to do so.
    undocumented renames it discovered? Per-file progress? Its notes are a
    window into what the model considered worth keeping when it knew the
    transcript wouldn't last.
+
+   Then check the scoreboard's **re-read** counter — it appears only when
+   the agent fetches a file it had already read, which is what forgetting
+   costs. The claim being tested is that notes reduce re-reads after
+   compaction drops things. Compare h2's count with h3's; that is the
+   mechanism, visible in one run rather than averaged across many.
 4. **Review the comparison table.** It prints automatically after every
    run, so by now you've watched it grow row by row. To re-render it at
    any time without running anything:
@@ -283,6 +298,26 @@ Then rerun the exercise flow from step 1.
    tests" was load-bearing.)
 4. These five protections are a tiny subset of what production harnesses
    ship. Block 4: what the pros decided for you.
+
+## Testing the claim yourself: the ablation
+
+Everything above says durable notes *should* help. The honest way to find
+out is to remove them and change nothing else:
+
+```
+uv run eval/run_eval.py h3 --task refactor_v2                 # with notes
+H3_NO_NOTES=1 uv run eval/run_eval.py h3 --task refactor_v2   # same harness, tool removed
+```
+
+The second run drops the `update_notes` tool and the pinned notes message
+and keeps every other h3 behaviour — truncation, compaction, recovery, the
+write guardrail. It reports as `h3_no_notes`, so both appear as separate
+rows in the comparison table with their own artifacts.
+
+Compare turns, input tokens, and the re-read count. One run of each proves
+nothing (the spread between identical h3 runs has reached 3×), so if you
+have the budget, do three of each and compare the ranges. This is the
+whole method of the block applied to the block's own claim.
 
 ## Where these ideas come from
 
