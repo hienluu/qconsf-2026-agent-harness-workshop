@@ -203,7 +203,7 @@ here, where it ran out of room in Block 2 — watch what it costs to do so.
 
    Afterward, read what the agent chose to remember:
    ```
-   cat results/runs/h3_full__refactor_v2__*/agent_notes.md
+   cat results/runs/h3_full__refactor_v2__*/agent_notes.md   # newest run's notes
    ```
 
 3. **Optional — run h1 yourself.** The reference row saves you the ~$1 and
