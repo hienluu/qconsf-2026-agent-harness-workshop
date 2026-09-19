@@ -307,12 +307,32 @@ and measures what each is worth.
 
 ## Starting over
 
-The agent edits the task workspaces as it works, so re-running any task
-needs a reset first. From this directory:
+The tasks in this repo are fixtures: a bug that must still be there, a
+codebase that must still be on the old API. Agents edit them — that's the
+exercise — so after any run the fixture is no longer in its starting
+state, and a second run would begin from wherever the first one stopped.
+Two small scripts keep that straight.
+
+**`reset.py` — put the fixtures back.** It restores every task workspace
+to its committed state (including deleting files an agent created),
+clears the per-run copies Blocks 3 and 4 leave behind, and archives your
+Block 3 score table with a timestamp rather than deleting it. It prints
+what it changed. Safe to run any time; it's a no-op if nothing has moved.
+
+**`check_fixtures.py` — confirm the tasks are still the tasks.** It runs
+each workspace's test suite and asserts it *fails* (a fixture that passes
+is a solved task, and measuring against it is meaningless), checks the
+reference copies still pass, and re-derives the long-horizon task into a
+temporary directory to confirm the committed one still matches. Expect
+`ALL FIXTURES OK`.
+
+Run both from this directory:
 
 ```
 uv run ../scripts/reset.py          # restore every task workspace
 uv run ../scripts/check_fixtures.py # confirm: ALL FIXTURES OK
 ```
 
-The reset prints what it restored. Then pick up from Step 3.
+Then pick up from Step 3. If you only ever remember one thing from this
+section: **reset before re-running a task**, or you'll be measuring an
+agent that got a head start.
