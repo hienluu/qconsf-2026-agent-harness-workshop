@@ -283,3 +283,51 @@ Then rerun the exercise flow from step 1.
    tests" was load-bearing.)
 4. These five protections are a tiny subset of what production harnesses
    ship. Block 4: what the pros decided for you.
+
+## Where these ideas come from
+
+The three protections in h2 and the two in h3 aren't inventions for this
+workshop — each is a scaled-down version of something production harnesses
+ship. If you want to check the lineage yourself:
+
+**Durable working notes (h3).** The general pattern — agent-maintained
+notes that live outside the conversation and survive compaction — is
+widespread:
+
+- Claude Code and the Claude Agent SDK load `CLAUDE.md` and `.claude/`
+  memory automatically each session
+  ([Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview)).
+- Deep Agents ships a `write_todos` planning tool plus persistent
+  `AGENTS.md` memory
+  ([docs](https://docs.langchain.com/oss/python/deepagents/overview)).
+- Pydantic AI's Harness package includes persistent notebooks with search
+  ([docs](https://pydantic.dev/docs/ai/harness/)).
+- Community writeups converge on the same reasoning — markdown notes are
+  durable, greppable, and survive a compaction:
+  [structured scratchpads for coding agents](https://nikiforovall.blog/ai/2026/06/08/scratch.html),
+  [agent-maintained durable notes](https://github.com/stubbedev/harness/issues/7),
+  [AgentMemory](https://github.com/jayzeng/agentmemory).
+
+One honest difference: production systems almost always keep these notes
+in **files**. h3 pins them as an in-context message instead, because a
+file has to be read to be useful and the model may not think to read it,
+while a pinned message is in front of it on every turn. That trade is
+right at ~900 characters of notes and wrong at 50,000 — which is a good
+question to carry into Block 4, where the file-based harnesses make the
+opposite call.
+
+**Context compaction and tool-output limits (h2).** Every production
+harness manages context somehow; the approaches differ. Claude Code
+compacts automatically; Deep Agents uses summarization middleware;
+Pydantic AI offers compaction as an opt-in capability. h2 uses the
+simplest possible version — drop the oldest large tool outputs — so the
+mechanism is readable in a dozen lines. The lossiness is deliberate, and
+it's exactly the gap h3's notes then fill.
+
+**A caveat worth keeping.** That these patterns are common is well
+documented. That they *help on your workload* is not something to take on
+faith — including from us. Across four runs of h3 during development, cost
+ranged from 336k to 1,087k input tokens for the same task: when the agent
+wrote its notes early it re-read far less, and when it treated them as an
+end-of-run summary it didn't. That's the whole argument for measuring on
+your own tasks rather than adopting a feature list.
