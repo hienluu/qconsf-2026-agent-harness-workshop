@@ -80,7 +80,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     print(f"\033[2m[fault injection] corrupting this {name} call's JSON (INJECT_MALFORMED_TURN={turn})\033[0m")
                 # Naive: unguarded parse — a truncated tool call kills the run.
                 args = json.loads(raw)
-                print(f"[{NAME} turn {turn}] {name}({', '.join(f'{k}={str(v)[:40]!r}' for k, v in args.items())})")
+                print(f"[{NAME} turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
                 try:
                     result_text = dispatch[name](args)
                 except Exception as exc:

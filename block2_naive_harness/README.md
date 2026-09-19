@@ -203,6 +203,32 @@ uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
   "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
 
+**What a typical run looks like.** One of our runs, turn by turn:
+
+| Turns | What the agent does |
+|---|---|
+| 1 | Lists the workspace, reads `MIGRATION.md` |
+| 2–12 | Reads ~50 files — every test file, then the whole source tree. Batches grow: 2 files per turn, then 4, then 8 |
+| 13 | *"Now I have the full picture."* Searches for the old names to confirm |
+| 14–16 | Starts writing: core modules, reports, CLI, the hand-written integrations — 17 files |
+| 17–20 | Bulk-writes the repetitive integration files, 14 per turn — auditors, then exporters, then forecasts, then histories |
+| — | **Budget exhausted.** 56 of the 112 repetitive files rewritten; the other 56 never touched |
+
+Two things in that run are worth more than the failure itself:
+
+- **It never ran the tests. Not once in 20 turns.** `run_tests` was
+  available the whole time. The agent chose to read everything, then write
+  everything, then presumably verify at the end — and never reached the
+  end.
+- **Nothing told it how much budget was left.** It spent 13 turns reading
+  before the first edit, which is a defensible strategy if you have enough
+  turns and a disaster if you don't. It had no way to know which it was.
+
+The agent wasn't confused and it wasn't incompetent — its plan was
+reasonable and its edits were correct. It ran out of turns halfway through
+executing a plan that no part of the system was tracking. Your run will
+differ in the details; the shape usually doesn't.
+
 **Watch these four things while it runs** — each one is a harness
 component doing nothing, because your harness doesn't have it:
 

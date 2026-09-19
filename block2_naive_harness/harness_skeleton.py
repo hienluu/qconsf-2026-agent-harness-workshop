@@ -107,7 +107,7 @@ def run(workspace_dir: str, task: str) -> None:
         for call in msg.tool_calls:
             name = call.function.name
             args = json.loads(call.function.arguments or "{}")
-            print(f"[turn {turn}] {name}({', '.join(f'{k}={str(v)[:40]!r}' for k, v in args.items())})")
+            print(f"[turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
             # --------------------------------------------------------------
             # TODO 2 — execute the tool, feed the result back (~5 lines)
             #

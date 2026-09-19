@@ -169,7 +169,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     # to persist memory — the behavior worth watching for.
                     print(f"\033[36m✎  [{NAME} turn {turn}] update_notes({str(args.get('notes', ''))[:60]!r}...)\033[0m")
                 else:
-                    print(f"[{NAME} turn {turn}] {name}({', '.join(f'{k}={str(v)[:40]!r}' for k, v in args.items())})")
+                    print(f"[{NAME} turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
                 try:
                     result_text = dispatch[name](args)
                 except Exception as exc:
