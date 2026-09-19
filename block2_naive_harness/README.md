@@ -333,6 +333,8 @@ uv run ../scripts/reset.py          # restore every task workspace
 uv run ../scripts/check_fixtures.py # confirm: ALL FIXTURES OK
 ```
 
-Then pick up from Step 3. If you only ever remember one thing from this
-section: **reset before re-running a task**, or you'll be measuring an
-agent that got a head start.
+Then re-run whichever step you want — Step 3 for the short task, Step 4
+for the long one.
+
+If you remember one thing from this section: **reset before re-running a
+task**, or you'll be measuring an agent that got a head start.
