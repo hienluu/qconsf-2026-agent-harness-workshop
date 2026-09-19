@@ -16,7 +16,8 @@ Requires [uv](https://docs.astral.sh/uv/) (`brew install uv`, or
 create or activate — `uv run` manages the environment itself.
 
 ```
-git clone <repo-url> && cd agent-harness-workshop
+git clone https://github.com/hienluu/qconsf-2026-agent-harness-workshop.git
+cd qconsf-2026-agent-harness-workshop
 uv sync                        # downloads dependencies — do this on real WiFi
 cp .env.example .env           # fill in your provider API key + model
 uv run setup/check_setup.py    # expect: ALL GREEN
