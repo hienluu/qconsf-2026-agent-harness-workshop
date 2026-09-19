@@ -33,10 +33,6 @@ fill. It has no protections of any kind — that's the point of the block:
 | Error recovery | A malformed tool call or transient API error derails the run |
 | Loop budget & progress detection | The agent can redo and undo the same work indefinitely |
 
-Block 3 adds these one configuration at a time and measures what each one
-buys. Stuck on the TODOs at any point? The finished harness is in
-`solution/harness.py`.
-
 ## Exercise flow (all commands from `block2_naive_harness/`)
 
 ### Step 0 — Confirm you're ready (2 min)
