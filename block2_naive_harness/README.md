@@ -40,8 +40,8 @@ directory** — the paths below are relative to it, and they will fail from
 anywhere else:
 
 ```
-cd block2_naive_harness     # from the repo root
-pwd                         # should end in /agent-harness-workshop/block2_naive_harness
+cd block2_naive_harness   # from the repo root
+pwd                       # .../agent-harness-workshop/block2_naive_harness
 ```
 
 (The one exception is the reset at the bottom of this page, which runs

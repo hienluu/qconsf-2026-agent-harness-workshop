@@ -127,7 +127,19 @@ afterward** (the agent is never asked whether it succeeded).
 Workspaces live under `../block2_naive_harness/tasks/` (each has a TASK.md
 with details); the prompts sent to the agent are in `eval/tasks.py`.
 
-## Exercise flow (all commands from `block3_measure/`)
+## Exercise flow
+
+**Run every command in this section from the `block3_measure/`
+directory** — the paths below are relative to it, and they will fail from
+anywhere else:
+
+```
+cd block3_measure   # from the repo root
+pwd                 # .../agent-harness-workshop/block3_measure
+```
+
+(The one exception is the reset in "Starting over" below, which runs
+from the repo root. It says so there.)
 
 1. **Reproduce the Block 2 failure, instrumented this time.** This is the
    same naive harness you already ran — no need to re-verify it on the

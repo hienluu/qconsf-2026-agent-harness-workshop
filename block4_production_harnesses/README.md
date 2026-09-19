@@ -49,7 +49,19 @@ Claude Agent SDK wheel bundles a compiled Claude Code CLI (~90MB download,
 ~190MB installed — one more reason the sync happens at home, not on venue
 WiFi).
 
-## Exercise flow (from `block4_production_harnesses/`)
+## Exercise flow
+
+**Run every command in this section from the
+`block4_production_harnesses/` directory** — the paths below are relative
+to it, and they will fail from anywhere else:
+
+```
+cd block4_production_harnesses   # from the repo root
+pwd                              # .../agent-harness-workshop/block4_production_harnesses
+```
+
+(The one exception is `scripts/reset.py`, mentioned under "Clearing the
+receipts table" below, which runs from the repo root.)
 
 Fair warning about what you'll see: **all six runs succeed.** That's the
 experimental design — outcome is the controlled variable. The information
