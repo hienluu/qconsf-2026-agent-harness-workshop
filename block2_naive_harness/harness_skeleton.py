@@ -21,6 +21,7 @@ from openai import OpenAI
 load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tools import TOOL_SCHEMAS, Workspace  # noqa: E402
+from trace import Scoreboard  # noqa: E402  (observer-side commentary)
 
 SYSTEM_PROMPT = """You are a coding agent operating on a local workspace via tools.
 Work step by step: inspect files, make edits, and run the tests to check yourself.
@@ -72,6 +73,10 @@ def run(workspace_dir: str, task: str) -> None:
         {"role": "user", "content": task},
     ]
 
+    # Commentary for you, not for the agent — see trace.py. Nothing below
+    # changes what the model sees or what the loop does.
+    board = Scoreboard(MAX_TURNS)
+
     for turn in range(1, MAX_TURNS + 1):
         # ------------------------------------------------------------------
         # TODO 1 — ask the model what to do next (~4 lines)
@@ -88,11 +93,13 @@ def run(workspace_dir: str, task: str) -> None:
         # ------------------------------------------------------------------
         response = None  # <-- your code here
 
+        board.record_usage(response)
         msg = response.choices[0].message
         messages.append(msg.model_dump(exclude_none=True))
 
         if not msg.tool_calls:
             print(f"\n[turn {turn}] agent finished:\n{msg.content}")
+            board.summary(finished=True, turn=turn)
             return
 
         # Models often narrate alongside their tool calls ("the tests expect
@@ -107,6 +114,7 @@ def run(workspace_dir: str, task: str) -> None:
         for call in msg.tool_calls:
             name = call.function.name
             args = json.loads(call.function.arguments or "{}")
+            board.record_tool(name, turn)
             print(f"[turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
             # --------------------------------------------------------------
             # TODO 2 — execute the tool, feed the result back (~5 lines)
@@ -121,6 +129,9 @@ def run(workspace_dir: str, task: str) -> None:
             # --------------------------------------------------------------
             pass  # <-- your code here
 
+        board.report(turn, messages)
+
+    board.summary(finished=False)
     print(f"\ngave up after {MAX_TURNS} turns without finishing")
 
 

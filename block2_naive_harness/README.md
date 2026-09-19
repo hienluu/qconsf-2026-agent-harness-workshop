@@ -229,6 +229,22 @@ reasonable and its edits were correct. It ran out of turns halfway through
 executing a plan that no part of the system was tracking. Your run will
 differ in the details; the shape usually doesn't.
 
+**The trace narrates itself.** After every turn the harness prints a
+scoreboard — how many files it has read and written, how large the
+transcript has grown, and how many tokens have gone over the wire so far
+— plus a call-out when something notable happens:
+
+```
+   ┈ turn 8/20 │ read 24  write 0  search 2  tests 0 │ transcript 92,418 chars (~23,104 tokens) │ sent so far 148,203 in / 1,904 out
+   ▸ first edit — 13 turns went to reading before anything changed
+```
+
+None of that is visible to the agent. It has no fuel gauge, no map of what
+it has already covered, and no idea how much budget is left — which is
+most of the explanation for what you're about to watch. (The scoreboard is
+in `trace.py`; it only reads the conversation and prints. It changes
+nothing about how the harness behaves.)
+
 **Watch these four things while it runs** — each one is a harness
 component doing nothing, because your harness doesn't have it:
 
