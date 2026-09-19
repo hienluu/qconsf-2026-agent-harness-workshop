@@ -203,54 +203,40 @@ uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
   "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
 
-**What a typical run looks like.** One of our runs, turn by turn:
+**What a typical run looks like.** A full run of this task, turn by turn:
 
 | Turns | What the agent does |
 |---|---|
-| 1 | Lists the workspace, reads `MIGRATION.md` |
-| 2–12 | Reads ~50 files — every test file, then the whole source tree. Batches grow: 2 files per turn, then 4, then 8 |
-| 13 | *"Now I have the full picture."* Searches for the old names to confirm |
-| 14–16 | Starts writing: core modules, reports, CLI, the hand-written integrations — 17 files |
-| 17–20 | Bulk-writes the repetitive integration files, 14 per turn — auditors, then exporters, then forecasts, then histories |
-| — | **Budget exhausted.** 56 of the 112 repetitive files rewritten; the other 56 never touched |
+| 1–4 | Lists the workspace, reads `MIGRATION.md`, then every test file and the core modules |
+| 5–15 | Reads the rest of the source — 106 files in all — plus 12 searches for the old names. Batches grow from 3 files per turn to 13 |
+| 16 | *"I now have the complete picture."* Writes its first 17 files — core, reports, CLI |
+| 17–20 | Bulk-writes the repetitive integration families, 14 per turn: auditors, reconcilers, snapshots, limits |
+| — | **Budget exhausted.** 73 files written of roughly 130 that needed it |
 
-Two things in that run are worth more than the failure itself:
-
-- **It never ran the tests. Not once in 20 turns.** `run_tests` was
-  available the whole time. The agent chose to read everything, then write
-  everything, then presumably verify at the end — and never reached the
-  end.
-- **Nothing told it how much budget was left.** It spent 13 turns reading
-  before the first edit, which is a defensible strategy if you have enough
-  turns and a disaster if you don't. It had no way to know which it was.
-
-The agent wasn't confused and it wasn't incompetent — its plan was
-reasonable and its edits were correct. It ran out of turns halfway through
-executing a plan that no part of the system was tracking. Your run will
-differ in the details; the shape usually doesn't.
-
-**The trace narrates itself.** After every turn the harness prints a
-scoreboard — how many files it has read and written, how large the
-transcript has grown, and how many tokens have gone over the wire so far
-— plus a call-out when something notable happens:
+The scoreboard prints two call-outs on the same turn, and together they
+are the whole lesson:
 
 ```
-   ┈ turn 8/20 │ read 24  write 0  search 2  tests 0 │ transcript 92,418 chars (~23,104 tokens) │ sent so far 148,203 in / 1,904 out
-   ▸ first edit — 13 turns went to reading before anything changed
+   ▸ first edit — 15 turns went to reading before anything changed
+   ▸ 4 turns left, and nothing is tracking how much work remains
 ```
 
-The number to watch is **transcript** — the whole conversation: your task,
-every message the model produced, and every tool result it got back. It is
-the agent's only memory, and the model is stateless, so all of it is
-re-sent on every turn. That's why "sent so far" climbs much faster than
-the transcript grows: in one of our runs the conversation ended at ~19,000
-tokens, but 320,000 input tokens had been billed to get there.
+It started working at the moment it ran out of room to work. Three more
+things from that run:
 
-None of that is visible to the agent. It has no fuel gauge, no map of what
-it has already covered, and no idea how much budget is left — which is
-most of the explanation for what you're about to watch. (The scoreboard is
-in `trace.py`; it only reads the conversation and prints. It changes
-nothing about how the harness behaves.)
+- **It never ran the tests. Not once in 20 turns.** `run_tests` was there
+  the whole time. It planned to read everything, write everything, then
+  verify — and never reached the verify.
+- **The transcript ended at ~39,000 tokens; the run was billed 469,341
+  input tokens** — roughly twelve times the conversation's final size,
+  because every turn re-sent all of it. Output was 16,278 tokens: you paid
+  about 29 tokens of input for every token the model actually wrote.
+- **The arithmetic was never going to work.** Reading took 15 turns;
+  writing ~130 files at 14 per turn needs ~10 more; verifying needs at
+  least one. That is 26+ turns against a budget of 20 — and nothing in the
+  system was tracking that, least of all the agent.
+
+Your run will differ in the details. The shape rarely does.
 
 **Watch these four things while it runs** — each one is a harness
 component doing nothing, because your harness doesn't have it:
@@ -262,19 +248,19 @@ component doing nothing, because your harness doesn't have it:
 | Write batches grow as it tries to edit many files in one turn | Nothing bounds what the model must produce in a single reply |
 | It re-reads files it already handled, because the only record of its progress is the conversation | Durable memory |
 
-**What to expect: failure.** Usually one of two kinds.
+**What to expect: failure**, in one of two ways.
 
+- **The budget runs out** — the common case. Twenty turns spent, the
+  codebase partly migrated, the suite still red.
 - **A crash** — a raw Python traceback mid-run. The model tried to write
-  several large files in one turn, hit its output limit partway through,
-  and sent a truncated tool call. Your harness calls `json.loads` on it
-  with nothing to catch the error, so the process dies.
-- **The budget runs out** — 20 turns spent with the suite still red.
+  many large files in one turn, hit its output limit partway through, and
+  sent a truncated tool call. Your harness calls `json.loads` on it with
+  nothing to catch the error, so the process dies.
 
-Occasionally it finishes instead. That's not a different lesson: in our
-test runs, completions needed 25–35 turns and roughly **a million input
-tokens (about $1)** for a task whose entire codebase is a fraction of
-that size — because the transcript is re-sent on every single call. Crash
-or expensive success, the harness is the reason.
+Note what failure does *not* mean here: the agent read correctly, planned
+sensibly, and every file it wrote was correct. It simply could not fit the
+job into the turns and tokens available — and nothing in the system was
+measuring whether it would.
 
 **Reset before any second attempt.** The agent edits files on disk, so a
 stranded run leaves real work behind — and if you re-run without
