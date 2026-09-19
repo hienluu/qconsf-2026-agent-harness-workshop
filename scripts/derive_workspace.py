@@ -57,7 +57,7 @@ def main(target: Path = WORKSPACE) -> None:
     target.mkdir(parents=True)
 
     for src in REFERENCE.rglob("*"):
-        if "__pycache__" in src.parts or not src.is_file():
+        if not src.is_file() or {"__pycache__", ".pytest_cache"} & set(src.parts):
             continue
         rel = src.relative_to(REFERENCE)
         dst = target / rel
