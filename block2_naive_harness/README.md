@@ -1,12 +1,12 @@
 # Block 2 — Build the Naive Harness
 
-**Why this block:** in Block 4 you'll evaluate production harnesses whose
-feature lists all read alike — compaction, hooks, sandboxing, memory,
-permissions. Those words only carry information once you've worked without
-them. The fastest way to get there is to build the harness that *lacks*
-every one of them, run it, and observe precisely what goes wrong. After
-this hour, every line in a vendor's feature list maps to a failure you
-have personally watched happen.
+**Why this block:** Block 1 listed seven things a harness does — the loop,
+tool dispatch, context management, memory, sandboxing, guardrails,
+observability. This block builds an agent with only the first two, then
+puts it under enough load to make the absence of the other five visible.
+You can't reason about a protection you've never missed; the fastest way
+to understand what a harness buys is to spend an hour without one. Block 3
+then adds them back, one at a time, and measures what each is worth.
 
 Time: ~55 minutes. Everything runs locally against your provider API key.
 Cost for the whole exercise: roughly $1–2.
