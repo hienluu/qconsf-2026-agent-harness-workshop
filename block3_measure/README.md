@@ -138,8 +138,8 @@ cd block3_measure   # from the repo root
 pwd                 # .../agent-harness-workshop/block3_measure
 ```
 
-(The one exception is the reset in "Starting over" below, which runs
-from the repo root. It says so there.)
+Every command on this page, including the reset script, runs from here —
+nothing requires switching directories mid-exercise.
 
 1. **Reproduce the Block 2 failure, instrumented this time.** This is the
    same naive harness you already ran — no need to re-verify it on the
@@ -241,7 +241,7 @@ are pennies. Run the long task once per harness.
 One command, run from anywhere in the repo:
 
 ```
-uv run scripts/reset.py
+uv run ../scripts/reset.py
 ```
 
 It restores the task workspaces to their committed state (including

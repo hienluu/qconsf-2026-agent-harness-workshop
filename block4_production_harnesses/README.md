@@ -60,8 +60,8 @@ cd block4_production_harnesses   # from the repo root
 pwd                              # .../agent-harness-workshop/block4_production_harnesses
 ```
 
-(The one exception is `scripts/reset.py`, mentioned under "Clearing the
-receipts table" below, which runs from the repo root.)
+Every command on this page, including the reset script, runs from here —
+nothing requires switching directories mid-exercise.
 
 Fair warning about what you'll see: **all six runs succeed.** That's the
 experimental design — outcome is the controlled variable. The information
@@ -138,7 +138,7 @@ To keep a finished round for reference instead of deleting it:
 mv runs/receipts.jsonl runs/receipts.round1.jsonl
 ```
 
-`uv run scripts/reset.py` (from the repo root) also clears it, along with
+`uv run ../scripts/reset.py` also clears it, along with
 all run workspaces and the Block 3 state — the full start-over.
 
 ## Extra credit: the trivial task

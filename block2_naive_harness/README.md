@@ -44,8 +44,8 @@ cd block2_naive_harness   # from the repo root
 pwd                       # .../agent-harness-workshop/block2_naive_harness
 ```
 
-(The one exception is the reset at the bottom of this page, which runs
-from the repo root. It says so there.)
+Every command on this page, including the reset scripts, runs from here —
+nothing requires switching directories mid-exercise.
 
 ### Step 0 — Confirm you're ready (2 min)
 
@@ -156,7 +156,7 @@ gone. Put every task workspace back to its starting state from anywhere in
 the repo:
 
 ```
-uv run scripts/reset.py
+uv run ../scripts/reset.py
 ```
 
 Re-run the pytest command above to confirm you're back to `2 failed,
@@ -276,8 +276,8 @@ started. That looks like success but isn't: it's two runs' worth of turns
 and tokens to do one task, with neither agent aware the other existed.
 (We did exactly this by accident while building the workshop: run one
 stranded 56 files, run two picked them up and reported "all 35 tests
-pass.") `uv run scripts/reset.py` from the repo root, then
-`uv run scripts/check_fixtures.py` to confirm.
+pass.") Run `uv run ../scripts/reset.py`, then
+`uv run ../scripts/check_fixtures.py` to confirm.
 
 **Record three numbers before moving on**: which outcome you got, the turn
 it ended on, and the wall time. Block 3 runs this same task through
@@ -315,20 +315,11 @@ and measures what each is worth.
 ## Starting over
 
 The agent edits the task workspaces as it works, so re-running any task
-needs a reset first. One command puts every workspace in this block back
-to its starting state — run it **from the repo root**
-(`agent-harness-workshop/`), not from this directory:
+needs a reset first. From this directory:
 
 ```
-cd ..                      # if you're in block2_naive_harness/
-uv run scripts/reset.py
+uv run ../scripts/reset.py          # restore every task workspace
+uv run ../scripts/check_fixtures.py # confirm: ALL FIXTURES OK
 ```
 
-It prints what it restored. Confirm you're back to the starting state:
-
-```
-uv run scripts/check_fixtures.py
-```
-
-Expect `ALL FIXTURES OK`. Then `cd block2_naive_harness` and pick up from
-Step 3.
+The reset prints what it restored. Then pick up from Step 3.
