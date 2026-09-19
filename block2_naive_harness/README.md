@@ -33,7 +33,19 @@ fill. It has no protections of any kind — that's the point of the block:
 | Error recovery | A malformed tool call or transient API error derails the run |
 | Loop budget & progress detection | The agent can redo and undo the same work indefinitely |
 
-## Exercise flow (all commands from `block2_naive_harness/`)
+## Exercise flow
+
+**Run every command in this section from the `block2_naive_harness/`
+directory** — the paths below are relative to it, and they will fail from
+anywhere else:
+
+```
+cd block2_naive_harness     # from the repo root
+pwd                         # should end in /agent-harness-workshop/block2_naive_harness
+```
+
+(The one exception is the reset at the bottom of this page, which runs
+from the repo root. It says so there.)
 
 ### Step 0 — Confirm you're ready (2 min)
 
