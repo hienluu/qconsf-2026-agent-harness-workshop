@@ -139,6 +139,18 @@ harness that did this is about 40 lines. Optional: run
 `tasks/short/02_add_function` and `03_small_rename` the same way (see each
 TASK.md for the run command).
 
+**Want to run it again?** The agent edited the workspace, so the bug is
+gone. Put every task workspace back to its starting state from anywhere in
+the repo:
+
+```
+uv run scripts/reset.py
+```
+
+Re-run the pytest command above to confirm you're back to `2 failed,
+2 passed`. Worth doing if you copied from `solution/harness.py` earlier and
+now want to watch your own version work.
+
 ### Step 4 — Run it on a long task (10 min)
 
 Same harness. Same model. Same tools. Bigger horizon:
@@ -175,12 +187,8 @@ uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 On a failed run you'll typically find it partially migrated: work
 performed, then stranded when the process died.
 
-To reset all task workspaces for another attempt (from anywhere in the
-repo):
-
-```
-uv run scripts/reset.py
-```
+As in Step 3, `uv run scripts/reset.py` puts every task workspace back to
+its starting state if you want another attempt.
 
 ## Debrief questions
 
