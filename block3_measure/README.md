@@ -23,13 +23,15 @@ context/error protections; and **`h3_full`**, h2 plus two capabilities that
 every production harness ships — durable memory and a write guardrail.
 Each is a small, readable diff on the previous one.
 
-A word on h3 before you run it: **it is a question, not an upgrade.** h2's
-protections are mechanical, so their savings are near-guaranteed. h3's
-headline capability is *offered* to the model — the harness provides a
-place to keep notes, but whether the model uses it, and when, is the
-model's choice. In our own runs that produced a 3× spread in cost. If your
-h3 run comes out worse than h2, you haven't done it wrong; you've measured
-something real about capabilities that depend on adoption.
+A word on h3 before you run it: **it is a question, not an upgrade** — and
+we have already answered it once, in the negative. h2's protections are
+mechanical, so their savings are near-guaranteed. h3's durable notes are
+merely *offered* to the model. We ablated them (six runs, notes on versus
+notes removed, everything else identical) and found a ~2% median
+difference with overlapping ranges: **no measurable benefit on this task.**
+The section "Testing the claim yourself" below shows you how to reproduce
+that in one command. If your h3 run comes out worse than h2, you haven't
+done it wrong.
 
 ## The three harnesses
 
