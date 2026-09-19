@@ -3,7 +3,7 @@ def moving_average(values: list[float], window: int) -> list[float]:
     if window <= 0:
         raise ValueError("window must be positive")
     out = []
-    for i in range(len(values) - window + 1):
+    for i in range(len(values) - window):
         chunk = values[i : i + window]
         out.append(sum(chunk) / window)
     return out
