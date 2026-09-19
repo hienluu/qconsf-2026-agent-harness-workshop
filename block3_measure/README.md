@@ -157,10 +157,10 @@ pwd                 # .../agent-harness-workshop/block3_measure
 Every command on this page, including the reset script, runs from here —
 nothing requires switching directories mid-exercise.
 
-**Before you start:** you'll run the long task three times, once per
-harness. Budget about 3–5 minutes and $0.50–1.50 each, so ~10 minutes and
-~$3 in total. Run each one once — the point is the comparison, not
-repetition.
+**Before you start:** the required runs are h2 once and the h3 ablation
+pair — three long runs, about 3–5 minutes and $0.50–1.50 each. The h1
+baseline ships as a reference row in the table, so you only run it if you
+want your own number.
 
 **One difference from Block 2 worth knowing up front:** these harnesses
 get a 40-turn budget, not Block 2's 20. The budget is held constant and
@@ -168,51 +168,54 @@ deliberately generous across all three so the experiment measures the
 protections rather than the turn cap. That means h1 may well *finish*
 here, where it ran out of room in Block 2 — watch what it costs to do so.
 
-1. **Run the same naive harness you built, now instrumented.** No need to
-   re-verify it on the short tasks; this is the long one. You'll see the
-   same per-turn scoreboard as Block 2 — watch the transcript column climb
-   and never come back down, since h1 has no way to shrink it:
-   ```
-   uv run eval/run_eval.py h1 --task refactor_v2
-   ```
-   Expect several minutes of scrolling tool calls, then a one-line verdict
-   and the comparison table with its first row.
-2. **Skim the three `[h2]`-marked blocks in `harnesses/h2_managed.py`**
-   (the capability matrix above tells you what you'll find: tool results
-   capped at 6k chars before the model sees them, recoverable bad calls,
-   compaction — everything unmarked is identical to h1), then run the same
-   task through h2. Watch two things in the live output: yellow
-   `compaction: dropped N old tool output(s)` lines, and the scoreboard's
-   transcript column immediately after one — that number going *down* is
-   the harness reclaiming context mid-run, which never happened in h1:
+1. **Measure what h2's protections buy.** Skim the three `[h2]`-marked
+   blocks in `harnesses/h2_managed.py` first — tool results capped at 6k
+   chars before the model sees them, malformed calls returned as
+   recoverable errors, old tool outputs dropped past a budget. Everything
+   unmarked is identical to h1. Then run it:
    ```
    uv run eval/run_eval.py h2 --task refactor_v2
    ```
-3. **Skim the `[h3]`-marked blocks in `harnesses/h3_full.py`** (durable
-   notes + the write guardrail), then run h3. Watch for the agent calling
-   `update_notes` unprompted — the harness only offers the tool; whether
-   the model adopts it is part of the result:
-   ```
-   uv run eval/run_eval.py h3 --task refactor_v2
-   ```
-   Afterward, read what the agent chose to remember — the final state of
-   its durable notes is saved as a run artifact:
-   ```
-   cat results/runs/h3_full__refactor_v2/agent_notes.md
-   ```
-   Compare it against the task: did the agent record the rename map? The
-   undocumented renames it discovered? Per-file progress? Its notes are a
-   window into what the model considered worth keeping when it knew the
-   transcript wouldn't last.
+   Watch two things in the live output: the yellow
+   `compaction: dropped N old tool output(s)` lines, and the scoreboard's
+   transcript column immediately after one — that number going *down* is
+   the harness reclaiming context mid-run.
 
-   Then check the scoreboard's **re-read** counter — it appears only when
-   the agent fetches a file it had already read, which is what forgetting
-   costs. The claim being tested is that notes reduce re-reads after
-   compaction drops things. Compare h2's count with h3's; that is the
-   mechanism, visible in one run rather than averaged across many.
+   The table already carries an `h1_naive` row marked **reference**: our
+   measurement of the harness you built, on this same task. Compare
+   against it. Across four of our runs h2 came in about 35% cheaper in
+   input tokens, and your number should land in the same neighbourhood.
+
+2. **Then test a capability that might not be worth anything.** h3 adds
+   two things to h2: durable working notes the agent can write via an
+   `update_notes` tool, and a guardrail making `tests/` read-only. Skim
+   the `[h3]`-marked blocks, then run the ablation — the same harness
+   twice, once with the notes capability and once with it removed:
+   ```
+   uv run eval/ablation.py --runs 1 --task refactor_v2
+   ```
+   That's two runs and a summary comparing turns, input tokens, and
+   re-reads. **We ran three per arm and found no measurable difference**
+   (~2% on the median, ranges overlapping). Before you look at your own
+   numbers, predict which way it will go — then see "What the ablation
+   found" below for why it turned out that way, and what it means for
+   deciding whether a harness feature is worth adopting.
+
+   Afterward, read what the agent chose to remember:
+   ```
+   cat results/runs/h3_full__refactor_v2__*/agent_notes.md
+   ```
+
+3. **Optional — run h1 yourself.** The reference row saves you the ~$1 and
+   four minutes, but if you'd rather measure your own baseline:
+   ```
+   uv run eval/run_eval.py h1 --task refactor_v2
+   ```
+   Note it gets 40 turns here rather than Block 2's 20, so it will
+   probably *finish* this time. Watch what finishing costs.
+
 4. **Review the comparison table.** It prints automatically after every
-   run, so by now you've watched it grow row by row. To re-render it at
-   any time without running anything:
+   run, so by now you've watched it grow. To re-render it any time:
    ```
    uv run eval/compare.py
    ```
@@ -297,34 +300,60 @@ Then rerun the exercise flow from step 1.
 ## Debrief questions
 
 1. What did ~40 lines of harness (h1→h2) buy, in solve rate, tokens, and
-   dollars?
-2. Which h2 protection did the heavy lifting on `refactor_v2`? (Check
-   `notes` in the table: `malformed_calls` recovered, `dropped_tool_outputs`.)
-3. What does h3's guardrail change about how much you must trust the
-   *prompt*? (Try h1 on a task and count how many times "do not modify the
-   tests" was load-bearing.)
-4. These five protections are a tiny subset of what production harnesses
+   dollars? Which of h2's three protections did the work here — check the
+   `dropped_tool_outputs` and `malformed_calls` columns before answering.
+2. h3's durable notes bought nothing on this task, and the re-read counter
+   says why. **What would have to be true of a workload for them to pay
+   off?** Describe a task at your job that has that shape.
+3. You just watched a capability that every major vendor ships fail to
+   earn its place on one specific workload. How would you have found that
+   out without running it — and if the answer is "you wouldn't," what does
+   that imply about choosing a harness from a feature comparison?
+4. h3's write guardrail never fired either: the model never tried to edit
+   the tests. Is the guardrail therefore worthless? (Consider what you'd
+   be able to claim about the runs nobody inspected.)
+5. These five protections are a tiny subset of what production harnesses
    ship. Block 4: what the pros decided for you.
 
-## Testing the claim yourself: the ablation
+## What the ablation found
 
-Everything above says durable notes *should* help. The honest way to find
-out is to remove them and change nothing else:
+We ran it three times per arm on `refactor_v2`, everything identical
+except the notes capability:
 
-```
-uv run eval/run_eval.py h3 --task refactor_v2                 # with notes
-H3_NO_NOTES=1 uv run eval/run_eval.py h3 --task refactor_v2   # same harness, tool removed
-```
+| arm | solved | turns (median) | input tokens (median) | re-reads |
+|---|---|---|---|---|
+| `h3_full` (notes) | 3/3 | 25–28 (25) | 539k–642k (**611k**) | **0** |
+| `h3_no_notes` | 3/3 | 26–30 (26) | 607k–713k (**621k**) | **0** |
 
-The second run drops the `update_notes` tool and the pinned notes message
-and keeps every other h3 behaviour — truncation, compaction, recovery, the
-write guardrail. It reports as `h3_no_notes`, so both appear as separate
-rows in the comparison table with their own artifacts.
+About 2% apart on the median, with ranges that overlap. **On this task,
+durable notes bought nothing measurable.**
 
-Compare turns, input tokens, and the re-read count. One run of each proves
-nothing (the spread between identical h3 runs has reached 3×), so if you
-have the budget, do three of each and compare the ranges. This is the
-whole method of the block applied to the block's own claim.
+The diagnostic column explains it: **re-reads were zero in every run, in
+both arms.** The claim notes are supposed to satisfy is that they spare
+the agent from re-fetching what compaction dropped. That never happened,
+because this task never asks the agent to go back. `refactor_v2` is a
+read-once, write-once migration — survey the files, transform them, done.
+Nothing sends it looking for something it already had, so memory had
+nothing to preserve.
+
+Two things worth taking from that, and they matter more than the number:
+
+- **A capability's value is a property of your workload, not of the
+  feature list.** Every production harness ships durable memory (see the
+  citations below). It is a good feature. It did nothing here, because
+  this workload doesn't produce the failure it prevents.
+- **We only know that because we measured it.** The mechanism was
+  plausible, the vendors all ship it, and our own earlier runs seemed to
+  show a pattern — four uncontrolled runs suggested that *when* the agent
+  wrote notes predicted cost. Six controlled runs said that spread was
+  path variance. Plausible mechanism plus suggestive data is not a result.
+
+This is the block's method applied to the block's own content, and it's
+the reason Block 5's rubric starts from your tasks rather than a vendor's
+capability matrix.
+
+Raw rows: `ablation_results.jsonl`. Reproduce with
+`uv run eval/ablation.py --runs 3 --task refactor_v2` (six runs, ~$6).
 
 ## Where these ideas come from
 

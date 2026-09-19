@@ -82,7 +82,10 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     # artifacts must not overwrite the unmodified run's.
     label = getattr(module, "NAME", HARNESSES[harness_key])
 
-    run_dir = out_dir / "runs" / f"{label}__{task_name}"
+    # Unique per run: repeated runs of a cell must not clobber each other's
+    # traces — during the ablation we lost 4 of 6 console logs that way.
+    stamp = time.strftime("%H%M%S")
+    run_dir = out_dir / "runs" / f"{label}__{task_name}__{stamp}"
     workspace = run_dir / "workspace"
     if run_dir.exists():
         shutil.rmtree(run_dir)

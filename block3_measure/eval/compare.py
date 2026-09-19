@@ -33,7 +33,17 @@ def main() -> int:
         print(f"no results yet — run eval/run_eval.py first ({RESULTS})")
         return 1
 
+    # Reference rows ship with the repo so the h1 baseline is present without
+    # every attendee paying to re-measure it. Their own runs always win.
     latest = {}
+    reference = RESULTS.parent.parent / "reference_results.jsonl"
+    if reference.exists():
+        for line in reference.read_text().splitlines():
+            row = json.loads(line)
+            if row["harness"] == "h1_naive" and row["task"] == "refactor_v2":
+                row["is_reference"] = True
+                latest[(row["harness"], row["task"])] = row
+
     with RESULTS.open() as fh:
         for line in fh:
             row = json.loads(line)
@@ -69,7 +79,7 @@ def main() -> int:
                 str(row["turns"]),
                 f"{row['input_tokens']:,}+{row['output_tokens']:,}",
                 str(row["wall_seconds"]),
-                age(row["timestamp"]),
+                "reference" if row.get("is_reference") else age(row["timestamp"]),
                 detail[:80],
             )
         table.add_section()
