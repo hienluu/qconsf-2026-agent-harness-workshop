@@ -26,6 +26,7 @@ uv run setup/check_setup.py    # expect: ALL GREEN
 
 | Path | Workshop block |
 |---|---|
+| `block1_why_harness_matters/` | Reference card: what a harness is, its components, the vendor spectrum (no code — Block 1 is slides) |
 | `block2_naive_harness/` | Build a minimal harness (loop + tool dispatch), run it on short tasks, break it on a long-horizon one |
 | `block3_measure/` | *(coming)* Same model + tasks through three harness configs; compare scores and traces |
 | `block4_production_harnesses/` | *(coming)* Claude Agent SDK, OpenAI Agents, Google ADK, Deep Agents, Pydantic AI — one task each |
