@@ -165,42 +165,82 @@ now want to watch your own version work.
 
 ### Step 4 — Run it on a long task (10 min)
 
-Same harness. Same model. Same tools. Bigger horizon:
+**What changes in this step:** nothing except the size of the job. Same
+harness you just built, same model, same five tools, same prompt style.
+The only variable is how much work the task takes — which is exactly the
+variable a harness exists to survive.
+
+**The task.** `tasks/long_horizon/refactor_v2/workspace/` holds *pyledger*,
+a small double-entry bookkeeping library: 149 Python files, 35 tests. Its
+test suite has already been updated to a new v2 API, but the source code
+still uses the old v1 names, so nothing imports and nothing runs. The
+agent has to rename every v1 identifier across the codebase until the
+tests pass. Three things make that harder than it sounds:
+
+- `MIGRATION.md` (inside the workspace, so the agent can read it) documents
+  **8 of the 14 renames**. The rest have to be discovered from the failing
+  tests.
+- The renames touch definitions, imports, call sites, dataclass fields, and
+  dict keys — so a careless find-and-replace breaks things elsewhere.
+- One function is deliberately out of scope: `webhook.py`'s `post()` is an
+  HTTP verb, not the ledger API. `MIGRATION.md` says so. A blind rename
+  breaks its tests.
+
+**See the starting state first**, the same way you did in Step 3:
+
+```
+uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
+```
+
+`1 error during collection` — the tests can't even import the code yet.
+That's the before-state.
+
+**Now run the agent on it.** This costs roughly $0.50 per attempt (the
+20-turn budget bounds the spend) — **run it once**, not five times:
 
 ```
 uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
   "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
 
-This one costs roughly $0.50 per attempt (the 20-turn budget bounds it) —
-**run it once**, not five times.
+**Watch these four things while it runs** — each one is a harness
+component doing nothing, because your harness doesn't have it:
 
-While it runs, skim `tasks/long_horizon/refactor_v2/workspace/MIGRATION.md`
-to see what you asked for, and watch what the agent does: how many files it
-reads, what its searches return, how big its write batches get.
+| What you'll see | What's missing |
+|---|---|
+| Every file it reads stays in the conversation forever, and the whole conversation is re-sent on the next turn | Context compaction |
+| One `run_tests` call returns every failing test's full traceback — thousands of characters, kept in full | Tool-output limits |
+| Write batches grow as it tries to edit many files in one turn | Nothing bounds what the model must produce in a single reply |
+| It re-reads files it already handled, because the only record of its progress is the conversation | Durable memory |
 
-Expected outcome: failure. Either a raw Python traceback mid-run (a
-truncated tool call the harness couldn't parse), or the 20-turn budget
-exhausted with the suite still red. In our test runs, completions of this
-task needed 25–35 turns and roughly a million input tokens (about $1),
-because the harness resends the entire growing transcript on every call —
-the 20-turn budget is a deliberate spend cap that this task cannot fit
-under. Which failure you get, and at which turn, varies run to run.
+**What to expect: failure.** Usually one of two kinds.
 
-Both outcomes are data. The crash demonstrates fragility; the expensive
-success demonstrates the cost curve. Record which you got, the turn
-count, and the wall time — Block 3 compares these numbers against
-protected harnesses. Then check the workspace state:
+- **A crash** — a raw Python traceback mid-run. The model tried to write
+  several large files in one turn, hit its output limit partway through,
+  and sent a truncated tool call. Your harness calls `json.loads` on it
+  with nothing to catch the error, so the process dies.
+- **The budget runs out** — 20 turns spent with the suite still red.
+
+Occasionally it finishes instead. That's not a different lesson: in our
+test runs, completions needed 25–35 turns and roughly **a million input
+tokens (about $1)** for a task whose entire codebase is a fraction of
+that size — because the transcript is re-sent on every single call. Crash
+or expensive success, the harness is the reason.
+
+**Record three numbers before moving on**: which outcome you got, the turn
+it ended on, and the wall time. Block 3 runs this same task through
+protected harnesses and compares against exactly these.
+
+**Then look at what it left behind:**
 
 ```
 uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 ```
 
-On a failed run you'll typically find it partially migrated: work
-performed, then stranded when the process died.
-
-As in Step 3, `uv run scripts/reset.py` puts every task workspace back to
-its starting state if you want another attempt.
+A failed run usually leaves the codebase partially migrated — real work
+completed, then stranded with no record of what was done or what remained.
+That stranded state is the point: the agent didn't run out of *ability*,
+it ran out of the things a harness provides.
 
 ## Debrief questions
 
