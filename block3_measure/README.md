@@ -122,16 +122,21 @@ Every run is preserved in `results/results.jsonl` for exactly this reason.
 
 ## The task suite
 
-The same four tasks you ran in Block 2 — each is a small codebase with a
-test suite, and "solved" always means the same thing: **pytest exits green
-afterward** (the agent is never asked whether it succeeded).
+Five tasks are available here. Each is a small codebase with a test suite,
+and "solved" always means the same thing: **pytest exits green afterward**
+(the agent is never asked whether it succeeded).
 
-| task | the agent must... | horizon |
-|---|---|---|
-| `fix_bug` | find and fix an off-by-one in a stats module (1 file, 4 tests) | short — a few turns |
-| `add_function` | implement a missing `slugify` from its 5 tests | short |
-| `small_rename` | rename two legacy functions across 2 files | short |
-| `refactor_v2` | migrate a ~150-file bookkeeping library to its v2 API using an *incomplete* changelog, 35 tests | long — sized past a naive harness's design limits |
+| task | the agent must... | horizon | where you've seen it |
+|---|---|---|---|
+| `fix_bug` | find and fix an off-by-one in a stats module (1 file, 4 tests) | short — a few turns | Block 2, step 3 |
+| `add_function` | implement a missing `slugify` from its 5 tests | short | Block 2, optional |
+| `small_rename` | rename two legacy functions across 2 files | short | Block 2, optional |
+| `bug_hunt` | diagnose three interacting bugs in an 8-module pricing package (18 tests, 5 failing) | medium | new here; it's Block 4's task |
+| `refactor_v2` | migrate a ~150-file bookkeeping library to its v2 API using an *incomplete* changelog, 35 tests | long — sized past a naive harness's design limits | Block 2, step 4 |
+
+The exercise below uses `refactor_v2` throughout, because the long horizon
+is where harness differences show. Any task works with `--task <name>` if
+you want to see how the three harnesses behave on a smaller job.
 
 Workspaces live under `../block2_naive_harness/tasks/` (each has a TASK.md
 with details); the prompts sent to the agent are in `eval/tasks.py`.
