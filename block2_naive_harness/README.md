@@ -207,3 +207,24 @@ discussion:
 The table at the top of this page maps each failure to the harness
 component that was missing. Block 3 adds those components one at a time —
 and measures what each is worth.
+
+## Starting over
+
+The agent edits the task workspaces as it works, so re-running any task
+needs a reset first. One command puts every workspace in this block back
+to its starting state — run it **from the repo root**
+(`agent-harness-workshop/`), not from this directory:
+
+```
+cd ..                      # if you're in block2_naive_harness/
+uv run scripts/reset.py
+```
+
+It prints what it restored. Confirm you're back to the starting state:
+
+```
+uv run scripts/check_fixtures.py
+```
+
+Expect `ALL FIXTURES OK`. Then `cd block2_naive_harness` and pick up from
+Step 3.
