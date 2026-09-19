@@ -153,8 +153,9 @@ protections rather than the turn cap. That means h1 may well *finish*
 here, where it ran out of room in Block 2 — watch what it costs to do so.
 
 1. **Run the same naive harness you built, now instrumented.** No need to
-   re-verify it on the short tasks; this is the long one, and every run
-   now reports turns, tokens, wall time, and outcome:
+   re-verify it on the short tasks; this is the long one. You'll see the
+   same per-turn scoreboard as Block 2 — watch the transcript column climb
+   and never come back down, since h1 has no way to shrink it:
    ```
    uv run eval/run_eval.py h1 --task refactor_v2
    ```
@@ -164,9 +165,10 @@ here, where it ran out of room in Block 2 — watch what it costs to do so.
    (the capability matrix above tells you what you'll find: tool results
    capped at 6k chars before the model sees them, recoverable bad calls,
    compaction — everything unmarked is identical to h1), then run the same
-   task through h2. Watch the live output for
-   `compaction: dropped N old tool output(s)` lines — that's the harness
-   managing context mid-run:
+   task through h2. Watch two things in the live output: yellow
+   `compaction: dropped N old tool output(s)` lines, and the scoreboard's
+   transcript column immediately after one — that number going *down* is
+   the harness reclaiming context mid-run, which never happened in h1:
    ```
    uv run eval/run_eval.py h2 --task refactor_v2
    ```

@@ -31,6 +31,8 @@ from base import (
     model_name,
     transcript_chars,
 )
+# base puts block2 on sys.path (for tools); reuse its scoreboard too.
+from scoreboard import Scoreboard  # noqa: E402
 
 NAME = "h2_managed"
 
@@ -84,6 +86,8 @@ def run(workspace_dir: str, task: str) -> RunResult:
     ]
 
     result = RunResult(harness=NAME, task=workspace_dir)
+    board = Scoreboard(MAX_TURNS)
+    board.legend()
     inject_turn = malformed_injection_turn()
     start = time.monotonic()
     try:
@@ -96,6 +100,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
             )
             result.turns = turn
             add_usage(result, response)
+            board.record_usage(response)
             msg = response.choices[0].message
             messages.append(msg.model_dump(exclude_none=True))
 
@@ -131,6 +136,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     result.notes["malformed_calls"] = result.notes.get("malformed_calls", 0) + 1
                     print(f"\033[35m↻  [{NAME} turn {turn}] {name}: malformed tool call — fed back as a recoverable error (h1 crashes here)\033[0m")
                     continue
+                board.record_tool(name, turn)
                 print(f"[{NAME} turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
                 try:
                     result_text = dispatch[name](args)
@@ -149,10 +155,12 @@ def run(workspace_dir: str, task: str) -> RunResult:
             if dropped:
                 result.notes["dropped_tool_outputs"] = result.notes.get("dropped_tool_outputs", 0) + dropped
                 print(f"\033[33m✂  [{NAME} turn {turn}] compaction: dropped {dropped} old tool output(s)\033[0m")
+            board.report(turn, messages)
     except Exception as exc:
         result.status = "crashed"
         result.error = f"{type(exc).__name__}: {exc}"
         print(f"\n[{NAME}] CRASHED: {result.error}")
 
+    board.summary(finished=result.status == "completed")
     result.wall_seconds = round(time.monotonic() - start, 1)
     return result

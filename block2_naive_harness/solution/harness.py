@@ -17,7 +17,7 @@ from openai import OpenAI
 load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tools import TOOL_SCHEMAS, Workspace  # noqa: E402
-from trace import Scoreboard  # noqa: E402  (observer-side commentary)
+from scoreboard import Scoreboard  # noqa: E402  (observer-side commentary)
 
 SYSTEM_PROMPT = """You are a coding agent operating on a local workspace via tools.
 Work step by step: inspect files, make edits, and run the tests to check yourself.
