@@ -146,7 +146,10 @@ def run(workspace_dir: str, task: str) -> RunResult:
             add_usage(result, response)
             board.record_usage(response)
             msg = response.choices[0].message
-            messages.append(msg.model_dump(exclude_none=True))
+            # Keep a handle on the stored copy: if a tool call turns out to be
+            # malformed we must repair it here too, not just skip it.
+            assistant_msg = msg.model_dump(exclude_none=True)
+            messages.append(assistant_msg)
 
             if not msg.tool_calls:
                 result.status = "completed"
@@ -162,10 +165,23 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 if inject_turn == turn:
                     inject_turn = None
                     raw = corrupt(raw)
+                    for stored in assistant_msg.get("tool_calls", []):
+                        if stored.get("id") == call.id:
+                            stored["function"]["arguments"] = raw
                     print(f"\033[2m[fault injection] corrupting this {name} call's JSON (INJECT_MALFORMED_TURN={turn})\033[0m")
                 try:
                     args = json.loads(raw)
                 except json.JSONDecodeError as exc:
+                    # [h2] The malformed arguments are also sitting in the
+                    # assistant message we just stored. Feeding that back
+                    # gets the ENTIRE next request rejected by the provider
+                    # (400: Invalid JSON in tool call arguments), so the run
+                    # dies one turn after the "recovery" appeared to work.
+                    # Neutralise the stored copy; the tool result below is
+                    # what tells the model what went wrong.
+                    for stored in assistant_msg.get("tool_calls", []):
+                        if stored.get("id") == call.id:
+                            stored["function"]["arguments"] = "{}"
                     messages.append({
                         "role": "tool",
                         "tool_call_id": call.id,
