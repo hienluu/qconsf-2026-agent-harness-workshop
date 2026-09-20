@@ -15,6 +15,9 @@ import time
 
 from base import (
     MAX_TURNS,
+    MILESTONE_MARKER,
+    SPEECH_MARKER,
+    marker_key,
     SYSTEM_PROMPT,
     TOOL_SCHEMAS,
     RunResult,
@@ -51,6 +54,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
     result = RunResult(harness=NAME, task=workspace_dir)
     board = Scoreboard(MAX_TURNS)
     board.legend()
+    marker_key(SPEECH_MARKER, MILESTONE_MARKER)
     inject_turn = malformed_injection_turn()
     start = time.monotonic()
     try:
@@ -70,8 +74,18 @@ def run(workspace_dir: str, task: str) -> RunResult:
             if not msg.tool_calls:
                 result.status = "completed"
                 result.final_message = msg.content or ""
-                print(f"\n[{NAME} turn {turn}] agent finished")
+                print(f"\033[1;32m❝  [{NAME} turn {turn}] agent finished:\033[0m"
+                      f"\n\033[32m{msg.content}\033[0m")
                 break
+
+            # Play-by-play, same as the Block 2 harness: models narrate
+            # alongside their tool calls ("the tests expect X, so I'll..."),
+            # and that narration is where a drifting plan shows up first.
+            # Unlike Block 2 this prints only when there IS commentary — the
+            # per-call lines just below already carry tool names and
+            # arguments, so an empty line every turn would be pure noise.
+            if msg.content and msg.content.strip():
+                print(f"\033[32m❝  [{NAME} turn {turn}] agent says: {msg.content.strip()}\033[0m")
 
             for call in msg.tool_calls:
                 name = call.function.name

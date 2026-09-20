@@ -15,11 +15,17 @@ Each addition answers a death we watched h1 die in live runs (marked [h2]):
 Read this file as `diff h1_naive.py h2_managed.py` — the diff IS the lesson.
 """
 
+import os as _os
 import json
 import time
 
 from base import (
     MAX_TURNS,
+    MILESTONE_MARKER,
+    CUT_MARKER,
+    RECOVER_MARKER,
+    SPEECH_MARKER,
+    marker_key,
     SYSTEM_PROMPT,
     TOOL_SCHEMAS,
     RunResult,
@@ -38,18 +44,33 @@ NAME = "h2_managed"
 
 # [h2] Protection knobs.
 MAX_TOOL_RESULT_CHARS = 6_000     # per tool result fed back to the model
-TRANSCRIPT_CHAR_BUDGET = 80_000   # ~20k tokens; keeps cumulative cost linear on long tasks
+# ~20k tokens; keeps cumulative cost linear on long tasks. Overridable so you
+# can watch compaction work: on refactor_v2 the transcript peaks just under
+# this default (77k of 80k in one measured run), so the protection is real but
+# rarely fires. Tighten it and it fires on demand:
+#   TRANSCRIPT_CHAR_BUDGET=40000 uv run eval/run_eval.py h2 --task refactor_v2
+TRANSCRIPT_CHAR_BUDGET = int(_os.environ.get("TRANSCRIPT_CHAR_BUDGET", 80_000))
 KEEP_RECENT_MESSAGES = 12         # never compact the newest N messages
 DROPPED_MARKER = "[old tool output dropped by the harness to save context — re-run the tool if you need it again]"
 
 
-def truncate(text: str) -> str:
-    """[h2] Cap a tool result, keeping the head and tail (errors live at both ends)."""
+def truncate(text: str) -> tuple[str, int]:
+    """[h2] Cap a tool result, keeping the head and tail (errors live at both
+    ends). Returns the capped text and how many characters were removed, so
+    the harness can report what it did — this protection fires constantly and
+    would otherwise be invisible."""
     if len(text) <= MAX_TOOL_RESULT_CHARS:
-        return text
-    head, tail = text[:4_000], text[-1_500:]
+        return text, 0
+    # Slices are derived from the cap, not hardcoded, so lowering
+    # MAX_TOOL_RESULT_CHARS to experiment still shrinks the result.
+    keep_head = MAX_TOOL_RESULT_CHARS * 2 // 3
+    keep_tail = MAX_TOOL_RESULT_CHARS // 4
+    head, tail = text[:keep_head], text[-keep_tail:]
     dropped = len(text) - len(head) - len(tail)
-    return f"{head}\n... [harness truncated {dropped} chars] ...\n{tail}"
+    capped = f"{head}\n... [harness truncated {dropped} chars] ...\n{tail}"
+    # Report the NET reduction: the marker itself costs characters, so the
+    # figure we count must match the "7,141 -> 5,540" the run prints.
+    return capped, len(text) - len(capped)
 
 
 def compact(messages: list) -> int:
@@ -88,10 +109,19 @@ def run(workspace_dir: str, task: str) -> RunResult:
     result = RunResult(harness=NAME, task=workspace_dir)
     board = Scoreboard(MAX_TURNS)
     board.legend()
+    marker_key(SPEECH_MARKER, CUT_MARKER, RECOVER_MARKER, MILESTONE_MARKER)
     inject_turn = malformed_injection_turn()
     start = time.monotonic()
     try:
+        # Chars the harness has removed from the transcript so far. Re-added to
+        # a cumulative counter every turn, because the transcript is re-sent on
+        # every request — a cut made at turn 5 keeps paying for the rest of the
+        # run. That compounding is the real saving, not the one-time cut.
+        trimmed_chars = 0
         for turn in range(1, MAX_TURNS + 1):
+            result.notes["chars_not_resent"] = (
+                result.notes.get("chars_not_resent", 0) + trimmed_chars
+            )
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -110,8 +140,18 @@ def run(workspace_dir: str, task: str) -> RunResult:
             if not msg.tool_calls:
                 result.status = "completed"
                 result.final_message = msg.content or ""
-                print(f"\n[{NAME} turn {turn}] agent finished")
+                print(f"\033[1;32m❝  [{NAME} turn {turn}] agent finished:\033[0m"
+                      f"\n\033[32m{msg.content}\033[0m")
                 break
+
+            # Play-by-play, same as the Block 2 harness: models narrate
+            # alongside their tool calls ("the tests expect X, so I'll..."),
+            # and that narration is where a drifting plan shows up first.
+            # Unlike Block 2 this prints only when there IS commentary — the
+            # per-call lines just below already carry tool names and
+            # arguments, so an empty line every turn would be pure noise.
+            if msg.content and msg.content.strip():
+                print(f"\033[32m❝  [{NAME} turn {turn}] agent says: {msg.content.strip()}\033[0m")
 
             for call in msg.tool_calls:
                 name = call.function.name
@@ -158,19 +198,32 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     result_text = dispatch[name](args)
                 except Exception as exc:
                     result_text = f"tool error: {exc}"
+                # [h2] Cap what a single tool result may inject, and say so —
+                # this is the protection that fires most and saves most.
+                capped, cut = truncate(result_text)
+                if cut:
+                    result.notes["truncations"] = result.notes.get("truncations", 0) + 1
+                    result.notes["chars_truncated"] = result.notes.get("chars_truncated", 0) + cut
+                    trimmed_chars += cut
+                    print(f"\033[33m✂  [{NAME} turn {turn}] truncated {name} output: "
+                          f"{len(result_text):,} → {len(capped):,} chars (model sees head + tail)\033[0m")
                 messages.append({
                     "role": "tool",
                     "tool_call_id": call.id,
-                    # [h2] Cap what a single tool result may inject.
-                    "content": truncate(result_text),
+                    "content": capped,
                 })
 
             # [h2] End-of-turn compaction pass. Highlighted (yellow, scissors)
             # so the room can see the harness act, not just the agent.
+            size_before = sum(len(str(m.get("content") or "")) for m in messages)
             dropped = compact(messages)
             if dropped:
+                freed = size_before - sum(len(str(m.get("content") or "")) for m in messages)
+                trimmed_chars += freed
                 result.notes["dropped_tool_outputs"] = result.notes.get("dropped_tool_outputs", 0) + dropped
-                print(f"\033[33m✂  [{NAME} turn {turn}] compaction: dropped {dropped} old tool output(s)\033[0m")
+                result.notes["chars_compacted"] = result.notes.get("chars_compacted", 0) + freed
+                print(f"\033[33m✂  [{NAME} turn {turn}] compaction: dropped {dropped} old tool "
+                      f"output(s), freeing {freed:,} chars\033[0m")
             board.report(turn, messages)
     except Exception as exc:
         result.status = "crashed"

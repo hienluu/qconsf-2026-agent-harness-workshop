@@ -50,41 +50,68 @@ def main() -> int:
             latest[(row["harness"], row["task"])] = row
 
     console = Console()
-    table = Table(title="Same model, same tasks — the harness is the only variable")
+    table = Table(
+        title="Same model, same tasks — the harness is the only variable",
+        caption=(
+            "fired = times each protection acted: ✂cut tool output · ✂✂dropped old output · ↻recovered\n"
+            "not re-sent = transcript characters the harness kept off the wire, counted once per\n"
+            "turn they would otherwise have been re-sent (the whole transcript goes over on every turn)\n"
+            "wall-clock is in results.jsonl but not here — it is run-to-run noise, not a harness property\n"
+            "\"not your run\" = our h1 baseline on refactor_v2, shipped with the repo so you don't pay to\n"
+            "re-measure it. It is not in results.jsonl, so reset.py never clears it. Every other row is yours."
+        ),
+        caption_justify="left",
+    )
     table.add_column("harness", style="bold")
     table.add_column("task")
-    table.add_column("solved?")
-    table.add_column("status")
+    table.add_column("solved?", justify="center")
     table.add_column("turns", justify="right")
-    table.add_column("tokens in+out", justify="right")
-    table.add_column("wall s", justify="right")
+    table.add_column("input tokens", justify="right")
+    table.add_column("protections fired")
+    table.add_column("not re-sent", justify="right")
     table.add_column("when")
-    table.add_column("detail")
 
     for harness in HARNESS_ORDER:
         for task in TASK_ORDER:
             row = latest.get((harness, task))
             if not row:
                 continue
-            solved = "[green]YES[/green]" if row["tests_green"] else "[red]no[/red]"
-            detail = row.get("error") or row.get("pytest_summary", "")
-            extras = row.get("notes") or {}
-            if extras:
-                detail += "  " + " ".join(f"{k}={v}" for k, v in extras.items())
+            if row["status"] == "crashed":
+                solved = "[red]CRASH[/red]"
+            else:
+                solved = "[green]YES[/green]" if row["tests_green"] else "[red]no[/red]"
+
+            n = row.get("notes") or {}
+            fired = []
+            if n.get("truncations"):
+                fired.append(f"✂{n['truncations']}")
+            if n.get("dropped_tool_outputs"):
+                fired.append(f"✂✂{n['dropped_tool_outputs']}")
+            if n.get("malformed_calls"):
+                fired.append(f"↻{n['malformed_calls']}")
+            if n.get("rereads"):
+                fired.append(f"[magenta]re-read {n['rereads']}[/magenta]")
+
+            saved = n.get("chars_not_resent") or 0
             table.add_row(
                 harness,
                 task,
                 solved,
-                row["status"],
                 str(row["turns"]),
-                f"{row['input_tokens']:,}+{row['output_tokens']:,}",
-                str(row["wall_seconds"]),
-                "reference" if row.get("is_reference") else age(row["timestamp"]),
-                detail[:80],
+                f"{row['input_tokens']:,}",
+                " ".join(fired) if fired else "[dim]none[/dim]",
+                f"{saved // 1000:,}k" if saved else "[dim]—[/dim]",
+                "[dim]not your run[/dim]" if row.get("is_reference") else age(row["timestamp"]),
             )
         table.add_section()
 
     console.print(table)
+    if not any((latest.get(k, {}).get("notes") or {}).get("chars_not_resent")
+               for k in latest):
+        console.print(
+            "[dim]No 'not re-sent' figures yet — that column fills in once you run "
+            "h2 or h3 on refactor_v2, the only task big enough to trip the limits.[/dim]"
+        )
     return 0
 
 

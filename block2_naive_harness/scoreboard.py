@@ -98,6 +98,10 @@ class Scoreboard:
                 self.said.add(key)
                 print(f"\033[33m   ▸ {line}\033[0m")
 
+        # One blank line per turn: long runs are much easier to scan when the
+        # turn boundary is visible, and this line IS the end of a turn.
+        print()
+
     def summary(self, finished: bool, turn: int | None = None) -> None:
         turns = turn or self.last_turn
         print(

@@ -99,7 +99,8 @@ def run(workspace_dir: str, task: str) -> None:
         messages.append(msg.model_dump(exclude_none=True))
 
         if not msg.tool_calls:
-            print(f"\n[turn {turn}] agent finished:\n{msg.content}")
+            print(f"\033[1;32m❝  [turn {turn}] agent finished:\033[0m"
+                  f"\n\033[32m{msg.content}\033[0m")
             board.summary(finished=True, turn=turn)
             return
 
@@ -110,7 +111,7 @@ def run(workspace_dir: str, task: str) -> None:
         # watchable — and lets you see the moment its plan starts to drift.
         tool_names = ", ".join(c.function.name for c in msg.tool_calls)
         narration = msg.content.strip() if msg.content else "(no commentary)"
-        print(f"\n[turn {turn}] agent says: {narration}  [tools: {tool_names}]")
+        print(f"\033[32m❝  [turn {turn}] agent says: {narration}\033[0m  [tools: {tool_names}]")
 
         for call in msg.tool_calls:
             name = call.function.name

@@ -92,3 +92,20 @@ def transcript_chars(messages: list) -> int:
         if isinstance(content, str):
             total += len(content)
     return total
+
+
+# Each harness prints only the markers it can actually emit, so the key
+# doubles as a statement of what that harness is capable of doing.
+SPEECH_MARKER = ("\033[32m❝\033[0m", "the agent talking — narration mid-run, and its final summary")
+CUT_MARKER = ("\033[33m✂\033[0m", "the harness managing context — capping a tool result, or dropping old ones")
+RECOVER_MARKER = ("\033[35m↻\033[0m", "the harness recovering from a malformed tool call instead of crashing")
+NOTES_MARKER = ("\033[36m✎\033[0m", "the agent writing to its durable notes")
+MILESTONE_MARKER = ("\033[33m▸\033[0m", "a scoreboard milestone, e.g. the turn the agent first edited a file")
+
+
+def marker_key(*entries) -> None:
+    """Print a key for the trace markers this harness can emit."""
+    print("\033[2m   ┈ trace markers\033[0m")
+    for symbol, meaning in entries:
+        print(f"     {symbol}  \033[2m{meaning}\033[0m")
+    print("     \033[2mplain lines are the agent's tool calls; dim ┈ lines are the scoreboard.\033[0m\n")
