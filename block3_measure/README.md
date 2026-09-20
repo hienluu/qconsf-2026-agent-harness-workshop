@@ -10,8 +10,7 @@ harness running it). So published scores tell you about the vendor's
 harness, not yours. The only numbers you can act on come from running your
 own tasks through the candidate harnesses with an external checker. This
 block is that method, practiced at a scale where you can see all the
-moving parts. Block 5's
-decision framework assumes you have it.
+moving parts.
 
 Block 2 gave you a single data point: one harness, one task, one run.
 This block is the controlled experiment: hold the model, the tasks, and
