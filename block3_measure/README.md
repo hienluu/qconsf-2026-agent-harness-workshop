@@ -2,12 +2,15 @@
 
 **Why this block:** at some point your team will pick a harness — adopt
 one, extend one, or defend the one you have — and that decision will need
-numbers behind it. Vendor benchmarks can't supply them: published scores are measured inside
-the vendor's harness and can swing dramatically with it (Block 1 covers
-the evidence), so they tell you about the vendor's harness, not yours. The
-only numbers you can act on come from running your own tasks through the
-candidate harnesses with an external checker. This block is that method,
-practiced at a scale where you can see all the moving parts. Block 5's
+numbers behind it. Vendor benchmarks can't supply them: a published score
+is measured inside the vendor's harness and moves substantially when that
+harness changes (the Block 1 slides work through a case where the same
+model scored 62.7% and 99.9% on one benchmark depending only on the
+harness running it). So published scores tell you about the vendor's
+harness, not yours. The only numbers you can act on come from running your
+own tasks through the candidate harnesses with an external checker. This
+block is that method, practiced at a scale where you can see all the
+moving parts. Block 5's
 decision framework assumes you have it.
 
 Block 2 gave you a single data point: one harness, one task, one run.
