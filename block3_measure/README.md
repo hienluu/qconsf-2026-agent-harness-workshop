@@ -503,14 +503,33 @@ agent with `search` rarely needs whole files, and head/tail being chosen
 because signal clusters at the ends. None of them is a guarantee.
 
 **The part worth carrying into Block 4:** our 6k cap is deliberately the
-naive answer. Production harnesses don't truncate file reads at all — they
-*paginate* them. Claude Code's `Read` tool takes `offset` and `limit` and
-returns a bounded number of lines per call, so a large file arrives in
-chunks the agent asks for explicitly. Nothing is lost; the agent decides
-how much to pull and can walk the file. Same pressure, better answer, more
-engineering. h2 protects context by **discarding**; a production harness
-protects it by **giving the agent control over what it pulls**. That
-difference is most of what Block 4 is about.
+naive answer. Production harnesses don't discard the middle of a file —
+they *paginate*. Claude Code's `Read` tool takes `offset` and `limit`, and
+per its documentation: "When a whole-file read exceeds the token limit,
+Read returns the first page with a `PARTIAL view` notice that tells Claude
+how much of the file it received and how to read more with `offset` and
+`limit`."
+
+Note what that shares with h2 and where it goes further. Both tell the
+model that it is seeing a partial result — h2's `[harness truncated N
+chars]` marker and Claude Code's `PARTIAL view` notice are the same
+instinct. The difference is the recovery path: h2's marker says *the middle
+is gone, re-run the tool if you need it*, while pagination says *here is
+page one, ask for page two*. One discards and hopes; the other bounds the
+payload while keeping every byte reachable.
+
+It isn't magic, and the honest version is more useful than the tidy one:
+the same docs note that a read passing an explicit `offset` or `limit` that
+*still* exceeds the token limit returns an error telling Claude to use a
+smaller limit or search with Grep instead. Production harnesses don't
+eliminate the pressure — they give the agent somewhere to go when it hits
+it. That is most of what Block 4 is about: **h2 protects context by
+discarding; a production harness protects it by giving the agent control
+over what it pulls, and a route out when a pull is too big.**
+
+Source: [Claude Code tools
+reference](https://code.claude.com/docs/en/tools-reference) (checked
+Sep 2026 — vendor behaviour changes, so re-check before quoting it).
 
 **Compaction (`✂ compaction`)** only starts once the transcript passes its
 80,000-char budget, so it is late-run or absent. How absent depends on the
