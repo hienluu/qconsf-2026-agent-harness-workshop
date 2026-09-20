@@ -1,39 +1,43 @@
 # Block 3 — Measure It
 
-**Why this block:** at some point your team will pick a harness — adopt
-one, extend one, or defend the one you have — and that decision will need
-numbers behind it. Vendor benchmarks can't supply them: a published score
-is measured inside the vendor's harness and moves substantially when that
-harness changes (the Block 1 slides work through a case where the same
-model scored 62.7% and 99.9% on one benchmark depending only on the
-harness running it). So published scores tell you about the vendor's
-harness, not yours. The only numbers you can act on come from running your
-own tasks through the candidate harnesses with an external checker. This
-block is that method, practiced at a scale where you can see all the
-moving parts.
+**Why this block:** sooner or later your team picks a harness — adopts
+one, extends one, or defends the one it already has — and that argument
+needs numbers. Published benchmark scores can't supply them: a score is
+measured inside the vendor's harness and moves when that harness changes.
+Block 1's page has a case where the same model scored 62.7% and 99.9% on
+one benchmark with nothing different but the harness running it. Those
+numbers describe the vendor's setup, not yours. The ones you can act on
+come from running your own tasks through the candidate harnesses and
+checking the result with something other than the agent's own report.
+That's this block, at a size where every moving part is visible.
 
-Block 2 gave you a single data point: one harness, one task, one run.
-This block is the controlled experiment: hold the model, the tasks, and
-the tools constant; vary only the harness; measure solve rate, turns,
-tokens, and wall time. You leave with a score table you could defend to
-your team — and, more usefully, a method you can rerun against your own
-tasks when a vendor benchmark asks you to take its word for it.
+Block 2 gave you one data point: one harness, one task, one run. This is
+the controlled version — hold the model, the tasks and the tools fixed,
+change only the harness, and record what each run costs. Turns and input
+tokens are the numbers that carry the argument; wall-clock is in the table
+too, but at this scale it's mostly provider latency, so don't rank on it
+(there's a section below on why). You leave with a table you could put in
+front of your team, and a method you can point at your own tasks.
 
-We run the experiment with three harnesses: **`h1_naive`**, the harness you
-built in Block 2, unchanged in behavior; **`h2_managed`**, h1 plus three
-context/error protections; and **`h3_full`**, h2 plus two capabilities that
-every production harness ships — durable memory and a write guardrail.
-Each is a small, readable diff on the previous one.
+Three harnesses, each a small readable diff on the one before it:
 
-A word on h3 before you run it: **it is a question, not an upgrade** — and
-we have already answered it once, in the negative. h2's protections are
-mechanical, so their savings are near-guaranteed. h3's durable notes are
-merely *offered* to the model. We ablated them (six runs, notes on versus
-notes removed, everything else identical) and found a ~2% median
-difference with overlapping ranges: **no measurable benefit on this task.**
-The section "Testing the claim yourself" below shows you how to reproduce
-that in one command. If your h3 run comes out worse than h2, you haven't
-done it wrong.
+- **`h1_naive`** — the harness you built in Block 2. Same code path, with
+  one deliberate difference: a 40-turn budget instead of 20, so the
+  comparison is decided by the protections rather than by the turn cap.
+- **`h2_managed`** — h1 plus three context and error protections.
+- **`h3_full`** — h2 plus two things every production harness ships:
+  durable notes the agent maintains itself, and a guardrail making
+  `tests/` read-only.
+
+**h3 is a question, not an upgrade.** h2's protections are mechanical, so
+its savings are near-guaranteed. h3's notes are only *offered* — the model
+decides whether to use them, and when. We ran the ablation (three runs
+with notes, three with the capability removed, nothing else changed) and
+measured a ~2% median difference with overlapping ranges: no benefit on
+this task. The guardrail never fired either — the model never tried to
+edit the tests. "What the ablation found" below has the numbers and the
+reason. If your h3 run lands worse than h2, that's the finding, not a
+mistake.
 
 ## The three harnesses
 
@@ -301,9 +305,9 @@ Then rerun the exercise flow from step 1.
 
 ## Debrief questions
 
-1. What did ~40 lines of harness (h1→h2) buy, in solve rate, tokens, and
-   dollars? Which of h2's three protections did the work here — check the
-   `dropped_tool_outputs` and `malformed_calls` columns before answering.
+1. What did ~40 lines of harness (h1→h2) buy, in tokens and dollars — and
+   which of h2's three protections did the work here? Check the
+   `dropped_tool_outputs` and `malformed_calls` values before answering.
 2. h3's durable notes bought nothing on this task, and the re-read counter
    says why. **What would have to be true of a workload for them to pay
    off?** Describe a task at your job that has that shape.
