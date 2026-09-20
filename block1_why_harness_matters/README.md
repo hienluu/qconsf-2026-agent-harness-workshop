@@ -62,5 +62,34 @@ is about choosing your position deliberately.
 - **Block 5** — the rubric: how to choose, extend, or defend a harness, with
   numbers behind the decision.
 
-The benchmark evidence for the claim at the top is on the slides. By the end
-of Block 3 you won't need it — you'll have measured your own.
+## The evidence, if you want to check it yourself
+
+The slides work through this in more detail, but the central case is public
+and worth reading at the source. ARC Prize — the independent organisation
+that runs the ARC-AGI benchmarks — evaluated GPT-6 Astra under two
+harnesses and published both results:
+
+| | Standard harness | Provider Adapter harness |
+|---|---|---|
+| ARC-AGI-3 (Semi-Private) | **62.7%** | **99.9%** |
+| Cost | $26,098 | $18,817 |
+| Reasoning effort | max | high |
+
+Same model. The Provider Adapter preserves the model's reasoning state
+between requests and compacts long conversations, so it can reuse prior
+work; the standard harness is a neutral interface built for comparing
+providers. The higher score also cost less. On the 167 problems *both*
+harnesses solved, the adapter ran about 3.66× faster on roughly half the
+tokens.
+
+Sources: [ARC Prize's write-up](https://arcprize.org/blog/astra) and their
+[results page](https://arcprize.org/results/openai-gpt-6-astra).
+
+Two things to take from it rather than the headline gap. First, ARC Prize
+now reports the two harnesses as separately labelled conditions on its
+leaderboard — when a benchmark organisation adds a harness column, the
+question is settled. Second, this is one benchmark and one vendor's
+harness; treat the size of the gap as an illustration, not a constant.
+
+By the end of Block 3 you won't need this slide at all — you'll have
+measured your own.
