@@ -21,7 +21,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, receipt, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 from langchain.agents import create_agent  # noqa: E402
 from langchain_core.tools import tool  # noqa: E402
@@ -82,7 +82,11 @@ def main() -> int:
     started = time.monotonic()
     result = agent.invoke(
         {"messages": [{"role": "user", "content": TASK}]},
-        config={"recursion_limit": 40},
+        # LangGraph counts super-steps (node executions), not agent turns, and
+        # a ReAct loop burns at least two per turn — more through deepagents'
+        # middleware. Deriving the limit from the same TASK_MAX_TURNS the other
+        # harnesses use keeps the budget comparable instead of quietly tighter.
+        config={"recursion_limit": TASK_MAX_TURNS * 3},
     )
     print(f"[{NAME}] final: {str(result['messages'][-1].content)[:100]}")
     solved = verify(NAME, workspace, started) == 0

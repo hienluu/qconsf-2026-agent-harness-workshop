@@ -23,7 +23,7 @@ TASKS = {
         "prompt": "The tests expect renamed functions. Rename the legacy functions everywhere until all tests pass. Do not modify the tests.",
     },
     "bug_hunt": {
-        "description": "Diagnose and fix 3 interacting bugs in a 6-file pricing package (14 tests, 5 failing). Medium horizon.",
+        "description": "Diagnose and fix 3 interacting bugs in an 8-module pricing package (18 tests, 5 failing). Medium horizon.",
         "workspace": "block2_naive_harness/tasks/medium/bug_hunt/workspace",
         "prompt": "Several tests fail. Diagnose and fix all the bugs until every test passes. Do not modify the tests.",
     },

@@ -18,7 +18,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, receipt, verify, ws_run_tests  # noqa: E402
+from common import TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify, ws_run_tests  # noqa: E402
 
 from deepagents import create_deep_agent  # noqa: E402
 from deepagents.backends import FilesystemBackend  # noqa: E402
@@ -46,8 +46,13 @@ def main() -> int:
             api_key=os.environ["PROVIDER_API_KEY"],
             max_retries=5,  # the workshop provider throws occasional 500s
         ),
-        # The harness's own file tools, aimed at the real workspace.
-        backend=FilesystemBackend(root_dir=workspace, virtual_mode=False),
+        # The harness's own file tools, aimed at the run's private copy.
+        # virtual_mode=True is the SANDBOXED mode: paths are confined to
+        # root_dir. With virtual_mode=False the library documents that
+        # "absolute paths are allowed as-is" — root_dir becomes a default
+        # for relative paths, not a boundary — and we watched an agent walk
+        # out of its copy and edit the source fixture in place.
+        backend=FilesystemBackend(root_dir=workspace, virtual_mode=True),
         tools=[run_tests],
         system_prompt=(
             "You fix bugs in the Python workspace you have filesystem access "
@@ -59,7 +64,11 @@ def main() -> int:
     started = time.monotonic()
     result = agent.invoke(
         {"messages": [{"role": "user", "content": TASK}]},
-        config={"recursion_limit": 40},
+        # LangGraph counts super-steps (node executions), not agent turns, and
+        # a ReAct loop burns at least two per turn — more through deepagents'
+        # middleware. Deriving the limit from the same TASK_MAX_TURNS the other
+        # harnesses use keeps the budget comparable instead of quietly tighter.
+        config={"recursion_limit": TASK_MAX_TURNS * 3},
     )
     final = result["messages"][-1]
     print(f"[{NAME}] final: {str(final.content)[:100]}")

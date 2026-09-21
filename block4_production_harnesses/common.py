@@ -92,7 +92,25 @@ def anthropic_compat_base_url() -> str:
 
 
 def prepare_workspace(specimen: str, source: Path = TASK_SOURCE) -> Path:
-    """Fresh copy of a task workspace under runs/<specimen>/."""
+    """Fresh copy of a task workspace under runs/<specimen>/.
+
+    Refuses to run if the source fixture is already solved. Block 2 edits
+    the fix_bug workspace IN PLACE, so an attendee who does Block 2 and then
+    BLOCK4_TASK=fix_bug here would copy a finished task: every harness
+    "succeeds" in one turn and the receipts compare nothing.
+    """
+    probe = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q"],
+        cwd=source, capture_output=True, text=True, timeout=180,
+    )
+    if probe.returncode == 0:
+        raise SystemExit(
+            f"source fixture is already solved: {source}\n"
+            f"A previous run (Block 2?) fixed it in place, so measuring against "
+            f"it is meaningless. Reset first, from block4_production_harnesses/:\n"
+            f"  uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py"
+        )
+
     run_dir = BLOCK4 / "runs" / specimen
     workspace = run_dir / "workspace"
     if run_dir.exists():
@@ -146,7 +164,7 @@ def receipt(
         "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or '—'})",
         "tools_harness_shipped": tools_harness_shipped,
         "provider_friction": provider_friction,
-        "code_lines": Path(script).read_text().count("\n") + 1,
+        "code_lines": len(Path(script).read_text().splitlines()),
         "timestamp": time.time(),
     }
 
