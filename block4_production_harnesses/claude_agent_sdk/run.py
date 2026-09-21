@@ -2,7 +2,7 @@
 
     uv run --group block4 claude_agent_sdk/run.py        (from block4_production_harnesses/)
 
-Pedigree: product-extracted. This is the same loop, tools, and context
+Where it came from: product-extracted. This is the same loop, tools, and context
 management that power Claude Code, driven programmatically. Notice what we
 do NOT write: no loop, no tool definitions, no dispatcher, no truncation,
 no compaction — the harness ships with all of it decided. Our whole job is
@@ -28,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import anthropic_compat_base_url, TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify  # noqa: E402
+from common import TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -47,11 +47,12 @@ NAME = "claude_agent_sdk"
 async def _stream(options) -> None:
     async for message in query(prompt=TASK, options=options):
         if isinstance(message, AssistantMessage):
+            new_turn()   # one assistant message == one model response
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
-                    print(f"[{NAME}] tool: {block.name}({str(block.input)[:60]})")
+                    trace_tool(NAME, block.name, str(block.input)[:60])
                 elif isinstance(block, TextBlock) and block.text.strip():
-                    print(f"[{NAME}] says: {block.text.strip()[:100]}")
+                    trace_say(NAME, block.text)
         elif isinstance(message, ResultMessage):
             print(f"[{NAME}] result: turns={message.num_turns} "
                   f"cost=${message.total_cost_usd or 0:.4f} "
@@ -60,6 +61,7 @@ async def _stream(options) -> None:
 
 async def main() -> int:
     workspace = prepare_workspace(NAME)
+    trace_key(NAME, [], "the full Claude Code kit: Bash, Read, Edit, Grep, web", shipped_traced=True)
 
     options = ClaudeAgentOptions(
         cwd=str(workspace),
@@ -89,7 +91,7 @@ async def main() -> int:
 
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
-        pedigree="product-extracted (Claude Code as a library)",
+        origin="product-extracted (Claude Code as a library)",
         loop_owner="theirs — closed; we only configure",
         tools_we_wrote=[],
         tools_harness_shipped="full Claude Code kit: Bash, Read, Edit, Grep, web...",

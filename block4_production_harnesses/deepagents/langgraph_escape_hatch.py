@@ -21,7 +21,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from langchain_core.callbacks import BaseCallbackHandler  # noqa: E402
+from common import TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 from langchain.agents import create_agent  # noqa: E402
 from langchain_core.tools import tool  # noqa: E402
@@ -60,9 +61,18 @@ def run_tests() -> str:
     return ws_run_tests(workspace)
 
 
+class CountTurns(BaseCallbackHandler):
+    """LangGraph accepts LangChain callbacks, so a turn number costs us one
+    hook instead of restructuring the call into .stream()."""
+
+    def on_chat_model_start(self, serialized, messages, **kwargs) -> None:
+        new_turn()
+
+
 def main() -> int:
     global workspace
     workspace = prepare_workspace(NAME)
+    trace_key(NAME, ["list_files", "read_file", "write_file", "run_tests"], "")
 
     agent = create_agent(
         ChatOpenAI(
@@ -86,12 +96,13 @@ def main() -> int:
         # a ReAct loop burns at least two per turn — more through deepagents'
         # middleware. Deriving the limit from the same TASK_MAX_TURNS the other
         # harnesses use keeps the budget comparable instead of quietly tighter.
-        config={"recursion_limit": TASK_MAX_TURNS * 3},
+        config={"recursion_limit": TASK_MAX_TURNS * 3,
+                "callbacks": [CountTurns()]},
     )
     print(f"[{NAME}] final: {str(result['messages'][-1].content)[:100]}")
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
-        pedigree="the runtime itself — one layer below Deep Agents",
+        origin="the runtime itself — one layer below Deep Agents",
         loop_owner="ours to shape (bare create_agent graph)",
         tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="nothing — dropping a layer put every tool back on our plate",

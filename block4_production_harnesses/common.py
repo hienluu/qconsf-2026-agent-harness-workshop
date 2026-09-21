@@ -41,6 +41,72 @@ REFACTOR_TASK = (
 )
 
 
+# --- trace output -----------------------------------------------------
+# Same vocabulary as Block 3, so a Block 4 trace reads like the ones you
+# already know: green ❝ is the model talking, plain lines are tool calls.
+# Every harness routes through these, so what differs on screen is the
+# harness rather than five authors' print statements.
+SAY = "\033[32m"
+DIM = "\033[2m"
+OFF = "\033[0m"
+
+
+# Turn counting. Block 3 could just print `turn` because it owned the loop;
+# here the harness owns it, so each script bumps this from whatever hook its
+# SDK offers. How much work that takes varies a lot — which is itself a
+# harness property worth noticing (see COMPARISON.md).
+_turn = {"n": 0}
+
+
+def new_turn() -> int:
+    """Call once per model request. Prints a blank line between turns (not
+    before the first), so a long trace reads as blocks the way Block 3's
+    does — the turn boundary is the only structure these traces have."""
+    if _turn["n"]:
+        print()
+    _turn["n"] += 1
+    return _turn["n"]
+
+
+def turn_now() -> int:
+    return _turn["n"]
+
+
+def trace_tool(harness: str, name: str, detail: str = "") -> None:
+    """One tool call. Args are shown because *which* file it reached for is
+    the interesting part when comparing how harnesses explore."""
+    where = f"{harness} turn {_turn['n']}" if _turn["n"] else harness
+    print(f"[{where}] {name}({detail})")
+
+
+def trace_say(harness: str, text: str) -> None:
+    """The model talking — narration mid-run, or its closing summary.
+    Printed whole: truncating the one place the agent explains itself was
+    never a good trade."""
+    if text and text.strip():
+        where = f"{harness} turn {_turn['n']}" if _turn["n"] else harness
+        print(f"{SAY}❝  [{where}] {text.strip()}{OFF}")
+
+
+def trace_key(harness: str, ours: list, shipped: str = "", shipped_traced: bool = False) -> None:
+    """Printed once at the start of a run, so nobody has to guess what the
+    markers mean — and so the tools we wrote are distinguishable from the
+    ones the harness brought."""
+    print(f"{DIM}   ┈ trace markers{OFF}")
+    print(f"     {SAY}❝{OFF}  {DIM}the model talking{OFF}")
+    print(f"     {DIM}plain lines are tool calls{OFF}")
+    print(f"     {DIM}tools we wrote for this run: {', '.join(ours) if ours else 'none'}{OFF}")
+    if shipped:
+        print(f"     {DIM}shipped by the harness: {shipped}{OFF}")
+        if shipped_traced:
+            print(f"     {DIM}this SDK streams its own tool calls, so the harness's"
+                  f" tools appear below too{OFF}")
+        else:
+            print(f"     {DIM}heads up: harness-shipped calls do NOT appear below, so this"
+                  f" trace looks shorter than the work actually done{OFF}")
+    print()
+
+
 def ws_list(workspace: Path) -> str:
     """Relative paths of every file in the workspace."""
     return "\n".join(
@@ -91,8 +157,8 @@ def anthropic_compat_base_url() -> str:
     return _os.environ["PROVIDER_BASE_URL"].removesuffix("/v1")
 
 
-def prepare_workspace(specimen: str, source: Path = TASK_SOURCE) -> Path:
-    """Fresh copy of a task workspace under runs/<specimen>/.
+def prepare_workspace(harness: str, source: Path = TASK_SOURCE) -> Path:
+    """Fresh copy of a task workspace under runs/<harness>/.
 
     Refuses to run if the source fixture is already solved. Block 2 edits
     the fix_bug workspace IN PLACE, so an attendee who does Block 2 and then
@@ -111,7 +177,7 @@ def prepare_workspace(specimen: str, source: Path = TASK_SOURCE) -> Path:
             f"  uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py"
         )
 
-    run_dir = BLOCK4 / "runs" / specimen
+    run_dir = BLOCK4 / "runs" / harness
     workspace = run_dir / "workspace"
     if run_dir.exists():
         shutil.rmtree(run_dir)
@@ -119,7 +185,7 @@ def prepare_workspace(specimen: str, source: Path = TASK_SOURCE) -> Path:
     return workspace
 
 
-def verify(specimen: str, workspace: Path, started: float) -> int:
+def verify(harness: str, workspace: Path, started: float) -> int:
     """Pytest is the judge. Returns a process exit code."""
     wall = time.monotonic() - started
     proc = subprocess.run(
@@ -128,17 +194,17 @@ def verify(specimen: str, workspace: Path, started: float) -> int:
     )
     summary = (proc.stdout.strip().splitlines() or ["(no output)"])[-1]
     verdict = "SOLVED" if proc.returncode == 0 else "NOT SOLVED"
-    print(f"\n--- {specimen}: {verdict} | wall={wall:.1f}s | {summary}")
+    print(f"\n--- {harness}: {verdict} | wall={wall:.1f}s | {summary}")
     return 0 if proc.returncode == 0 else 1
 
 
 def receipt(
-    specimen: str,
+    harness: str,
     *,
     script: str,
     started: float,
     solved: bool,
-    pedigree: str,
+    origin: str,
     loop_owner: str,
     tools_we_wrote: list,
     tools_harness_shipped: str,
@@ -155,11 +221,11 @@ def receipt(
 
     task_name = _os.environ.get("BLOCK4_TASK", "bug_hunt")
     row = {
-        "specimen": specimen,
+        "harness": harness,
         "task": task_name,
         "solved": solved,
         "wall_s": round(time.monotonic() - started, 1),
-        "pedigree": pedigree,
+        "origin": origin,
         "loop_owner": loop_owner,
         "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or '—'})",
         "tools_harness_shipped": tools_harness_shipped,
@@ -178,7 +244,7 @@ def receipt(
         for line in fh:
             r = json.loads(line)
             # rows recorded before task tracking existed show as "?"
-            latest[(r["specimen"], r.get("task", "?"))] = r
+            latest[(r.get("harness") or r["specimen"], r.get("task", "?"))] = r
 
     from rich.console import Console
     from rich.table import Table
@@ -191,7 +257,7 @@ def receipt(
         table.add_column(col, overflow="fold")
     for r in latest.values():
         table.add_row(
-            r["specimen"] + ("" if r["solved"] else " ✗"),
+            (r.get("harness") or r["specimen"]) + ("" if r["solved"] else " ✗"),
             r.get("task", "?"),
             str(r["wall_s"]),
             r["loop_owner"],

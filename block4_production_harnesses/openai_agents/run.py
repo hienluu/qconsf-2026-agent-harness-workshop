@@ -2,9 +2,9 @@
 
     uv run --group block4 openai_agents/run.py       (from block4_production_harnesses/)
 
-Pedigree: model-native — a harness co-designed with the vendor's models,
+Where it came from: model-native — a harness co-designed with the vendor's models,
 organized around a trusted control plane (loop, handoffs, guardrails,
-sessions) over untrusted compute. Notice what's first-class here that the
+sessions) over untrusted compute. Notice what's built into the loop here that the
 others leave to you (guardrails, handoffs as primitives) and what we must
 still write ourselves for this task: the three workspace tools.
 
@@ -23,10 +23,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 from agents import (  # noqa: E402
     Agent,
+    RunHooks,
     OpenAIChatCompletionsModel,
     Runner,
     function_tool,
@@ -42,34 +43,35 @@ workspace: Path
 @function_tool
 def list_files() -> str:
     """List every file in the workspace as relative paths."""
-    print(f"[{NAME}] tool: list_files()")
+    trace_tool(NAME, "list_files")
     return ws_list(workspace)
 
 
 @function_tool
 def read_file(path: str) -> str:
     """Read one file, path relative to the workspace."""
-    print(f"[{NAME}] tool: read_file({path})")
+    trace_tool(NAME, "read_file", f"path={path!r}")
     return ws_read(workspace, path)
 
 
 @function_tool
 def write_file(path: str, content: str) -> str:
     """Overwrite one file, path relative to the workspace."""
-    print(f"[{NAME}] tool: write_file({path}, {len(content)} chars)")
+    trace_tool(NAME, "write_file", f"path={path!r}, {len(content)} chars")
     return ws_write(workspace, path, content)
 
 
 @function_tool
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
-    print(f"[{NAME}] tool: run_tests()")
+    trace_tool(NAME, "run_tests")
     return ws_run_tests(workspace)
 
 
 async def main() -> int:
     global workspace
     workspace = prepare_workspace(NAME)
+    trace_key(NAME, ["list_files", "read_file", "write_file", "run_tests"], "")
 
     # Redirect the harness from its home (OpenAI's Responses API) to the
     # workshop provider's OpenAI-compatible chat-completions endpoint. An
@@ -95,15 +97,22 @@ async def main() -> int:
         tools=[list_files, read_file, write_file, run_tests],
     )
 
+    # The SDK owns the loop, so a turn number has to come from its hooks.
+    # RunHooks fires on_llm_start once per model request — that IS a turn.
+    class CountTurns(RunHooks):
+        async def on_llm_start(self, context, agent, system_prompt, input_items):
+            new_turn()
+
     started = time.monotonic()
     try:
-        result = await Runner.run(agent, TASK, max_turns=TASK_MAX_TURNS)
-        print(f"[{NAME}] final: {str(result.final_output)[:100]}")
+        result = await Runner.run(agent, TASK, max_turns=TASK_MAX_TURNS,
+                                  hooks=CountTurns())
+        trace_say(NAME, str(result.final_output))
     except Exception as exc:  # turn-cap etc. are outcomes, not crashes
         print(f"[{NAME}] run ended without finishing: {exc}")
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
-        pedigree="model-native (guardrails/handoffs as loop primitives)",
+        origin="model-native (guardrails/handoffs as loop primitives)",
         loop_owner="theirs — Runner owns it",
         tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="none for this task (sandbox tools exist on OpenAI infra)",

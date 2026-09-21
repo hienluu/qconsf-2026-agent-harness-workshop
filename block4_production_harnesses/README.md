@@ -1,30 +1,50 @@
 # Block 4 — The Production Harnesses
 
-**Why this block:** you now know, from your own hands, what a harness must
-decide — you built the loop, watched it fail, and measured five specific
-protections. The production harnesses decide those same things for you,
-differently, and their feature lists all read alike until you can map each
-feature to a failure you've seen. This block is that mapping: five
-harnesses, one controlled task, read side by side.
+**Why this block:** You wrote the loop, watched it die, and measured what
+five protections were worth. These five frameworks made all of those
+decisions for you already — Claude Agent SDK, OpenAI Agents, Google ADK,
+Deep Agents, Pydantic AI.
+
+**All five solve the task**, on the same model. That's the design: hold the
+outcome constant and the only things left to compare are what each one
+handed you and what it charged for it.
+
+The feature lists are no help here. Every one of them says memory, tools,
+context management, guardrails. They only start to differ once you've
+implemented those yourself.
+
+No code to write in this block. Six scripts, well under a minute each, and
+a table that fills in as you go.
 
 ## The five harnesses (and one escape hatch)
 
 Same task, same model, same provider key. The task is `bug_hunt`: a small
-order-pricing package (8 modules, 18 tests, 5 failing) with three seeded
-bugs that interact — real diagnosis, sized so differences in how each harness
-works (exploration, planning, batching) have room to show. You haven't seen this
-task before (Blocks 2–3 used others), and knowing the bugs helps you read
-the traces — the agents have to find them the hard way:
+order-pricing package (8 modules, 18 tests, 5 failing) with three bugs that
+interact. Real diagnosis rather than a typo hunt, and big enough that
+differences in how each harness explores, plans and batches have room to
+show.
 
-1. **A rounding bug with a shared blast radius:** `discounts.percent_off`
-   floors instead of rounding half-up, and `tax.py` reuses the same
-   helper — failures across two modules, one root cause.
-2. **An order-of-operations bug that hides:** `pricing.price_cart` taxes
-   the pre-discount subtotal. Invisible on carts with no discount (one
-   passing test is the clue), compounding with bug 1 everywhere else.
-3. **A crash as misdirection:** `receipt.format_receipt` lost its
-   empty-cart guard — a ZeroDivisionError that tops the pytest output
-   while having nothing to do with the arithmetic.
+You may have run this task once already — it's what Block 3's compaction
+demo uses — but you were watching the harness then, not the bugs. Here they
+are, so you can follow what the agents are doing. The agents get no such
+help:
+
+1. **One wrong line, wrong answers in two modules.**
+   `discounts.percent_off` is `cents * pct // 100`. Integer division
+   throws away the remainder, so 5% of a $1.50 item is 7.5¢ and the
+   function returns **7¢ instead of 8¢**. `tax.py` calls that same helper
+   to compute tax, so a single rounding mistake produces wrong numbers in
+   two places that look unrelated from the test output.
+2. **A bug that disappears whenever there's no discount.**
+   `pricing.price_cart` computes `tax_cents(subtotal)` where it should be
+   `tax_cents(taxable)` — customers get taxed on money the discount took
+   off. On a cart with no coupon, `subtotal` and `taxable` are the same
+   number, so that test passes. The passing test is a clue, not luck.
+3. **A crash that has nothing to do with the other two.**
+   `receipt.format_receipt` divides the subtotal by the item count to
+   print an average, and nothing handles an empty cart. The resulting
+   `ZeroDivisionError` lands at the top of the pytest output, so it's the
+   first thing the agent sees and the least useful.
 
 (The exact diffs live in `scripts/derive_bug_hunt.py`, which injects them
 into the green reference; task details in
@@ -63,24 +83,43 @@ pwd                              # .../agent-harness-workshop/block4_production_
 Every command on this page, including the reset script, runs from here —
 nothing requires switching directories mid-exercise.
 
-Fair warning about what you'll see: **all six runs succeed.** That's the
-experimental design — outcome is the controlled variable. The information
-is in *how* each harness got there and what each run didn't require of
-you, and that's what the **harness receipt** printed
-after every run captures: who owns the loop, what tools you wrote versus
-what the harness shipped, what provider friction you paid, how many lines
-the same job took. Receipts accumulate — after your sixth run, the table
-on your screen IS the five-harness comparison, built from your own runs.
+Every run prints a **harness receipt**: who owns the loop, what tools you
+wrote versus what the harness shipped, what you had to work around to use
+your own provider, and how many lines the same job took. Receipts
+accumulate, so after the sixth run the table on your screen is the whole
+comparison — built from your runs, not from anyone's docs.
 
 All six runs together cost well under $1. Between runs, spend sixty
 seconds in the script you just ran on ONE question its receipt raised —
 each docstring says what to look for.
+
+0. **Start clean** (a few seconds, no API calls). You arrive here carrying
+   state from Blocks 2 and 3, and two bits of it matter: the task fixtures
+   must still be unsolved, and the receipts table should be empty so it
+   ends up being *yours*.
+   ```
+   uv run ../scripts/check_fixtures.py   # expect: ALL FIXTURES OK
+   rm -f runs/receipts.jsonl             # start the table empty
+   ```
+   `check_fixtures.py` only reads — it never changes anything. If it
+   complains, run `uv run ../scripts/reset.py` and try again. Note that a
+   full reset also archives your Block 3 score table (timestamped, not
+   deleted), so run it only if you need it — Block 4 doesn't require it.
+
+   This matters most for the extra credit at the bottom of this page:
+   `fix_bug` is the one workspace Block 2 edits in place, so if you fixed
+   it there it is already solved. The scripts refuse to run against a
+   finished task rather than quietly reporting that every harness
+   succeeded in one turn.
 
 1. **Kit vs composable.** Run both, and compare their friction
    cells: "none — a constructor argument" vs a paragraph plus its own
    dependency group:
    ```
    uv run --group block4-adk google_adk/run.py
+   ```
+
+   ```
    uv run --group block4 pydantic_ai/run.py
    ```
 2. **Two roads to an opinionated harness.** Claude's receipt will say
@@ -89,6 +128,9 @@ each docstring says what to look for.
    provider friction: convenience and coupling, same row:
    ```
    uv run --group block4 claude_agent_sdk/run.py
+   ```
+
+   ```
    uv run --group block4 openai_agents/run.py
    ```
 3. **A harness on a runtime, then the layer below it.** Watch
@@ -96,6 +138,9 @@ each docstring says what to look for.
    bare LangGraph — the price of the escape hatch, as a number:
    ```
    uv run --group block4 deepagents/run.py
+   ```
+
+   ```
    uv run --group block4 deepagents/langgraph_escape_hatch.py
    ```
 4. **Read `COMPARISON.md`** — the full comparison table — and argue with
@@ -106,14 +151,18 @@ each docstring says what to look for.
    uv run --group block4 presenter_demo/run.py
    ```
    The closing question: **did the professionals' harness beat our
-   200-line h3?** Whatever the answer, it teaches — a big win shows what
+   285-line h3?** Whatever the answer, it teaches — a big win shows what
    production harness engineering buys; anything else is the harness-model
    fit lesson from Block 1, live.
 
    For calibration, two live runs (Sep 2026, GLM-5.3) agree: SOLVED in
-   17–19 turns, ~16–18 tool calls, 65–97s wall — versus 117–208s for our
-   h3 — with a Bash-dominated tool profile and a single Edit for a
-   ~130-file migration. Both runs chose the same approach: survey the
+   17–19 turns with ~16–18 tool calls, against 22–38 turns (median 27) for
+   our h3 across ten runs — roughly **1.5× fewer turns**. Wall-clock ran
+   65–97s versus h3's 117–222s, but read that second: it is the column
+   this page and Block 3 both tell you not to rank on, and quoting the
+   wall-clock ratio instead of the turn ratio is how the "2–3× faster"
+   claim that used to sit here got inflated. The tool profile is the real
+   story: Bash-dominated, with a single Edit for a ~130-file migration. Both runs chose the same approach: survey the
    code via grep/cat, detect that MIGRATION.md is incomplete from the tests,
    then *write a word-boundary-regex rename script* and run it — followed
    by collateral-damage checks on display strings. Given a shell, the
@@ -123,23 +172,43 @@ each docstring says what to look for.
    harnesses need sandboxing and permissions — we ran `bypassPermissions`
    on a disposable copy, deliberately.)
 
-## Clearing the receipts table
+## Starting over
 
-Receipts accumulate in `runs/receipts.jsonl`; the table shows the latest
-run per (harness, task). To start it over (from `block4_production_harnesses/`):
+Two different things accumulate here, and you usually only want to clear
+one of them.
 
-```
-rm runs/receipts.jsonl
-```
-
-To keep a finished round for reference instead of deleting it:
+**The receipts table.** Every run appends to `runs/receipts.jsonl`, and the
+table shows the latest run per (harness, task). To start the table fresh
+without touching anything else:
 
 ```
-mv runs/receipts.jsonl runs/receipts.round1.jsonl
+rm runs/receipts.jsonl                          # discard it
+mv runs/receipts.jsonl runs/receipts.round1.jsonl   # or keep the round
 ```
 
-`uv run ../scripts/reset.py` also clears it, along with
-all run workspaces and the Block 3 state — the full start-over.
+**The task fixtures.** The tasks are fixtures: a bug that must still be
+there. Each run works on its own copy under `runs/`, so the originals
+normally stay clean — but Block 2 edits the `fix_bug` workspace *in place*,
+so if you did Block 2 and then come here for the extra credit, that fixture
+is already fixed. The scripts now refuse to run in that state rather than
+quietly measuring a finished task. Both scripts run from this directory:
+
+```
+uv run ../scripts/reset.py          # restore the fixtures
+uv run ../scripts/check_fixtures.py # confirm: ALL FIXTURES OK
+```
+
+**`reset.py`** restores every task workspace to its committed state
+(including deleting files an agent created), clears the per-run copies
+under `runs/`, and archives the Block 3 score table with a timestamp. It
+also removes `runs/receipts.jsonl`, so it is the full start-over — use the
+`rm`/`mv` above if you only want the table gone.
+
+**`check_fixtures.py`** asserts each workspace's tests still *fail* — a
+fixture that passes is a solved task, and measuring against it is
+meaningless — and confirms the reference copies still pass.
+
+Then rerun the exercise flow from step 1.
 
 ## Extra credit: the trivial task
 

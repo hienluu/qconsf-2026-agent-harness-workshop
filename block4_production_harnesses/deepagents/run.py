@@ -2,7 +2,7 @@
 
     uv run --group block4 deepagents/run.py          (from block4_production_harnesses/)
 
-Pedigree: a harness built ON a runtime — Deep Agents is LangChain's own
+Where it came from: a harness built ON a runtime — Deep Agents is LangChain's own
 conclusion that teams need batteries included, assembled on top of the
 LangGraph runtime. Notice how little we define: the harness SHIPS its own
 filesystem tools (pointed at the real workspace via a backend), planning
@@ -18,7 +18,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, TASK_MAX_TURNS, prepare_workspace, receipt, verify, ws_run_tests  # noqa: E402
+from langchain_core.callbacks import BaseCallbackHandler  # noqa: E402
+from common import TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_run_tests  # noqa: E402
 
 from deepagents import create_deep_agent  # noqa: E402
 from deepagents.backends import FilesystemBackend  # noqa: E402
@@ -31,13 +32,22 @@ workspace: Path
 
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
-    print(f"[{NAME}] tool: run_tests()")
+    trace_tool(NAME, "run_tests")
     return ws_run_tests(workspace)
+
+
+class CountTurns(BaseCallbackHandler):
+    """LangGraph accepts LangChain callbacks, so a turn number costs us one
+    hook instead of restructuring the call into .stream()."""
+
+    def on_chat_model_start(self, serialized, messages, **kwargs) -> None:
+        new_turn()
 
 
 def main() -> int:
     global workspace
     workspace = prepare_workspace(NAME)
+    trace_key(NAME, ["run_tests"], "filesystem suite (ls, read_file, write_file), write_todos, subagents")
 
     agent = create_deep_agent(
         model=ChatOpenAI(
@@ -68,14 +78,15 @@ def main() -> int:
         # a ReAct loop burns at least two per turn — more through deepagents'
         # middleware. Deriving the limit from the same TASK_MAX_TURNS the other
         # harnesses use keeps the budget comparable instead of quietly tighter.
-        config={"recursion_limit": TASK_MAX_TURNS * 3},
+        config={"recursion_limit": TASK_MAX_TURNS * 3,
+                "callbacks": [CountTurns()]},
     )
     final = result["messages"][-1]
-    print(f"[{NAME}] final: {str(final.content)[:100]}")
+    trace_say(NAME, str(final.content))
     print(f"[{NAME}] messages in transcript: {len(result['messages'])}")
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
-        pedigree="harness on a runtime (LangGraph underneath)",
+        origin="harness on a runtime (LangGraph underneath)",
         loop_owner="theirs — ReAct + middleware onion",
         tools_we_wrote=["run_tests"],
         tools_harness_shipped="filesystem suite on the real workspace, write_todos, subagents",

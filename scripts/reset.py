@@ -1,4 +1,4 @@
-"""Reset all exercise state so Blocks 2 and 3 can be rerun from scratch.
+"""Reset all exercise state so Blocks 2, 3 and 4 can be rerun from scratch.
 
     uv run scripts/reset.py
 
@@ -43,7 +43,7 @@ def main() -> None:
 
     for runs, label in [
         (RESULTS / "runs", "block 3 eval run copies"),
-        (REPO / "block4_production_harnesses" / "runs", "block 4 specimen runs + receipts"),
+        (REPO / "block4_production_harnesses" / "runs", "block 4 harness runs + receipts"),
     ]:
         if runs.exists():
             shutil.rmtree(runs)
@@ -59,7 +59,7 @@ def main() -> None:
     else:
         print("[reset] no score table to archive")
 
-    print("[reset] done — rerun from Block 2 step 3 or Block 3 step 1")
+    print("[reset] done — rerun from Block 2 step 3, Block 3 step 1, or Block 4 step 1")
 
 
 if __name__ == "__main__":

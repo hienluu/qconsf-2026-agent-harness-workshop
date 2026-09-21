@@ -167,7 +167,7 @@ pwd                 # .../agent-harness-workshop/block3_measure
 Every command on this page, including the reset script, runs from here —
 nothing requires switching directories mid-exercise.
 
-**Before you start:** the exercise is four steps — one cheap batch (three
+**Before you start:** a free setup check, then four steps — one cheap batch (three
 short runs, ~30 seconds and a few cents together), then h2 and h3 on the
 long task at about 3 minutes and $0.60 each, then reading the table. Call
 it 8 minutes and $1.25. The h1 baseline on the long task ships as a
@@ -179,6 +179,24 @@ get a 40-turn budget, not Block 2's 20. The budget is held constant and
 deliberately generous across all three so the experiment measures the
 protections rather than the turn cap. That means h1 may well *finish*
 here, where it ran out of room in Block 2 — watch what it costs to do so.
+
+0. **Start clean** (a few seconds, no API calls). You just came from Block
+   2, which edits the `fix_bug` workspace *in place* — and step 1 below runs
+   that very task. Confirm the fixtures are still unsolved before measuring
+   anything against them:
+   ```
+   uv run ../scripts/check_fixtures.py   # expect: ALL FIXTURES OK
+   ```
+   It only reads; it never changes anything. If it complains, run
+   `uv run ../scripts/reset.py` and try again. The runner also refuses to
+   start against a solved fixture, so nothing silently measures a finished
+   task — this step just saves you hitting that mid-exercise.
+
+   If you want a fresh score table too (say, to separate warm-up runs from
+   the ones you intend to keep), archive it rather than deleting it:
+   ```
+   mv results/results.jsonl results/results.warmup.jsonl
+   ```
 
 1. **Start cheap: find out what a harness costs when the workload needs
    nothing from it.** `fix_bug` is one file and four tests. No tool result

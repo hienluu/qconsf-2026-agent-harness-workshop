@@ -2,7 +2,7 @@
 
     uv run --group block4-adk google_adk/run.py      (from block4_production_harnesses/)
 
-Pedigree: harness construction kit — maximum structure (typed state,
+Where it came from: harness construction kit — maximum structure (typed state,
 sessions, services, a graph runtime in 2.x), with the opinions left to
 you. Notice the ceremony this smallest-possible agent still requires:
 a Runner, a session service, a session, typed Content parts. And notice
@@ -22,7 +22,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, prepare_workspace, receipt, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import TASK, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 load_dotenv()
 # LiteLLM's OpenAI adapter reads these; set before ADK imports settle.
@@ -61,6 +61,7 @@ def run_tests() -> str:
 async def main() -> int:
     global workspace
     workspace = prepare_workspace(NAME)
+    trace_key(NAME, ["list_files", "read_file", "write_file", "run_tests"], "")
 
     agent = Agent(
         name="bug_fixer",
@@ -83,15 +84,22 @@ async def main() -> int:
     async for event in runner.run_async(
         user_id="attendee", session_id=session.id, new_message=message
     ):
-        for part in (event.content.parts if event.content else []):
+        parts = event.content.parts if event.content else []
+        # ADK emits a second event carrying each tool's RESULT; only the
+        # model-authored ones (a call or text) count as a turn.
+        if any(getattr(p, "function_call", None) or getattr(p, "text", None) for p in parts):
+            new_turn()
+        for part in parts:
             if getattr(part, "function_call", None):
-                print(f"[{NAME}] tool: {part.function_call.name}")
+                args = getattr(part.function_call, "args", None) or {}
+                detail = ", ".join(f"{k}={str(v)[:40]!r}" for k, v in args.items())
+                trace_tool(NAME, part.function_call.name, detail)
             elif getattr(part, "text", None) and part.text.strip():
-                print(f"[{NAME}] says: {part.text.strip()[:100]}")
+                trace_say(NAME, part.text)
 
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
-        pedigree="construction kit (typed state, sessions, graph runtime)",
+        origin="construction kit (typed state, sessions, graph runtime)",
         loop_owner="theirs — Runner + session services (most ceremony)",
         tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="none for this task (rich ecosystem exists: executors, computer-use)",

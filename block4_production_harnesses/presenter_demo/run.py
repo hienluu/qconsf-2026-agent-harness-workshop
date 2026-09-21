@@ -4,7 +4,7 @@
 
 The closing question of Block 4: our hand-built h3 solved this task in
 22-38 turns and 336k-1,087k input tokens. **Did the professionals' harness
-beat our 200 lines?** One run, ~3 minutes, same model, same provider —
+beat our 285-line h3?** One run, ~3 minutes, same model, same provider —
 watch the turn count and the cost line at the end.
 
 Whatever the answer, it teaches: if Claude Code's harness wins big, that's
@@ -22,7 +22,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import anthropic_compat_base_url, REFACTOR_SOURCE, REFACTOR_TASK, prepare_workspace, verify  # noqa: E402
+from common import REFACTOR_SOURCE, REFACTOR_TASK, anthropic_compat_base_url, prepare_workspace, trace_key, trace_say, trace_tool, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -63,7 +63,7 @@ async def main() -> int:
                     tool_calls += 1
                     print(f"[{NAME}] tool #{tool_calls}: {block.name}({str(block.input)[:60]})")
                 elif isinstance(block, TextBlock) and block.text.strip():
-                    print(f"[{NAME}] says: {block.text.strip()[:100]}")
+                    trace_say(NAME, block.text)
         elif isinstance(message, ResultMessage):
             usage = message.usage or {}
             print(
