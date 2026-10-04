@@ -22,7 +22,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import REFACTOR_SOURCE, REFACTOR_TASK, anthropic_compat_base_url, prepare_workspace, trace_key, trace_say, trace_tool, verify  # noqa: E402
+from common import tool_detail, REFACTOR_SOURCE, REFACTOR_TASK, anthropic_compat_base_url, prepare_workspace, trace_key, trace_say, trace_tool, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -61,7 +61,7 @@ async def main() -> int:
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
                     tool_calls += 1
-                    print(f"[{NAME}] tool #{tool_calls}: {block.name}({str(block.input)[:60]})")
+                    trace_tool(NAME, block.name, tool_detail(block.input))
                 elif isinstance(block, TextBlock) and block.text.strip():
                     trace_say(NAME, block.text)
         elif isinstance(message, ResultMessage):

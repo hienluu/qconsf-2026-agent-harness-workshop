@@ -36,12 +36,28 @@ def run_tests() -> str:
     return ws_run_tests(workspace)
 
 
-class CountTurns(BaseCallbackHandler):
-    """LangGraph accepts LangChain callbacks, so a turn number costs us one
-    hook instead of restructuring the call into .stream()."""
+class Watch(BaseCallbackHandler):
+    """LangGraph accepts LangChain callbacks, which buys us two things a
+    plain .invoke() hides: turn boundaries, and the harness's OWN tool
+    calls. Without on_tool_start this trace showed 2 calls where other
+    harnesses showed 12 — because Deep Agents does its file work through
+    tools it shipped, and we never see them."""
 
     def on_chat_model_start(self, serialized, messages, **kwargs) -> None:
         new_turn()
+
+    def on_llm_end(self, response, **kwargs) -> None:
+        for batch in (getattr(response, "generations", None) or []):
+            for gen in batch:
+                said = getattr(gen, "text", None)
+                if said and said.strip():
+                    trace_say(NAME, said)
+
+    def on_tool_start(self, serialized, input_str, **kwargs) -> None:
+        name = (serialized or {}).get("name") or kwargs.get("name") or "tool"
+        if name == "run_tests":
+            return                       # already traced by the tool itself
+        trace_tool(NAME, name, str(input_str)[:70], shipped=True)
 
 
 def main() -> int:
@@ -79,7 +95,7 @@ def main() -> int:
         # middleware. Deriving the limit from the same TASK_MAX_TURNS the other
         # harnesses use keeps the budget comparable instead of quietly tighter.
         config={"recursion_limit": TASK_MAX_TURNS * 3,
-                "callbacks": [CountTurns()]},
+                "callbacks": [Watch()]},
     )
     final = result["messages"][-1]
     trace_say(NAME, str(final.content))

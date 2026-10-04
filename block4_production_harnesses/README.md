@@ -1,20 +1,25 @@
 # Block 4 — The Production Harnesses
 
 **Why this block:** You wrote the loop, watched it die, and measured what
-five protections were worth. These five frameworks made all of those
+five protections were worth. These five frameworks made every one of those
 decisions for you already — Claude Agent SDK, OpenAI Agents, Google ADK,
 Deep Agents, Pydantic AI.
 
 **All five solve the task**, on the same model. That's the design: hold the
-outcome constant and the only things left to compare are what each one
-handed you and what it charged for it.
+outcome constant, and what's left to compare is what each one decided on
+your behalf — who owns the loop, which tools you still had to write, what
+you had to work around to use your own provider, and how much code it took.
 
-The feature lists are no help here. Every one of them says memory, tools,
-context management, guardrails. They only start to differ once you've
-implemented those yourself.
+Feature lists can't tell you any of that. Every one of them says memory,
+tools, context management, guardrails. They only start to differ once
+you've built those yourself, which you now have.
 
-No code to write in this block. Six scripts, well under a minute each, and
-a table that fills in as you go.
+**What you leave with:** the ability to look at any agent framework and say
+what it decides for you — plus a comparison you ran yourself instead of one
+a vendor published. Block 5 turns that into a choice.
+
+No code to write here. Six scripts, well under a minute each, and a table
+that fills in as you go.
 
 ## The five harnesses (and one escape hatch)
 
@@ -83,11 +88,10 @@ pwd                              # .../agent-harness-workshop/block4_production_
 Every command on this page, including the reset script, runs from here —
 nothing requires switching directories mid-exercise.
 
-Every run prints a **harness receipt**: who owns the loop, what tools you
-wrote versus what the harness shipped, what you had to work around to use
-your own provider, and how many lines the same job took. Receipts
-accumulate, so after the sixth run the table on your screen is the whole
-comparison — built from your runs, not from anyone's docs.
+Every run prints a **harness receipt** — the things named above, measured
+for that run, plus what the harness shipped that you didn't have to write.
+Receipts accumulate, so after the sixth run the table on your screen is the
+whole comparison, built from your runs rather than anyone's docs.
 
 All six runs together cost well under $1. Between runs, spend sixty
 seconds in the script you just ran on ONE question its receipt raised —

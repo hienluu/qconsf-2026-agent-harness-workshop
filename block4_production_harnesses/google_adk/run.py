@@ -22,7 +22,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import trace_cost, trace_note, trace_state, TASK, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 load_dotenv()
 # LiteLLM's OpenAI adapter reads these; set before ADK imports settle.
@@ -96,6 +96,20 @@ async def main() -> int:
                 trace_tool(NAME, part.function_call.name, detail)
             elif getattr(part, "text", None) and part.text.strip():
                 trace_say(NAME, part.text)
+
+        # ADK's events carry more than content — session state deltas and its
+        # own compaction are the structure the "kit" is really selling. Printed
+        # after the turn's tool calls, the way Block 3's scoreboard line is.
+        acts = getattr(event, "actions", None)
+        if acts is not None:
+            if getattr(acts, "state_delta", None):
+                trace_state(NAME, acts.state_delta)
+            if getattr(acts, "compaction", None):
+                trace_note(NAME, "the harness compacted its own session history")
+        um = getattr(event, "usage_metadata", None)
+        if um and getattr(um, "prompt_token_count", None):
+            trace_cost(NAME, um.prompt_token_count,
+                       getattr(um, "candidates_token_count", 0) or 0)
 
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,

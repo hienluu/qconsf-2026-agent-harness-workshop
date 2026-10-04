@@ -68,15 +68,55 @@ def new_turn() -> int:
     return _turn["n"]
 
 
-def turn_now() -> int:
-    return _turn["n"]
-
-
-def trace_tool(harness: str, name: str, detail: str = "") -> None:
+def trace_tool(harness: str, name: str, detail: str = "", shipped: bool = False) -> None:
     """One tool call. Args are shown because *which* file it reached for is
-    the interesting part when comparing how harnesses explore."""
+    the interesting part when comparing how harnesses explore. `shipped`
+    marks a tool the harness brought rather than one we wrote — the whole
+    point of the block, made visible line by line."""
     where = f"{harness} turn {_turn['n']}" if _turn["n"] else harness
-    print(f"[{where}] {name}({detail})")
+    mark = f"{DIM}·shipped{OFF}" if shipped else ""
+    print(f"[{where}] {name}({detail}){mark}")
+
+
+def trace_reject(harness: str, why: str) -> None:
+    """A tool call the harness refused before running it."""
+    print(f"\033[35m↻  [{harness} turn {_turn['n']}] rejected before execution: {why}{OFF}")
+
+
+def trace_state(harness: str, delta: dict) -> None:
+    """Session-state changes. Only ADK surfaces these, and state IS what a
+    construction kit gives you instead of a finished harness."""
+    keys = ", ".join(f"{k}={str(v)[:30]}" for k, v in list(delta.items())[:3])
+    print(f"{DIM}   ⚙ [{harness}] session state: {keys}{OFF}")
+
+
+def trace_note(harness: str, text: str) -> None:
+    """Something the harness did on its own — the kind of event you wrote
+    by hand in Block 3 and are now only a spectator to."""
+    print(f"\033[33m✂  [{harness} turn {_turn['n']}] {text}{OFF}")
+
+
+def tool_detail(payload) -> str:
+    """Render a tool's input for the trace. Bash commands are shown whole:
+    the single most interesting artifact in this block is the shell command
+    the model writes when a harness hands it a shell, and truncating it to
+    60 characters threw that away."""
+    if not isinstance(payload, dict):
+        return str(payload)[:70]
+    if "command" in payload:
+        return str(payload["command"])
+    for k in ("file_path", "path", "pattern"):
+        if k in payload:
+            return f"{k}={payload[k]!r}"
+    return str(payload)[:70]
+
+
+def trace_cost(harness: str, sent: int, out: int, cumulative: int | None = None) -> None:
+    """What this turn put on the wire. Block 3's whole cost argument was
+    that the transcript is re-sent every turn; here you can watch the
+    `sent` number climb while the task stays the same size."""
+    tail = f" · {cumulative:,} in total" if cumulative is not None else ""
+    print(f"{DIM}   ┈ turn {_turn['n']}: {sent:,} in / {out:,} out{tail}{OFF}")
 
 
 def trace_say(harness: str, text: str) -> None:

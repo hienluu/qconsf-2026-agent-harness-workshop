@@ -28,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify  # noqa: E402
+from common import trace_cost, trace_note, tool_detail, TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -48,12 +48,19 @@ async def _stream(options) -> None:
     async for message in query(prompt=TASK, options=options):
         if isinstance(message, AssistantMessage):
             new_turn()   # one assistant message == one model response
+            u = getattr(message, "usage", None) or {}
+            sent = u.get("input_tokens") if isinstance(u, dict) else getattr(u, "input_tokens", None)
+            got = (u.get("output_tokens") if isinstance(u, dict) else getattr(u, "output_tokens", 0)) or 0
+            if sent:
+                trace_cost(NAME, sent, got)
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
-                    trace_tool(NAME, block.name, str(block.input)[:60])
+                    trace_tool(NAME, block.name, tool_detail(block.input))
                 elif isinstance(block, TextBlock) and block.text.strip():
                     trace_say(NAME, block.text)
         elif isinstance(message, ResultMessage):
+            for d in (getattr(message, "permission_denials", None) or []):
+                trace_note(NAME, f"permission denied: {str(d)[:80]}")
             print(f"[{NAME}] result: turns={message.num_turns} "
                   f"cost=${message.total_cost_usd or 0:.4f} "
                   f"duration={message.duration_ms}ms")

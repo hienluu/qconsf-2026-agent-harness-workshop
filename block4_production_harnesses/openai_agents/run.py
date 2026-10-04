@@ -23,7 +23,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 from agents import (  # noqa: E402
     Agent,
@@ -99,14 +99,33 @@ async def main() -> int:
 
     # The SDK owns the loop, so a turn number has to come from its hooks.
     # RunHooks fires on_llm_start once per model request — that IS a turn.
-    class CountTurns(RunHooks):
+    class Watch(RunHooks):
+        """RunHooks is the SDK's pluggability seam: on_llm_start marks a
+        turn, on_llm_end hands back that request's usage — so the cost
+        curve from Block 3 is visible per turn instead of only at the end."""
+
+        total = 0
+
         async def on_llm_start(self, context, agent, system_prompt, input_items):
             new_turn()
+
+        async def on_llm_end(self, context, agent, response):
+            # Mid-run narration: the model's own text for this turn, which a
+            # plain Runner.run() only ever hands back as final_output.
+            for item in (getattr(response, "output", None) or []):
+                for c in (getattr(item, "content", None) or []):
+                    said = getattr(c, "text", None)
+                    if said and said.strip():
+                        trace_say(NAME, said)
+            u = getattr(response, "usage", None)
+            if u:
+                Watch.total += u.input_tokens
+                trace_cost(NAME, u.input_tokens, u.output_tokens, Watch.total)
 
     started = time.monotonic()
     try:
         result = await Runner.run(agent, TASK, max_turns=TASK_MAX_TURNS,
-                                  hooks=CountTurns())
+                                  hooks=Watch())
         trace_say(NAME, str(result.final_output))
     except Exception as exc:  # turn-cap etc. are outcomes, not crashes
         print(f"[{NAME}] run ended without finishing: {exc}")

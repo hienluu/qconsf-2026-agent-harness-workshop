@@ -18,8 +18,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent  # noqa: E402
-from common import TASK, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, PartDeltaEvent, PartStartEvent, RetryPromptPart, TextPart, TextPartDelta  # noqa: E402
+from common import trace_reject, TASK, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 from pydantic_ai import Agent  # noqa: E402
 from pydantic_ai.models.openai import OpenAIChatModel  # noqa: E402
@@ -87,11 +87,26 @@ def main() -> int:
         # Fires twice per turn: once for the model's response stream, once
         # for the tool-result phase. Only the first is a model request.
         first = True
+        said: list[str] = []
         async for ev in stream:
             if first:
                 first = False
                 if not isinstance(ev, (FunctionToolCallEvent, FunctionToolResultEvent)):
                     new_turn()
+            # Text streams in as a start event plus deltas, so collect the
+            # pieces and print the sentence once instead of a letter at a time.
+            if isinstance(ev, PartStartEvent) and isinstance(getattr(ev, "part", None), TextPart):
+                said.append(ev.part.content or "")
+            elif isinstance(ev, PartDeltaEvent) and isinstance(getattr(ev, "delta", None), TextPartDelta):
+                said.append(ev.delta.content_delta or "")
+            # The typed core's whole pitch: a tool call whose arguments don't
+            # validate never reaches the tool. It comes back as a
+            # RetryPromptPart instead — the same "feed the error back" move
+            # you hand-wrote in h2, here for free and before execution.
+            elif isinstance(ev, FunctionToolResultEvent) and isinstance(ev.part, RetryPromptPart):
+                trace_reject(NAME, str(getattr(ev.part, "content", ""))[:90])
+        if "".join(said).strip():
+            trace_say(NAME, "".join(said))
 
     result = agent.run_sync(TASK, event_stream_handler=count_turns)
     trace_say(NAME, str(result.output))
