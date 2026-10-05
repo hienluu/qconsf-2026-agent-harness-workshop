@@ -24,7 +24,7 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 | **Guardrails/permissions** | permission modes (we ran bypassPermissions in a sandbox copy) | guardrails built into the loop | callbacks/plugins — mechanisms, not policies | filesystem permissions, interrupt_on | opt-in capability (limits, masking) |
 | **Provider coupling** | Anthropic env contract (`ANTHROPIC_*`); worked on the compat endpoint but announced `unrecognized_model`, and auth needed Bearer via `AUTH_TOKEN` | OpenAI-shaped; `org/model` strings parse as provider prefixes — explicit model object required | agnostic via LiteLLM (env-var contract) | any LangChain model — constructor argument | none — provider is a constructor argument |
 | **Cost visibility** | `total_cost_usd` on every result | you | you | you | built-in (`RunUsage.cost`) |
-| **Install weight** | pip pkg bundles a compiled Claude Code CLI per platform (~90MB wheel, ~190MB installed) | light | heavy — 86 packages (k8s, botocore, llama-index); **cannot co-resolve with openai-agents** (own uv group) | LangChain ecosystem | light |
+| **Install weight** | pip pkg bundles a compiled Claude Code CLI per platform (~90MB wheel, ~190MB installed) | light | 75 packages with LiteLLM (OpenTelemetry, tokenizers, Hugging Face Hub); its `[extensions]` bundle would be 161 and **can't share an environment with openai-agents** | LangChain ecosystem | light |
 
 Wall times are deliberately NOT a matrix row: single-run wall clock on
 short tasks is provider-latency noise (see below). Your receipts table
@@ -104,7 +104,26 @@ sampling before anyone quotes it.
 
 ## Dependency note (a finding, not a footnote)
 
-The five harnesses could not share one dependency resolution:
-`google-adk[extensions]` conflicts with `openai-agents`, so ADK lives in
-its own uv group. If you adopt two of these in one codebase, you may be
-choosing a container boundary, not just an import.
+All five harnesses share one environment in this repo, but only because
+we hold one library back. ADK reaches non-Google models through LiteLLM.
+LiteLLM 1.84 and later require version 2 of the `openai` library;
+`openai-agents` requires version 3. So we install LiteLLM directly, and the
+resolver settles on 1.83.0, the last release without that limit. ADK's
+convenient `[extensions]` bundle requires LiteLLM 1.84 or later, so
+installed that way, ADK and OpenAI Agents can't share an environment at
+all. (Tested with google-adk 2.8.0, openai-agents 0.22.0, and LiteLLM
+1.83 through 1.100.)
+
+This repo originally used the bundle and documented the conflict as
+unavoidable. It wasn't. Three things worth taking from that:
+
+- **Neither harness conflicts with the other directly.** They disagree
+  about a library underneath both.
+- **How you install matters, not just what.** The bundle breaks it; the
+  bare library doesn't. The bundle is also twice the size: 161 packages
+  against 75.
+- **The workaround has a shelf life.** The day you need a newer LiteLLM,
+  the conflict comes back.
+
+If you adopt two of these in one codebase, you may be choosing a container
+boundary, not just an import.

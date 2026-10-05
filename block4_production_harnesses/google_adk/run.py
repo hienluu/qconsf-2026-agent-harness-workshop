@@ -1,13 +1,16 @@
 """fix_bug through Google ADK.
 
-    uv run --group block4-adk google_adk/run.py      (from block4_production_harnesses/)
+    uv run --group block4 google_adk/run.py      (from block4_production_harnesses/)
 
 Where it came from: harness construction kit — maximum structure (typed state,
 sessions, services, a graph runtime in 2.x), with the opinions left to
 you. Notice the ceremony this smallest-possible agent still requires:
 a Runner, a session service, a session, typed Content parts. And notice
-the import weight — ADK could not share a dependency resolution with the
-other four harnesses (that's why it runs from its own uv group).
+the import weight. To reach a non-Google model ADK needs LiteLLM, and
+LiteLLM 1.84 and later require version 2 of the `openai` library, which
+OpenAI Agents can't accept. This repo installs LiteLLM directly and stays on
+1.83.0, so ADK can share an environment with the other harnesses. ADK's own
+`[extensions]` bundle requires a newer LiteLLM and would break that.
 
 Provider note: ADK is model-agnostic via LiteLLM, which reads the
 OpenAI-compatible endpoint from environment variables we set below.
@@ -117,7 +120,7 @@ async def main() -> int:
         loop_owner="theirs — Runner + session services (most ceremony)",
         tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="none for this task (rich ecosystem exists: executors, computer-use)",
-        provider_friction="LiteLLM env contract; own uv group (conflicts with openai-agents); 86 extra pkgs; transient 500s -> num_retries")
+        provider_friction="LiteLLM env contract; LiteLLM held at 1.83.0 to share an env with openai-agents; transient 500s -> num_retries")
     return 0 if solved else 1
 
 

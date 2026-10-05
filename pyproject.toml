@@ -12,24 +12,20 @@ dependencies = [
 
 [tool.uv]
 package = false
-# The five production harnesses cannot share one dependency resolution:
-# google-adk[extensions] (LiteLLM) conflicts with openai-agents. Ecosystem
-# fragmentation, made tangible — ADK runs from its own group:
-#   uv run --group block4 <specimen>          (four of five)
-#   uv run --group block4-adk google_adk/run.py
-conflicts = [[{ group = "block4" }, { group = "block4-adk" }]]
 
 [dependency-groups]
-block4-adk = [
-    "google-adk[extensions]>=2.8",
-    "python-dotenv>=1",
-    "pytest>=8",
-]
 block4 = [
     "claude-agent-sdk>=0.2.152",
     "deepagents>=0.7.13",
+    # ADK reaches non-Google models through LiteLLM. LiteLLM 1.84+ requires
+    # openai<3 and openai-agents requires openai>=3, so the resolver holds
+    # LiteLLM at 1.83.0, the last release without that limit. Install it
+    # directly: google-adk[extensions] requires LiteLLM 1.84+ and would put
+    # ADK and openai-agents back in conflict (and is 161 packages vs 75).
+    "google-adk>=2.8",
     "langchain-openai>=1.6.0",
     "langgraph>=1.2.11",
+    "litellm>=1.83.0",
     "openai-agents>=0.22.0",
     "pydantic-ai>=2.31.1",
 ]

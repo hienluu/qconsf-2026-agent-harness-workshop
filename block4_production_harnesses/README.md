@@ -67,12 +67,16 @@ Each `run.py` is ~100 lines, meant to be read as much as run — notice what
 you had to write, what came free, and what the harness assumed about who
 you are.
 
-Setup: the usual `.env` plus `uv sync --group block4`. Two notes baked
-into that sync, both part of the lesson: ADK lives in a separate
-dependency group because it cannot co-resolve with openai-agents, and the
-Claude Agent SDK wheel bundles a compiled Claude Code CLI (~90MB download,
-~190MB installed — one more reason the sync happens at home, not on venue
-WiFi).
+Setup: the usual `.env` plus `uv sync --group block4`, which installs all
+five harnesses into one environment. Two notes baked into that sync, both
+part of the lesson. First, getting ADK to share that environment took care.
+ADK reaches non-Google models through LiteLLM, and LiteLLM 1.84 and later
+require version 2 of the `openai` library, while OpenAI Agents requires
+version 3. So we install LiteLLM directly and stay on 1.83.0, the last
+release without that limit. ADK's own `[extensions]` bundle requires a newer
+LiteLLM and couldn't share the environment at all. Second, the Claude Agent
+SDK wheel bundles a compiled Claude Code CLI (~90MB download, ~190MB
+installed), one more reason the sync happens at home, not on venue WiFi.
 
 ## Exercise flow
 
@@ -116,11 +120,11 @@ each docstring says what to look for.
    finished task rather than quietly reporting that every harness
    succeeded in one turn.
 
-1. **Kit vs composable.** Run both, and compare their friction
-   cells: "none — a constructor argument" vs a paragraph plus its own
-   dependency group:
+1. **Kit vs composable.** Run both, and compare their friction cells.
+   Pydantic AI's says the provider is just a constructor argument; ADK's
+   lists the LiteLLM setup it needed:
    ```
-   uv run --group block4-adk google_adk/run.py
+   uv run --group block4 google_adk/run.py
    ```
 
    ```
@@ -243,7 +247,10 @@ weight-vs-horizon question from Q1, run in the other direction.
 3. Two harnesses needed an explicit workaround to run on our provider at
    all (Bearer auth for Claude's SDK, an explicit model object for
    OpenAI's). What does that predict about switching costs at your job?
-4. ADK couldn't even share a dependency resolution with OpenAI's SDK.
-   What does your platform team do with that fact?
+4. ADK and OpenAI's SDK share an environment here only because we hold
+   LiteLLM at an older release; ADK's convenient `[extensions]` install
+   can't coexist with OpenAI Agents at all. How would your team have caught
+   that before adopting both, and what happens the day you need a newer
+   LiteLLM?
 5. Every one of these solved the task. On what basis, then, would you
    actually choose? (That's Block 5.)
