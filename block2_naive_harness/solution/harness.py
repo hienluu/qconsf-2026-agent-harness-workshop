@@ -41,11 +41,20 @@ def run(workspace_dir: str, task: str) -> None:
     file read, tool result, and edit accumulates there, and the full list is
     resent to the model on every turn.
     """
-    client = OpenAI(
-        base_url=os.environ["PROVIDER_BASE_URL"],
-        api_key=os.environ["PROVIDER_API_KEY"],
-    )
+    provider_base_url = os.environ["PROVIDER_BASE_URL"]
+    provider_api_key = os.environ["PROVIDER_API_KEY"]
     model = os.environ["MODEL"]
+
+    print(f"====================================")
+    print(f"Using provider: {provider_base_url}")
+    print(f"Using model: {model}")
+    print(f"====================================")
+
+    client = OpenAI(
+        base_url=provider_base_url,
+        api_key=provider_api_key,
+    )
+    model = model
     ws = Workspace(workspace_dir)
 
     # The tool dispatcher: the bridge between what the model SAYS and what
