@@ -86,9 +86,9 @@ Sources: [ARC Prize's write-up](https://arcprize.org/blog/astra) and their
 [results page](https://arcprize.org/results/openai-gpt-6-astra).
 
 Two things to take from it rather than the headline gap. First, ARC Prize
-now reports the two harnesses as separately labelled conditions on its
-leaderboard — when a benchmark organisation adds a harness column, the
-question is settled. Second, this is one benchmark and one vendor's
+announced it will report the two harnesses as separately labelled
+conditions on its leaderboard. When a benchmark organisation adds a
+harness column, the question is settled. Second, this is one benchmark and one vendor's
 harness; treat the size of the gap as an illustration, not a constant.
 
 By the end of Block 3 you won't need this slide at all — you'll have

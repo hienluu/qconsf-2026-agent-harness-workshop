@@ -5,9 +5,9 @@ Choosing the Right Agent Harness"** — QCon San Francisco, November 19, 2026.
 
 An agent is a model plus a harness: the loop, tools, context management,
 memory, sandboxing, and guardrails around it. In this repo you build a
-minimal harness, characterize where and why it fails, measure what each
-added component buys, and then evaluate the production harnesses through
-the same lens.
+minimal harness, see what it costs and where it falls short, measure what
+each added component buys, and then run five production harnesses on the
+same task to see what each one decides for you.
 
 ## Setup (do this at home — venue WiFi will not support it)
 
@@ -27,12 +27,16 @@ uv run setup/check_setup.py    # expect: ALL GREEN
 
 | Path | Workshop block |
 |---|---|
-| `block1_why_harness_matters/` | Reference card: what a harness is, its components, the vendor spectrum (no code — Block 1 is slides) |
-| `block2_naive_harness/` | Build a minimal harness (loop + tool dispatch), run it on short tasks, break it on a long-horizon one |
-| `block3_measure/` | Same model + tasks through three harness configs; compare scores, costs, and traces |
-| `block4_production_harnesses/` | Claude Agent SDK, OpenAI Agents, Google ADK, Deep Agents, Pydantic AI — one task each |
-| `block5_framework/` | *(coming)* The harness decision rubric |
+| [`block1_why_harness_matters/`](./block1_why_harness_matters/README.md) | Reference card: what a harness is, its components, the vendor spectrum (no code: Block 1 is slides) |
+| [`block2_naive_harness/`](./block2_naive_harness/README.md) | Build a minimal harness (loop + tool dispatch), run it on a short task, then push it through a long one until it hits its turn limit |
+| [`block3_measure/`](./block3_measure/README.md) | Same model + tasks through three harness configs; compare cost, turns and traces |
+| [`block4_production_harnesses/`](./block4_production_harnesses/README.md) | Claude Agent SDK, OpenAI Agents, Google ADK, Deep Agents and Pydantic AI, all on the same task |
+| [`block5_decision_framework/`](./block5_decision_framework/WORKSHEET.md) | A worksheet that takes your own agent to a harness decision |
 | `scripts/` | `reset.py` (start any block over), `check_fixtures.py` (verify the task workspaces are still unsolved), plus the generators that rebuild workspaces from their green references |
 
-Start at `block1_why_harness_matters/README.md` for the vocabulary, then
+Start at [`block1_why_harness_matters/README.md`](./block1_why_harness_matters/README.md) for the vocabulary, then
 `block2_naive_harness/README.md` for the first hands-on block.
+
+## License
+
+MIT. See [LICENSE](./LICENSE).
