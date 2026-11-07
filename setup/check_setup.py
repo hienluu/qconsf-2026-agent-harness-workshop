@@ -47,6 +47,24 @@ def main() -> int:
         ok = importlib.util.find_spec(module) is not None
         check(f"package: {module}", ok, "run: uv sync (then invoke via uv run)")
 
+    # Block 4 runs five production harnesses. A plain `uv sync` installs
+    # them too, but check here so a missing one shows up at home rather
+    # than as a download on venue WiFi.
+    for module, label in (
+        ("claude_agent_sdk", "Claude Agent SDK"),
+        ("agents", "OpenAI Agents SDK"),
+        ("google.adk", "Google ADK"),
+        ("litellm", "LiteLLM (used by Google ADK)"),
+        ("deepagents", "Deep Agents"),
+        ("langgraph", "LangGraph"),
+        ("pydantic_ai", "Pydantic AI"),
+    ):
+        try:
+            ok = importlib.util.find_spec(module) is not None
+        except ModuleNotFoundError:
+            ok = False
+        check(f"Block 4: {label}", ok, "run: uv sync (it installs the Block 4 frameworks too), then retry")
+
     try:
         from dotenv import load_dotenv
 

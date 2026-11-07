@@ -12,6 +12,9 @@ dependencies = [
 
 [tool.uv]
 package = false
+# Install Block 4's frameworks with a plain `uv sync`, so attendees get
+# everything at home and nothing has to download on venue WiFi.
+default-groups = ["block4"]
 
 [dependency-groups]
 block4 = [
