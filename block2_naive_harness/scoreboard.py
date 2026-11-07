@@ -102,7 +102,7 @@ class Scoreboard:
         # turn boundary is visible, and this line IS the end of a turn.
         print()
 
-    def summary(self, finished: bool, turn: int | None = None) -> None:
+    def summary(self, finished: bool, turn: int | None = None, workspace=None) -> None:
         turns = turn or self.last_turn
         print(
             f"\n   ── run over after {turns} turns: {sum(self.counts.values())} tool calls, "
@@ -115,4 +115,18 @@ class Scoreboard:
         if not self.counts.get("run_tests"):
             print("   ── it never ran the tests. It had the tool the whole time.")
         elif not finished:
-            print("   ── it ran the tests but never got them green inside the budget.")
+            # Judge by running the tests, never by whether the agent SAID it was
+            # done. A run can finish the work on its last turn and run out of
+            # budget before it reads the result: that's a different story from
+            # a run that ran out mid-job, and the old message told both as one.
+            last = ""
+            if workspace is not None:
+                last = (workspace.run_tests().strip().splitlines() or [""])[-1]
+            green = "passed" in last and "failed" not in last and "error" not in last
+            if workspace is None:
+                print("   ── it ran out of turns before saying it was done.")
+            elif green:
+                print(f"   ── it ran out of turns before saying it was done, but the work was "
+                      f"finished: the tests pass ({last}). It just never got to tell you.")
+            else:
+                print(f"   ── it ran out of turns with the job unfinished: {last}.")

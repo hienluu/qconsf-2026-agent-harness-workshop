@@ -12,9 +12,9 @@ Time: ~55 minutes. Everything runs locally against your provider API key.
 Cost for the whole exercise: roughly $1–2.
 
 The plan: complete a minimal agent harness, verify it handles a short task,
-then give it a task sized past its design limits and characterize how it
-fails. The failure modes you observe here are what Block 3 fixes and
-measures.
+then give it a task sized past its design limits and watch what it takes
+to get through it. What you see here (the cost, the close calls and the
+failures) is what Block 3 measures.
 
 Everything below runs via `uv run` — no virtualenv to create or activate, ever. uv finds the
 project environment itself and installs anything missing on first run, so
@@ -203,7 +203,8 @@ uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
   "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
 
-**What a typical run looks like.** A full run of this task, turn by turn:
+**One run, turn by turn.** Runs vary (more on that below), but this one is
+a good guide to how the agent spends its turns:
 
 | Turns | What the agent does |
 |---|---|
@@ -248,19 +249,27 @@ component doing nothing, because your harness doesn't have it:
 | Write batches grow as it tries to edit many files in one turn | Nothing bounds what the model must produce in a single reply |
 | It re-reads files it already handled, because the only record of its progress is the conversation | Durable memory |
 
-**What to expect: failure**, in one of two ways.
+**What to expect: it hits the 20-turn limit.** What it leaves behind
+varies. In our runs, it ended one of three ways:
 
-- **The budget runs out** — the common case. Twenty turns spent, the
-  codebase partly migrated, the suite still red.
-- **A crash** — a raw Python traceback mid-run. The model tried to write
+- **It finished the work but never said so.** Every edit made, the tests
+  run on the very last turn, and the budget gone before it could read the
+  result. The scoreboard checks the tests itself and tells you. Two of our
+  three most recent runs ended this way.
+- **It ran out mid-job.** The codebase partly migrated, the tests still
+  failing. Our third recent run ended this way.
+- **It crashed.** A raw Python traceback mid-run. The model tried to write
   many large files in one turn, hit its output limit partway through, and
-  sent a truncated tool call. Your harness calls `json.loads` on it with
-  nothing to catch the error, so the process dies.
+  sent a tool call cut off in the middle. Your harness calls `json.loads`
+  on it with nothing to catch the error, so the process dies. About one
+  long run in four did this in September; none of the three most recent
+  did.
 
-Note what failure does *not* mean here: the agent read correctly, planned
-sensibly, and every file it wrote was correct. It simply could not fit the
-job into the turns and tokens available — and nothing in the system was
-measuring whether it would.
+Whichever you get, look at the cost line: our recent runs sent between
+430,000 and 615,000 input tokens to do one migration, because the whole
+conversation goes back to the model on every call. And even the runs that
+finished couldn't tell you so. The only way to know was to check the tests
+yourself, which is exactly what a harness should have done.
 
 **Reset before any second attempt.** The agent edits files on disk, so a
 stranded run leaves real work behind — and if you re-run without
@@ -272,9 +281,10 @@ stranded 56 files, run two picked them up and reported "all 35 tests
 pass.") Run `uv run ../scripts/reset.py`, then
 `uv run ../scripts/check_fixtures.py` to confirm.
 
-**Record three numbers before moving on**: which outcome you got, the turn
-it ended on, and the wall time. Block 3 runs this same task through
-protected harnesses and compares against exactly these.
+**Record three things before moving on**: which outcome you got, the turn
+it ended on, and the input tokens it sent. Block 3 runs this same task
+through protected harnesses and compares against exactly these. (Wall time
+isn't one of them: it mostly measures how busy the provider was.)
 
 **Then look at what it left behind:**
 
@@ -282,10 +292,12 @@ protected harnesses and compares against exactly these.
 uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 ```
 
-A failed run usually leaves the codebase partially migrated — real work
-completed, then stranded with no record of what was done or what remained.
-That stranded state is the point: the agent didn't run out of *ability*,
-it ran out of the things a harness provides.
+If it ran out mid-job, you'll see a partly migrated codebase: real work,
+stranded, with no record of what was done or what remained. If it
+finished, the tests pass and the agent still never knew. Either way the
+point is the same. The agent didn't run out of *ability*. It ran out of the
+things a harness provides: a record of its progress, a budget it could
+see, and a check on whether it was done.
 
 ## Debrief questions
 
@@ -293,13 +305,15 @@ Standard incident-review questions, applied to your run — a postmortem on
 an agent instead of an outage. Answer for yourself before the group
 discussion:
 
-1. What was the *proximate* cause of death in YOUR run? (Read the last few
-   lines of output.)
+1. How did YOUR run end, and what caused it? (Read the last few lines of
+   output.)
 2. Where did most of the context go? (Reads? Search results? Test output?
    The agent's own file rewrites?)
 3. What did the agent "know" at turn 5 that it had effectively lost by the
-   time it died?
+   end?
 4. Which of these would a better *model* fix? Which need a better *harness*?
+5. If your run finished the work, how would anyone have known without
+   running the tests by hand?
 
 The table at the top of this page maps each failure to the harness
 component that was missing. Block 3 adds those components one at a time —

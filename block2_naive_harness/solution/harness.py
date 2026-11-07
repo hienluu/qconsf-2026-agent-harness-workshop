@@ -123,7 +123,7 @@ def run(workspace_dir: str, task: str) -> None:
 
         board.report(turn, messages)
 
-    board.summary(finished=False)
+    board.summary(finished=False, workspace=ws)
     print(f"\ngave up after {MAX_TURNS} turns without finishing")
 
 
