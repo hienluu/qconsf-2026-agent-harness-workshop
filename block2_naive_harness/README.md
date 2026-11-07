@@ -75,8 +75,12 @@ moments that matter:
   up the tool, invoke it, append the result to the transcript.
 
 Each TODO comment shows you exactly what to write. If you're stuck or short
-on time, copy from `solution/harness.py` and move on — the point of this
+on time, copy from `solution/harness.py` and move on. The point of this
 block is what happens next, not the typing.
+
+Or skip the typing and run the finished harness directly. It takes the same
+two arguments, so every command below works with either file: just swap
+`harness_skeleton.py` for `solution/harness.py`.
 
 ### Step 3 — Run it on a small task (5 min)
 
@@ -124,9 +128,13 @@ it visible.** Look at line 6 — the buggy loop bound. Your editor will
 reload the file the moment the agent rewrites it, so you can watch the
 edit land.
 
-**Now run your agent against it.** The harness takes two arguments — the
-workspace directory (the only files the agent's tools can see) and the task
-prompt (`uv run harness_skeleton.py --help` for details):
+**Now run your agent against it.** The harness takes two arguments:
+
+- **a workspace directory**: the only files the agent's tools can see
+- **the task, in plain English and in quotes**: it becomes the agent's
+  first message
+
+`uv run harness_skeleton.py --help` prints the same.
 
 ```
 uv run harness_skeleton.py tasks/short/01_fix_bug/workspace \
@@ -249,27 +257,40 @@ component doing nothing, because your harness doesn't have it:
 | Write batches grow as it tries to edit many files in one turn | Nothing bounds what the model must produce in a single reply |
 | It re-reads files it already handled, because the only record of its progress is the conversation | Durable memory |
 
-**What to expect: it hits the 20-turn limit.** What it leaves behind
-varies. In our runs, it ended one of three ways:
+**What to expect: it uses most or all of its 20 turns.** How it ends
+varies from run to run. All four of these have happened in our runs:
 
+- **It finished, and said so.** Every edit made, the tests run and
+  passing, and a closing summary from the agent. Nothing looks wrong, which
+  is exactly why the next section matters most for this outcome.
 - **It finished the work but never said so.** Every edit made, the tests
   run on the very last turn, and the budget gone before it could read the
-  result. The scoreboard checks the tests itself and tells you. Two of our
-  three most recent runs ended this way.
+  result. The scoreboard checks the tests itself and tells you.
 - **It ran out mid-job.** The codebase partly migrated, the tests still
-  failing. Our third recent run ended this way.
+  failing.
 - **It crashed.** A raw Python traceback mid-run. The model tried to write
   many large files in one turn, hit its output limit partway through, and
   sent a tool call cut off in the middle. Your harness calls `json.loads`
-  on it with nothing to catch the error, so the process dies. About one
-  long run in four did this in September; none of the three most recent
-  did.
+  on it with nothing to catch the error, so the process dies.
 
-Whichever you get, look at the cost line: our recent runs sent between
-430,000 and 615,000 input tokens to do one migration, because the whole
-conversation goes back to the model on every call. And even the runs that
-finished couldn't tell you so. The only way to know was to check the tests
-yourself, which is exactly what a harness should have done.
+The first two have been the most common recently, and crashes the rarest.
+
+**Read your output, whatever happened.** A clean finish teaches as much as
+a crash, as long as you know where to look. Three questions:
+
+1. **What did it cost?** The scoreboard's last lines compare what the
+   conversation finally weighed with everything the harness sent to get
+   there. In one of our runs the conversation ended at about 22,000 tokens,
+   and the harness had sent 455,000: it paid for that conversation about
+   20 times over, because it re-sends all of it on every turn. That gap is
+   what Block 3 goes after.
+2. **How close did it come?** Note the turn it ended on. A run that finished
+   on turn 20 of 20 had no room for one more surprise, and nothing in the
+   harness was watching the budget or how much work was left, so it
+   couldn't have warned you.
+3. **What did the people around you get?** Same code, same model, same
+   task. The room will usually see more than one of the outcomes above. One
+   run tells you very little, and that's where Block 3 starts.
 
 **Reset before any second attempt.** The agent edits files on disk, so a
 stranded run leaves real work behind — and if you re-run without
@@ -294,10 +315,11 @@ uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 
 If it ran out mid-job, you'll see a partly migrated codebase: real work,
 stranded, with no record of what was done or what remained. If it
-finished, the tests pass and the agent still never knew. Either way the
-point is the same. The agent didn't run out of *ability*. It ran out of the
-things a harness provides: a record of its progress, a budget it could
-see, and a check on whether it was done.
+finished, the tests pass, and whether the agent said so came down to
+whether it had a turn left. Either way the point is the same. When this
+harness struggles, it isn't for lack of *ability*. It's for lack of the
+things a harness provides: a record of its progress, a budget it can see,
+and a check on whether it's done.
 
 ## Debrief questions
 
@@ -312,8 +334,8 @@ discussion:
 3. What did the agent "know" at turn 5 that it had effectively lost by the
    end?
 4. Which of these would a better *model* fix? Which need a better *harness*?
-5. If your run finished the work, how would anyone have known without
-   running the tests by hand?
+5. If your run finished, how would you know without either taking the
+   agent's word for it or running the tests by hand?
 
 The table at the top of this page maps each failure to the harness
 component that was missing. Block 3 adds those components one at a time —

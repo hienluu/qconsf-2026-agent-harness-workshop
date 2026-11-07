@@ -28,6 +28,7 @@ class Scoreboard:
         self.output_tokens = 0
         self.first_write_turn = None
         self.last_turn = 0
+        self.last_chars = 0
         self.said = set()
 
     def legend(self) -> None:
@@ -74,6 +75,7 @@ class Scoreboard:
     def report(self, turn: int, messages: list) -> None:
         self.last_turn = turn
         chars = sum(len(m.get("content") or "") for m in messages if isinstance(m, dict))
+        self.last_chars = chars
         tally = "  ".join(
             f"{n.replace('_file', '').replace('run_', '')} {self.counts.get(n, 0)}"
             for n in ("read_file", "write_file", "search", "run_tests")
@@ -109,6 +111,15 @@ class Scoreboard:
             f"{self.input_tokens:,} input tokens sent "
             f"(the whole transcript went over the wire on every one of them)."
         )
+        # The lesson that holds whatever the outcome: what the conversation
+        # finally weighed, against what was sent to get there.
+        conversation = self.last_chars // 4
+        if conversation:
+            times = round(self.input_tokens / conversation)
+            print(f"   ── it sent {self.input_tokens:,} input tokens for a conversation that "
+                  f"ended at about {conversation:,} tokens: you paid for that conversation "
+                  f"about {times} times over, because the harness re-sends all of it on "
+                  f"every turn.")
         if self.rereads:
             print(f"   ── it re-read {self.rereads} file(s) it had already seen: "
                   f"information it had, then didn't.")
