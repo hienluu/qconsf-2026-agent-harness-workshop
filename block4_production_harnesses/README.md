@@ -177,8 +177,9 @@ each docstring says what to look for.
    model stopped rewriting files and started scripting; the decisive
    advantage wasn't the loop or compaction but tool design changing which
    algorithm the model chose. (The same Bash tool is why production
-   harnesses need sandboxing and permissions — we ran `bypassPermissions`
-   on a disposable copy, deliberately.)
+   harnesses need sandboxing and permissions. We ran `bypassPermissions`
+   on a disposable copy, deliberately, and a copy is not a sandbox: see
+   "What 'sandbox' means here" below.)
 
 ## Starting over
 
@@ -217,6 +218,28 @@ fixture that passes is a solved task, and measuring against it is
 meaningless — and confirms the reference copies still pass.
 
 Then rerun the exercise flow from step 1.
+
+## What "sandbox" means here (less than you might think)
+
+Every run works on a **disposable copy** of the task under `runs/`. That
+makes runs repeatable and keeps the original task unsolved. It is not
+security. Here is what each run can actually reach:
+
+| Harness | File tools | What enforces the boundary |
+|---|---|---|
+| Google ADK, Pydantic AI, OpenAI Agents, LangGraph | ours, from `common.py` | Python code in `_inside()`: paths that climb out (`../`) or start at `/` are refused |
+| Deep Agents | its own | its `FilesystemBackend` with `virtual_mode=True`. Set it to `False` and the boundary is gone: we watched an agent edit the original task that way |
+| Claude Agent SDK | Claude Code's, including Bash | **nothing.** `bypassPermissions` gives it a shell as you. The copy is only where it starts, and it has written outside it |
+
+And one thing every harness shares: `run_tests` runs pytest on the copy,
+which **executes the code the agent wrote, with your user's permissions.**
+Whatever that code does, it can do anything you can.
+
+So every boundary here is a rule in application code, not operating-system
+isolation such as a container or a VM. That's acceptable for a workshop
+task on your own laptop. For an agent that runs untrusted code, or can
+reach anything you care about, the isolation is your job, whichever
+harness you pick.
 
 ## Extra credit: the trivial task
 

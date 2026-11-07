@@ -58,6 +58,25 @@ OFF = "\033[0m"
 _turn = {"n": 0}
 
 
+def run_context() -> dict:
+    """Where a result came from, so results from different setups are never
+    mixed up: the provider's host (never the key) and the repo commit."""
+    from urllib.parse import urlparse
+    import os
+    base_url = os.environ.get("PROVIDER_BASE_URL", "")
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout.strip()
+    except Exception:
+        commit = ""
+    return {
+        "model": os.environ.get("MODEL", ""),
+        "provider": urlparse(base_url).netloc or base_url,
+        "repo_commit": commit,
+    }
+
 def new_turn() -> int:
     """Call once per model request. Prints a blank line between turns (not
     before the first), so a long trace reads as blocks the way Block 3's
@@ -156,11 +175,23 @@ def ws_list(workspace: Path) -> str:
     )
 
 
+def _inside(workspace: Path, path: str) -> Path | None:
+    """Resolve a tool's path, or None if it lands outside the workspace.
+    `workspace / path` alone is not a boundary: "../x" climbs out, and an
+    absolute path replaces the workspace entirely. Same rule as Block 2's
+    Workspace._path."""
+    root = workspace.resolve()
+    target = (root / path).resolve()
+    return target if target.is_relative_to(root) else None
+
+
 def ws_read(workspace: Path, path: str) -> str:
     """Read a file; errors come back as messages the model can act on,
     never exceptions — some harnesses (ADK) crash the whole run on a
     raised tool error, which is the h2 lesson in reverse."""
-    target = workspace / path
+    target = _inside(workspace, path)
+    if target is None:
+        return f"error: {path!r} is outside the workspace"
     if target.is_dir():
         return f"error: {path!r} is a directory, not a file. Files:\n{ws_list(workspace)}"
     if not target.is_file():
@@ -169,7 +200,9 @@ def ws_read(workspace: Path, path: str) -> str:
 
 
 def ws_write(workspace: Path, path: str, content: str) -> str:
-    target = workspace / path
+    target = _inside(workspace, path)
+    if target is None:
+        return f"error: {path!r} is outside the workspace"
     if target.is_dir():
         return f"error: {path!r} is a directory"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -272,6 +305,7 @@ def receipt(
         "provider_friction": provider_friction,
         "code_lines": len(Path(script).read_text().splitlines()),
         "timestamp": time.time(),
+        **run_context(),
     }
 
     receipts = BLOCK4 / "runs" / "receipts.jsonl"

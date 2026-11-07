@@ -129,6 +129,17 @@ against harness+luck — treat one-run differences as direction, not
 magnitude, and collect several runs per cell before quoting numbers.
 Every run is preserved in `results/results.jsonl` for exactly this reason.
 
+Two more limits on what the table can tell you:
+
+- **h2 changes three things at once** (truncation, recovery, compaction).
+  So h1 against h2 compares two configurations; it can't say which of the
+  three earned the difference. The ablation in step 5 is how you'd pull
+  one apart.
+- **Rows only compare if they ran on the same model and provider.** Every
+  result records both, and `compare.py` prints a warning when the rows it
+  shows came from different setups. That includes the shipped h1 baseline
+  row, which was measured on GLM-5.3 via Baseten.
+
 ## The task suite
 
 Five tasks are available here. Each is a small codebase with a test suite,
@@ -694,6 +705,10 @@ pass, convincingly.**
 - Solved means **pytest exits green on the workspace afterward**. The
   agent's self-report is never consulted. Your harness evaluation at work
   should share this property: external checkers on your tasks.
+- Green tests are this exercise's definition of done, not proof the code
+  is correct. They're only as good as what they check. At work, a passing
+  checker tells you the agent met *your* bar, so how good that bar is
+  matters as much as which harness you pick.
 - `results/results.jsonl` accumulates every run; `compare.py` shows the
   latest per cell (with a `when` column so you can tell recent rows from
   old ones). Rerunning a cell needs no reset — each run copies the

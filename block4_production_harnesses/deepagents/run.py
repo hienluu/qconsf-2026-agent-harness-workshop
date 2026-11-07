@@ -73,7 +73,7 @@ def main() -> int:
             max_retries=5,  # the workshop provider throws occasional 500s
         ),
         # The harness's own file tools, aimed at the run's private copy.
-        # virtual_mode=True is the SANDBOXED mode: paths are confined to
+        # virtual_mode=True is the confined mode: paths are kept inside
         # root_dir. With virtual_mode=False the library documents that
         # "absolute paths are allowed as-is" — root_dir becomes a default
         # for relative paths, not a boundary — and we watched an agent walk
