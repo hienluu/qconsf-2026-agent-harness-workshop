@@ -7,6 +7,7 @@ the output to the workshop help desk (before 9am, not during).
 """
 
 import importlib.util
+import json
 import os
 import sys
 
@@ -96,6 +97,44 @@ def main() -> int:
                 False,
                 f"API call failed: {exc}",
             )
+        else:
+            # Every block depends on tool calling, and a model or proxy can
+            # answer plain text perfectly well and still fail at tools. So
+            # ask for one real tool call and check what comes back.
+            tool_ok, tool_hint = False, ""
+            try:
+                reply = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content":
+                               "Call the report_status tool with status set to 'ready'."}],
+                    tools=[{
+                        "type": "function",
+                        "function": {
+                            "name": "report_status",
+                            "description": "Report a status word.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {"status": {"type": "string"}},
+                                "required": ["status"],
+                            },
+                        },
+                    }],
+                    max_tokens=100,
+                )
+                calls = reply.choices[0].message.tool_calls or []
+                if not calls:
+                    tool_hint = ("the model replied in text instead of calling the tool. "
+                                 "The workshop needs a model and provider that support tool calling")
+                elif calls[0].function.name != "report_status":
+                    tool_hint = f"the model called an unexpected tool: {calls[0].function.name}"
+                else:
+                    json.loads(calls[0].function.arguments or "{}")
+                    tool_ok = True
+            except json.JSONDecodeError:
+                tool_hint = "the model's tool call arguments weren't valid JSON"
+            except Exception as exc:
+                tool_hint = f"tool-calling request failed: {exc}"
+            check("tool calling works", tool_ok, tool_hint)
 
     print()
     if failures:

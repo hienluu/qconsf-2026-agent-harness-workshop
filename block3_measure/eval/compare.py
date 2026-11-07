@@ -3,8 +3,10 @@
     uv run eval/compare.py
 
 Shows the LATEST run for each (harness, task) pair. This table is the
-payoff of Block 3: same model, same tasks, same tools — the harness is
-the only variable, and here is what it was worth.
+payoff of Block 3: same model, same tasks, same tools, different
+harnesses. Two things it can't separate out: the model's run-to-run
+randomness (one run per row), and which of a harness's protections did the
+work (h2 adds three at once).
 """
 
 import json
@@ -51,7 +53,7 @@ def main() -> int:
 
     console = Console()
     table = Table(
-        title="Same model, same tasks — the harness is the only variable",
+        title="Same model, same tasks, different harnesses (one run each)",
         caption=(
             "fired = times each protection acted: ✂cut tool output · ✂✂dropped old output · ↻recovered\n"
             "not re-sent = transcript characters the harness kept off the wire, counted once per\n"
@@ -106,6 +108,19 @@ def main() -> int:
         table.add_section()
 
     console.print(table)
+    # Rows only compare if they came from the same model and provider. The
+    # shipped baseline row was measured on GLM-5.3; say so if yours differs.
+    setups = {}
+    for (harness, task), row in latest.items():
+        setup = row.get("model") or "unknown model"
+        if row.get("provider"):
+            setup += f" via {row['provider']}"
+        setups.setdefault(setup, []).append(f"{harness}/{task}")
+    if len(setups) > 1:
+        console.print("[yellow]These rows came from different setups, so they don't "
+                      "compare directly:[/yellow]")
+        for setup, rows in setups.items():
+            console.print(f"[yellow]  {setup}: {', '.join(sorted(rows))}[/yellow]")
     if not any((latest.get(k, {}).get("notes") or {}).get("chars_not_resent")
                for k in latest):
         console.print(

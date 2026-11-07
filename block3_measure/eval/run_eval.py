@@ -50,6 +50,25 @@ from tasks import TASKS  # noqa: E402
 HARNESSES = {"h1": "h1_naive", "h2": "h2_managed", "h3": "h3_full"}
 
 
+def run_context() -> dict:
+    """Where a result came from, so results from different setups are never
+    mixed up: the provider's host (never the key) and the repo commit."""
+    from urllib.parse import urlparse
+    import os
+    base_url = os.environ.get("PROVIDER_BASE_URL", "")
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout.strip()
+    except Exception:
+        commit = ""
+    return {
+        "model": os.environ.get("MODEL", ""),
+        "provider": urlparse(base_url).netloc or base_url,
+        "repo_commit": commit,
+    }
+
 def check_tests(workspace: Path) -> tuple[bool, str]:
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "-q"],
@@ -114,8 +133,8 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
         task=task_name,
         tests_green=tests_green,
         pytest_summary=pytest_summary,
-        model=__import__("os").environ.get("MODEL", ""),
         timestamp=time.time(),
+        **run_context(),
     )
     verdict = "SOLVED" if tests_green else f"NOT SOLVED ({result.status})"
     print(
