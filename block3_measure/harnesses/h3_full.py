@@ -231,6 +231,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                         ),
                     })
                     result.notes["malformed_calls"] = result.notes.get("malformed_calls", 0) + 1
+                    board.mark("↻")
                     print(f"\033[35m↻  [{NAME} turn {turn}] {name}: malformed tool call — fed back as a recoverable error (h1 crashes here)\033[0m")
                     continue
                 if name == "update_notes":
@@ -247,6 +248,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 capped, cut = truncate(result_text)
                 if cut:
                     result.notes["truncations"] = result.notes.get("truncations", 0) + 1
+                    board.mark("✂")
                     result.notes["chars_truncated"] = result.notes.get("chars_truncated", 0) + cut
                     trimmed_chars += cut
                     print(f"\033[33m✂  [{NAME} turn {turn}] truncated {name} output: "
@@ -263,6 +265,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 freed = size_before - sum(len(str(m.get("content") or "")) for m in messages)
                 trimmed_chars += freed
                 result.notes["dropped_tool_outputs"] = result.notes.get("dropped_tool_outputs", 0) + dropped
+                board.mark("✂✂", dropped)
                 result.notes["chars_compacted"] = result.notes.get("chars_compacted", 0) + freed
                 print(f"\033[33m✂  [{NAME} turn {turn}] compaction: dropped {dropped} old tool "
                       f"output(s), freeing {freed:,} chars\033[0m")
@@ -272,7 +275,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
         result.error = f"{type(exc).__name__}: {exc}"
         print(f"\n[{NAME}] CRASHED: {result.error}")
 
-    board.summary(finished=result.status == "completed")
+    board.summary(finished=result.status == "completed", error=result.error)
     if board.rereads:
         result.notes["rereads"] = board.rereads
     result.wall_seconds = round(time.monotonic() - start, 1)

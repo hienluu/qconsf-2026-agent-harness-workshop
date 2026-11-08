@@ -114,7 +114,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
         result.error = f"{type(exc).__name__}: {exc}"
         print(f"\n[{NAME}] CRASHED: {result.error}")
 
-    board.summary(finished=result.status == "completed")
+    board.summary(finished=result.status == "completed", error=result.error)
     if board.rereads:
         result.notes["rereads"] = board.rereads
     result.wall_seconds = round(time.monotonic() - start, 1)

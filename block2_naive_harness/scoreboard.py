@@ -100,6 +100,14 @@ class Scoreboard:
             path = args["path"]
             self.paths_read[path] = self.paths_read.get(path, 0) + 1
 
+    def mark(self, kind: str, n: int = 1) -> None:
+        """A protection fired this turn (Block 3's h2/h3): ✂ a tool result was
+        cut, ✂✂ old results were dropped (compaction), ↻ a malformed call was
+        recovered. Shown in the table's `fired` column."""
+        if self.turns:
+            fired = self.turns[-1].setdefault("fired", {})
+            fired[kind] = fired.get(kind, 0) + n
+
     @property
     def rereads(self) -> int:
         return sum(n - 1 for n in self.paths_read.values() if n > 1)
@@ -167,11 +175,16 @@ class Scoreboard:
         for row in self.turns:
             if row["conversation"] is None:  # the final call: nothing reported after it
                 row["turn"] = last_turn + 1
-                row["did"] = row["did"] or "none (finished)"
+                row["did"] = row["did"] or ("crashed" if getattr(self, "crashed", False) else "none (finished)")
                 row["conversation"] = self.last_chars // 4 + len(row["says"]) // 4
                 row["added"] = len(row["says"]) // 4
             last_turn = row["turn"]
         self.final_conversation = self.turns[-1]["conversation"]
+        for row in self.turns:
+            # A recovered malformed call never parsed, so it isn't a counted
+            # tool call; say what it was rather than leave the cell blank.
+            if not row["did"] and "↻" in (row.get("fired") or {}):
+                row["did"] = "malformed call"
         top = max(r["sent"] for r in self.turns) or 1
         show_cache = self.cache_reported
         # Columns run in the order things happen: what the call sent, what
@@ -180,6 +193,9 @@ class Scoreboard:
         if show_cache:
             head += f"{'cached':>8}"
         head += f"  {'':<20}  {'tool calls':<17}{'added':>9}"
+        show_fired = any(r.get("fired") for r in self.turns)
+        if show_fired:
+            head += f"  {'fired':<11}"
         # What the agent said goes in a last column sized to the terminal. On a
         # window too narrow for a useful column, it goes under the row instead.
         import shutil
@@ -198,6 +214,9 @@ class Scoreboard:
                 line += f"{pct:>8}"
             bar = "█" * max(1, round(20 * r["sent"] / top))
             line += f"  {bar:<20}  {r['did']:<17}{r['added']:>+9,}"
+            if show_fired:
+                fired = " ".join(f"{k}{v}" for k, v in (r.get("fired") or {}).items())
+                line += f"  \033[33m{fired:<11}\033[0m"
             said = " ".join(r["says"].split())
             if said and says_column:
                 said = said if len(said) <= room else said[: room - 1] + "…"
@@ -221,8 +240,13 @@ class Scoreboard:
               "     calls) plus the tool results (≈, characters ÷ 4). On the last turn that's just its\n"
               "     closing message. Every later turn pays to send it again. A negative number\n"
               "     means the harness dropped something from the conversation.\033[0m")
+        if show_fired:
+            print("\033[2m   fired: protections that acted that turn. ✂ a tool result was cut,\n"
+                  "     ✂✂ old tool results were dropped (compaction), ↻ a malformed call was recovered.\033[0m")
 
-    def summary(self, finished: bool, turn: int | None = None, workspace=None) -> None:
+    def summary(self, finished: bool, turn: int | None = None, workspace=None,
+                error: str | None = None) -> None:
+        self.crashed = bool(error)
         self.turn_table()
         # The table counts the final call too; harnesses that don't pass `turn`
         # (Block 3's) would otherwise report the last turn that used a tool.
@@ -233,7 +257,9 @@ class Scoreboard:
         # SAID it was done: a run can finish the work on its last turn and run
         # out of budget before it reads the result.
         ended = f"turn {turns} of {self.max_turns}, "
-        if finished:
+        if error:
+            ended += f"the harness crashed ({error})"
+        elif finished:
             ended += "the agent said it was done"
         elif workspace is None:
             ended += "out of turns before saying it was done"

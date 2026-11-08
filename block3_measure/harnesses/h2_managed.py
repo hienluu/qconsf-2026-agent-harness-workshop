@@ -40,7 +40,32 @@ from base import (
 # base puts block2 on sys.path (for tools); reuse its scoreboard too.
 from scoreboard import Scoreboard  # noqa: E402
 
-NAME = "h2_managed"
+# [h2, optional] TURN_NOTICE tells the model how much of its turn budget is
+# left: TURN_NOTICE=every after every turn, or TURN_NOTICE=10,15,20 after
+# just those turns. Off by default. Each schedule is recorded under its own
+# name, so it never mixes with plain h2's numbers or another schedule's.
+def _notice_schedule(raw: str):
+    if not raw:
+        return None
+    if raw.strip().lower() == "every":
+        return "every"
+    try:
+        turns = sorted({int(x) for x in raw.split(",") if x.strip()})
+    except ValueError:
+        turns = []
+    if not turns or turns[0] < 1 or turns[-1] > MAX_TURNS:
+        raise SystemExit(f"TURN_NOTICE must be 'every' or turn numbers from 1 to {MAX_TURNS}, "
+                         f"comma-separated (e.g. 10,15,20); got {raw!r}")
+    return turns
+
+
+TURN_NOTICE = _notice_schedule(_os.environ.get("TURN_NOTICE", ""))
+if TURN_NOTICE is None:
+    NAME = "h2_managed"
+elif TURN_NOTICE == "every":
+    NAME = "h2_managed+turns"
+else:
+    NAME = "h2_managed+turns@" + ",".join(map(str, TURN_NOTICE))
 
 # [h2] Protection knobs.
 MAX_TOOL_RESULT_CHARS = 6_000     # per tool result fed back to the model
@@ -190,6 +215,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                         ),
                     })
                     result.notes["malformed_calls"] = result.notes.get("malformed_calls", 0) + 1
+                    board.mark("↻")
                     print(f"\033[35m↻  [{NAME} turn {turn}] {name}: malformed tool call — fed back as a recoverable error (h1 crashes here)\033[0m")
                     continue
                 board.record_tool(name, turn, args)
@@ -203,6 +229,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 capped, cut = truncate(result_text)
                 if cut:
                     result.notes["truncations"] = result.notes.get("truncations", 0) + 1
+                    board.mark("✂")
                     result.notes["chars_truncated"] = result.notes.get("chars_truncated", 0) + cut
                     trimmed_chars += cut
                     print(f"\033[33m✂  [{NAME} turn {turn}] truncated {name} output: "
@@ -213,6 +240,16 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     "content": capped,
                 })
 
+            # [h2, optional] Budget notice, appended to this turn's last tool
+            # result: the end of the conversation, so the start (and the
+            # provider's cache) never changes, and every tool call still has
+            # exactly one result message.
+            due = TURN_NOTICE == "every" or (TURN_NOTICE and turn in TURN_NOTICE)
+            if due and messages and messages[-1].get("role") == "tool":
+                notice = f"[harness] turn {turn} of {MAX_TURNS} used: {MAX_TURNS - turn} left."
+                messages[-1]["content"] += "\n" + notice
+                print(f"\033[2m⏱  told the model: {notice}\033[0m")
+
             # [h2] End-of-turn compaction pass. Highlighted (yellow, scissors)
             # so the room can see the harness act, not just the agent.
             size_before = sum(len(str(m.get("content") or "")) for m in messages)
@@ -221,6 +258,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 freed = size_before - sum(len(str(m.get("content") or "")) for m in messages)
                 trimmed_chars += freed
                 result.notes["dropped_tool_outputs"] = result.notes.get("dropped_tool_outputs", 0) + dropped
+                board.mark("✂✂", dropped)
                 result.notes["chars_compacted"] = result.notes.get("chars_compacted", 0) + freed
                 print(f"\033[33m✂  [{NAME} turn {turn}] compaction: dropped {dropped} old tool "
                       f"output(s), freeing {freed:,} chars\033[0m")
@@ -230,7 +268,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
         result.error = f"{type(exc).__name__}: {exc}"
         print(f"\n[{NAME}] CRASHED: {result.error}")
 
-    board.summary(finished=result.status == "completed")
+    board.summary(finished=result.status == "completed", error=result.error)
     if board.rereads:
         result.notes["rereads"] = board.rereads
     result.wall_seconds = round(time.monotonic() - start, 1)
