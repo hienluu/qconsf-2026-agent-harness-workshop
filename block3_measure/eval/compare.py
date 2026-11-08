@@ -27,7 +27,7 @@ def age(timestamp: float) -> str:
 
 RESULTS = Path(__file__).resolve().parent.parent / "results" / "results.jsonl"
 HARNESS_ORDER = ["h1_naive", "h2_managed", "h2_managed+turns", "h3_full", "h3_no_notes"]
-TASK_ORDER = ["fix_bug", "add_function", "small_rename", "bug_hunt", "refactor_v2"]
+TASK_ORDER = ["fix_bug", "touch_tests", "add_function", "small_rename", "bug_hunt", "refactor_v2"]
 
 
 def main() -> int:
@@ -82,6 +82,8 @@ def main() -> int:
                 fired.append(f"✂✂{n['dropped_tool_outputs']}")
             if n.get("malformed_calls"):
                 fired.append(f"↻{n['malformed_calls']}")
+            if n.get("guardrail_refusals"):
+                fired.append(f"⛔{n['guardrail_refusals']}")
             if n.get("rereads"):
                 fired.append(f"[magenta]re-read {n['rereads']}[/magenta]")
 

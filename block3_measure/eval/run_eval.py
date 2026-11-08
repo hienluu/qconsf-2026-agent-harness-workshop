@@ -145,8 +145,16 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     notes_text = row.get("notes", {}).pop("final_notes_text", None)
     if notes_text is not None:
         notes_path = run_dir / "agent_notes.md"
+        if notes_text.strip() == "(empty)":
+            # The pinned notes still hold h3's starting placeholder. Say what
+            # that means, so an empty file doesn't read as a broken run.
+            notes_text = ("The agent never called update_notes in this run: the notes "
+                          "stayed empty.\nh3 offers the tool; using it is the model's call.")
+            print(f"    agent notes: none, the agent never called update_notes "
+                  f"({notes_path.relative_to(BLOCK3)})")
+        else:
+            print(f"    agent notes saved: {notes_path.relative_to(BLOCK3)}")
         notes_path.write_text(notes_text + "\n")
-        print(f"    agent notes saved: {notes_path.relative_to(BLOCK3)}")
     row.update(
         task=task_name,
         tests_green=tests_green,

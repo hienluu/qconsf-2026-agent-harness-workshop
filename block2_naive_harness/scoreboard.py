@@ -242,7 +242,8 @@ class Scoreboard:
               "     means the harness dropped something from the conversation.\033[0m")
         if show_fired:
             print("\033[2m   fired: protections that acted that turn. ✂ a tool result was cut,\n"
-                  "     ✂✂ old tool results were dropped (compaction), ↻ a malformed call was recovered.\033[0m")
+                  "     ✂✂ old tool results were dropped (compaction), ↻ a malformed call was recovered,\n"
+                  "     ⛔ a write to a test file was refused.\033[0m")
 
     def summary(self, finished: bool, turn: int | None = None, workspace=None,
                 error: str | None = None) -> None:

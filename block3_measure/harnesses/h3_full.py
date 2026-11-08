@@ -13,6 +13,8 @@ home the transcript can't take down.
 """
 
 import json
+import posixpath
+from pathlib import PurePosixPath
 import time
 
 from base import (
@@ -77,8 +79,16 @@ NOTES_SCHEMA = {
     },
 }
 
-# [h3] Paths the agent may not write, no matter what it decides.
-PROTECTED_PREFIXES = ("tests/", "conftest.py")
+# [h3] Files the agent may not write, no matter what it decides: anything
+# under a tests/ folder, any test_*.py or *_test.py, and conftest.py. The
+# path is normalized first, so "./tests/x.py" or "src/../tests/x.py" can't
+# slip past a plain prefix check.
+def is_test_file(path: str) -> bool:
+    p = PurePosixPath(posixpath.normpath(path.replace("\\", "/")))
+    name = p.name
+    return ("tests" in p.parts or name == "conftest.py"
+            or (name.startswith("test_") and name.endswith(".py"))
+            or name.endswith("_test.py"))
 
 
 def truncate(text: str) -> tuple[str, int]:
@@ -121,7 +131,10 @@ def run(workspace_dir: str, task: str) -> RunResult:
     # [h3] Guarded write: the harness, not the prompt, enforces test immutability.
     def guarded_write(args):
         path = args["path"]
-        if path.startswith(PROTECTED_PREFIXES) or path in PROTECTED_PREFIXES:
+        if is_test_file(path):
+            result.notes["guardrail_refusals"] = result.notes.get("guardrail_refusals", 0) + 1
+            board.mark("⛔")
+            print(f"\033[31m⛔ [{NAME}] guardrail refused a write to {path!r}\033[0m")
             return f"guardrail: writing to {path!r} is not permitted — tests are read-only."
         return ws.write_file(path, args["content"])
 
