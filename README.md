@@ -32,7 +32,7 @@ uv run setup/check_setup.py    # expect: ALL GREEN
 | [`block3_measure/`](./block3_measure/README.md) | Same model + tasks through three harness configs; compare cost, turns and traces |
 | [`block4_production_harnesses/`](./block4_production_harnesses/README.md) | Claude Agent SDK, OpenAI Agents, Google ADK, Deep Agents and Pydantic AI, all on the same task |
 | [`block5_decision_framework/`](./block5_decision_framework/WORKSHEET.md) | A worksheet that takes your own agent to a harness decision |
-| `scripts/` | `reset.py` (start any block over), `check_fixtures.py` (verify the task workspaces are still unsolved), plus the generators that rebuild workspaces from their green references |
+| `scripts/` | `preflight.py` (one-command readiness check: runs `check_fixtures.py` and `test_llm.py`), `reset.py` (start any block over), `check_fixtures.py` (verify the task workspaces are still unsolved), `test_llm.py` (test the LLM provider connection in `.env`), plus the generators that rebuild workspaces from their green references |
 
 Start at [`block1_why_harness_matters/README.md`](./block1_why_harness_matters/README.md) for the vocabulary, then
 `block2_naive_harness/README.md` for the first hands-on block.
