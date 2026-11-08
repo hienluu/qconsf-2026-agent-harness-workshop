@@ -29,8 +29,8 @@ The task is complete only when run_tests reports that every test passed.
 When the tests are green, reply with a short summary instead of calling tools."""
 
 # The loop budget — a real harness decision. 20 turns is plenty for the
-# short tasks and deliberately not enough for the long one: completions
-# there take 25+ turns and ~$1 of transcript resending.
+# short tasks and deliberately tight for the long one, which usually uses
+# all 20.
 MAX_TURNS = 20
 
 
@@ -42,7 +42,7 @@ def run(workspace_dir: str, task: str) -> None:
 
     `workspace_dir` is the directory the tools operate in; `task` is the
     natural-language instruction that becomes the first user message. The
-    conversation transcript (`messages`) is the agent's entire memory: every
+    conversation (`messages`) is the agent's entire memory: every
     file read, tool result, and edit accumulates there, and the full list is
     resent to the model on every turn.
     """
@@ -89,7 +89,7 @@ def run(workspace_dir: str, task: str) -> None:
         #       model=model, messages=messages,
         #       tools=TOOL_SCHEMAS, temperature=0.1)
         #
-        # Notice: `messages` — the whole transcript — goes over the wire on
+        # Notice: `messages` — the whole conversation — goes over the wire on
         # EVERY turn. That fact will matter later today.
         # ------------------------------------------------------------------
         response = None  # <-- your code here

@@ -1,376 +1,279 @@
-# Block 2 — Build the Naive Harness
+# Block 2: Build the Naive Harness
 
-**Why this block:** Block 1 listed seven things a harness does — the loop,
-tool dispatch, context management, memory, sandboxing, guardrails,
-observability. This block builds an agent with only the first two, then
-puts it under enough load to make the absence of the other five visible.
-You can't reason about a protection you've never missed; the fastest way
-to understand what a harness buys is to spend an hour without one. Block 3
-then adds them back, one at a time, and measures what each is worth.
+> **In this block (45 min)**
+>
+> | Part | Time | What happens |
+> |---|---|---|
+> | Intro | 5 min | The presenter sets up the block and the exercise |
+> | Hands-on | 30 min | Steps 0 to 4 below |
+> | Discussion | 10 min | The questions under "Discussion" at the end of this page |
+>
+> **If you're behind:** if you haven't reached Step 4 twenty minutes into
+> the hands-on, stop typing, switch to `solution/harness.py` (same two
+> arguments) and go straight to Step 4. The discussion starts on time,
+> whether or not everyone has finished.
 
-Time: ~55 minutes. Everything runs locally against your provider API key.
-Cost for the whole exercise: roughly $1–2.
+You'll finish a minimal agent harness, check it on a one-line bug, then
+hand it a 149-file migration. Block 1 listed seven parts of a harness;
+this one has two, the loop and tool dispatch. The point is to see what the
+other five would have done for you, so that Block 3 can measure it.
 
-The plan: complete a minimal agent harness, verify it handles a short task,
-then give it a task sized past its design limits and watch what it takes
-to get through it. What you see here (the cost, the close calls and the
-failures) is what Block 3 measures.
+Cost: about $1 to $2 in total. Everything runs with `uv run`, so there's
+no virtualenv to create or activate.
 
-Everything below runs via `uv run` — no virtualenv to create or activate, ever. uv finds the
-project environment itself and installs anything missing on first run, so
-shell aliases and forgotten activations can't bite you.
+## What's missing, on purpose
 
-## The harness you're completing
+`harness_skeleton.py` is a working loop with two gaps to fill and no
+protections. Here's what that looks like in practice:
 
-`harness_skeleton.py` is a complete agent loop with two gaps for you to
-fill. It has no protections of any kind — that's the point of the block:
-
-| Missing component | Symptom you'll see |
+| Missing | What you'll see |
 |---|---|
-| Tool-output limits | Full pytest tracebacks flood the context every test run |
-| Context compaction | Transcript grows monotonically until quality degrades or the request fails |
-| Durable memory / plan | Rename rules and per-file progress live only in the transcript |
-| Error recovery | A malformed tool call or transient API error derails the run |
-| Loop budget & progress detection | The agent can redo and undo the same work indefinitely |
+| Limits on tool output | One `run_tests` call returns every traceback in full, and it stays in the conversation |
+| Context compaction | The conversation only grows, and all of it is re-sent every turn |
+| A record of progress | The agent's plan and progress exist only in the conversation |
+| Error recovery | One malformed tool call kills the process |
+| Budget awareness | It has 20 turns and nothing tracks how much work is left |
 
-## Exercise flow
+## Exercise
 
-**Run every command in this section from the `block2_naive_harness/`
-directory** — the paths below are relative to it, and they will fail from
-anywhere else:
+Run every command from `block2_naive_harness/`. From the repo root:
 
-```
-cd block2_naive_harness   # from the repo root
-pwd                       # .../agent-harness-workshop/block2_naive_harness
+```bash
+cd block2_naive_harness
 ```
 
-Every command on this page, including the reset scripts, runs from here —
-nothing requires switching directories mid-exercise.
+### Step 0: Check your setup (2 min)
 
-### Step 0 — Confirm you're ready (2 min)
-
-```
+```bash
 uv run ../setup/check_setup.py
 ```
 
-Expect `ALL GREEN`. If not, fix what it tells you (or flag a helper).
+Expect `ALL GREEN`. If not, fix what it tells you, or flag a helper.
 
-### Step 1 — Read the code you were given (5 min)
+### Step 1: Read what you were given (3 min)
 
-Open `tools.py`. Your agent gets five tools: `list_files`, `read_file`,
-`write_file`, `search`, `run_tests`. Notice what they DON'T do: no output
-truncation, no size limits, no permissions. Remember that.
+- `tools.py`: five tools, `list_files`, `read_file`, `write_file`, `search`
+  and `run_tests`. A path check keeps them inside the workspace. Nothing
+  else limits them: no cap on output size, nothing on what they return.
+- `harness_skeleton.py`: the client, system prompt and tool schemas are
+  done. The two things that make it an agent aren't.
 
-Open `harness_skeleton.py`. The client, system prompt, and tool schemas are
-done. Two things are missing — the two things that make it an agent.
+### Step 2: Fill in the two TODOs (10 min)
 
-### Step 2 — Complete the harness (10 min)
+- **TODO 1, ask the model what to do next** (~4 lines): send the whole
+  conversation plus the tool schemas.
+- **TODO 2, run the tool and feed the result back** (~5 lines): look up
+  the tool, call it, append the result to the conversation.
 
-The agent loop is scaffolded in `harness_skeleton.py`; you fill in the two
-moments that matter:
+The comments show what to write. Stuck? `solution/harness.py` is the
+finished version and takes the same arguments, so it works in place of
+yours in every command below.
 
-- **TODO 1 — ask the model what to do next** (~4 lines): the API call that
-  sends the full conversation plus the tool schemas.
-- **TODO 2 — execute the tool and feed the result back** (~5 lines): look
-  up the tool, invoke it, append the result to the transcript.
+### Step 3: A short task (5 min)
 
-Each TODO comment shows you exactly what to write. If you're stuck or short
-on time, copy from `solution/harness.py` and move on. The point of this
-block is what happens next, not the typing.
+See the bug first:
 
-Or skip the typing and run the finished harness directly. It takes the same
-two arguments, so every command below works with either file: just swap
-`harness_skeleton.py` for `solution/harness.py`.
-
-### Step 3 — Run it on a small task (5 min)
-
-**First, see the bug with your own eyes.** Run the tests before the agent
-touches anything:
-
-```
+```bash
 uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 ```
 
-Expect `2 failed, 2 passed`. Read the first failure — the assertion diff
-tells you everything:
+`2 failed, 2 passed`. `moving_average([1, 2, 3, 4], 2)` returns
+`[1.5, 2.5]`: the loop on line 6 of `stats.py` stops one window short.
+Keep `stats.py` open in your editor and you'll see the fix land.
 
-```
-assert [1.5, 2.5] == [1.5, 2.5, 3.5]
-```
+Now run your agent. It takes two arguments: the workspace (the only files
+its tools can see) and the task in quotes, which becomes its first
+message.
 
-`moving_average([1, 2, 3, 4], 2)` should slide a 2-wide window and average
-each one:
-
-```
-[ 1  2  3  4 ]
-  └──┘            (1+2)/2 = 1.5   ✓
-     └──┘         (2+3)/2 = 2.5   ✓
-        └──┘      (3+4)/2 = 3.5   ✗ never computed — the loop stops early
-```
-
-The last window is dropped. Want to poke the bug directly, no test
-framework in between?
-
-```
-cd tasks/short/01_fix_bug/workspace
-uv run python -c "from stats import moving_average; print(moving_average([1, 2, 3, 4], 2))"
-cd ../../../..
-```
-
-It prints `[1.5, 2.5]` — two windows, not three. (Rerun it after the agent
-fixes the file and you'll get all three.)
-
-Leave the fix to the agent — the point of this step is establishing the
-before-state yourself. (Full explanation in the task's `TASK.md`.)
-
-**Open `tasks/short/01_fix_bug/workspace/stats.py` in your editor and keep
-it visible.** Look at line 6 — the buggy loop bound. Your editor will
-reload the file the moment the agent rewrites it, so you can watch the
-edit land.
-
-**Now run your agent against it.** The harness takes two arguments:
-
-- **a workspace directory**: the only files the agent's tools can see
-- **the task, in plain English and in quotes**: it becomes the agent's
-  first message
-
-`uv run harness_skeleton.py --help` prints the same.
-
-```
+```bash
 uv run harness_skeleton.py tasks/short/01_fix_bug/workspace \
   "One test fails. Find the bug and fix it. Do not modify the tests."
 ```
 
-Watch the turns print. Expected: ~5 turns, under a minute. Notice the agent
-does exactly what you just did — runs the tests, reads the diff, reads the
-loop — then edits.
+About 5 turns, under a minute. It does what you just did: runs the tests,
+reads the failure, reads the loop, edits. Then check it yourself. The
+agent's summary isn't evidence; the tests are:
 
-**Verify the result yourself** — an agent's self-report is not evidence;
-the test suite is. Run the following from the block2_naive_harness
-directory:
-
-```
+```bash
 uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 ```
 
-`4 passed`. Red before, green after, confirmed by your own checker rather
-than the agent's summary — that verification habit is the one to keep. The
-harness that did this is about 40 lines. Optional: run
-`tasks/short/02_add_function` and `03_small_rename` the same way (see each
-TASK.md for the run command).
+`4 passed`. Optional: `02_add_function` and `03_small_rename` work the
+same way, and each `TASK.md` has the command. To rerun a task, reset it
+first (see "Starting over").
 
-**Want to run it again?** The agent edited the workspace, so the bug is
-gone. Put every task workspace back to its starting state from anywhere in
-the repo:
+### Step 4: A long task (10 min)
 
-```
-uv run ../scripts/reset.py
-```
+Same harness, model and tools. Only the size of the job changes.
 
-Re-run the pytest command above to confirm you're back to `2 failed,
-2 passed`. Worth doing if you copied from `solution/harness.py` earlier and
-now want to watch your own version work.
+`tasks/long_horizon/refactor_v2/workspace/` is *pyledger*, a bookkeeping
+library: 149 files, 35 tests. The tests use a new v2 API, but the code is
+still on v1, so nothing imports. The agent has to rename every v1
+identifier until the tests pass. It's harder than find-and-replace:
 
-### Step 4 — Run it on a long task (10 min)
+- `MIGRATION.md` documents 8 of the 14 renames. The other 6 have to be
+  worked out from the failing tests.
+- The renames hit definitions, imports, call sites, dataclass fields and
+  dict keys.
+- `post()` in `webhook.py` is an HTTP verb, not the ledger API, and must
+  not be renamed. `MIGRATION.md` says so.
 
-**What changes in this step:** nothing except the size of the job. Same
-harness you just built, same model, same five tools, same prompt style.
-The only variable is how much work the task takes — which is exactly the
-variable a harness exists to survive.
+The before-state:
 
-**The task.** `tasks/long_horizon/refactor_v2/workspace/` holds *pyledger*,
-a small double-entry bookkeeping library: 149 Python files, 35 tests. Its
-test suite has already been updated to a new v2 API, but the source code
-still uses the old v1 names, so nothing imports and nothing runs. The
-agent has to rename every v1 identifier across the codebase until the
-tests pass. Three things make that harder than it sounds:
-
-- `MIGRATION.md` (inside the workspace, so the agent can read it) documents
-  **8 of the 14 renames**. The rest have to be discovered from the failing
-  tests.
-- The renames touch definitions, imports, call sites, dataclass fields, and
-  dict keys — so a careless find-and-replace breaks things elsewhere.
-- One function is deliberately out of scope: `webhook.py`'s `post()` is an
-  HTTP verb, not the ledger API. `MIGRATION.md` says so. A blind rename
-  breaks its tests.
-
-**See the starting state first**, the same way you did in Step 3:
-
-```
+```bash
 uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 ```
 
-`1 error during collection` — the tests can't even import the code yet.
-That's the before-state.
+`7 errors during collection`: none of the test files can even import the
+code.
 
-**Now run the agent on it.** This costs roughly $0.50 per attempt (the
-20-turn budget bounds the spend) — **run it once**, not five times:
+Run it **once**. It costs about $0.50, and the 20-turn cap bounds that:
 
-```
+```bash
 uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
   "Migrate the source code to the v2 API following MIGRATION.md until all tests pass. Do not modify the tests."
 ```
 
-**One run, turn by turn.** Runs vary (more on that below), but this one is
-a good guide to how the agent spends its turns:
+**While it runs** (a few minutes). Each turn prints what the agent said,
+the tool calls it made, and then a scoreboard line like this one:
 
-| Turns | What the agent does |
+```text
+┈ turn 17/20 │ read 49  write 130  search 8  tests 0 │ conversation 195,454 chars (~48,863 tokens) │ sent so far 382,855 in / 21,062 out
+```
+
+| Field | What it counts | What to watch for |
+|---|---|---|
+| `turn 17/20` | Calls to the model so far, out of the 20 allowed | How many are left when it starts writing |
+| `read 49  write 130  search 8  tests 0` | Tool calls so far, per tool, added up since turn 1. These are calls, not distinct files: reading one file twice counts 2 | A long run of reads before the first write. `tests 0` late in the run |
+| `re-read 3` (purple, only if it happens) | Reads of a file the agent had already read | Fetching something it already had |
+| `conversation … chars (~… tokens)` | Everything so far: your task, everything the model said, the full text of every file it wrote, and every tool result. The token figure is a rough estimate (characters ÷ 4) | It only grows. Nothing is ever dropped |
+| `sent so far … in / … out` | Tokens the provider billed, as it reports them. `in` is everything sent to the model, added up over every turn; `out` is what the model wrote | `in` grows by about the whole conversation every turn |
+
+Two yellow call-outs appear once each: the turn of the first edit
+(usually after a long stretch of reading), and the moment 4 turns are left
+with nothing tracking the remaining work.
+
+Note the turn where you'd first have guessed it was in trouble.
+
+**How it ends.** It nearly always uses most or all of its 20 turns. We've
+seen four endings:
+
+- **Finished, and said so.** Tests pass and the agent sums up. Nothing
+  looks wrong.
+- **Finished, but never said so.** It ran the tests on the last turn and
+  had no turn left to read the result. The scoreboard runs the tests
+  itself and tells you.
+- **Ran out mid-job.** Partly migrated, tests still failing.
+- **Crashed.** The model hit its output limit partway through a big batch
+  of writes and sent a truncated tool call. Nothing in your harness
+  catches the `json.loads` error, so the process dies. The rarest of the
+  four.
+
+**When it stops**, it prints a **turn-by-turn table** and then a two-line
+**run summary**: how the run ended (checked by running the tests when the
+agent didn't say it was done), and how much it sent against the
+conversation's final size. Each row of the table is one turn:
+
+- **sent to model:** what that turn's call cost to send, as billed. It's
+  the whole conversation so far, plus the tool definitions, which go out
+  with every call. The bar draws this number.
+- **tool calls:** what the model asked for in reply.
+- **added:** how much the turn added to the conversation (an estimate):
+  the model's reply, including its tool calls and any file it wrote, plus
+  the tool results. On the last turn it's just the closing message. Every
+  later turn pays to send it again.
+
+- **agent says:** its words that turn, in green, cut to fit your window.
+  The full text is in the trace above the table. (In a narrow window they
+  move to a line under the row.)
+
+A row from a long run:
+
+```text
+   turn  sent to model  cached                        tool calls           added
+      7         10,917     85%  ████                  search 5           +11,535
+```
+
+Turn 7 cost 10,917 tokens to send. Its five searches then added 11,535
+tokens of results, so turn 8 costs about that much more, and so does every
+turn after it. The big `+` numbers are where the cost comes from, and
+they're what Block 3's harnesses go after.
+
+**Read your output, whatever happened.** Three things to find in your own
+table:
+
+1. **Your most expensive result.** Find the biggest number in the `added`
+   column and multiply it by the number of turns after it. That's what one
+   turn's results cost you in re-sending. In one of our runs, turn 3's
+   eight searches added 10,052 tokens, and the 17 turns after it sent them
+   again: about 171,000 tokens, **a third of the run's 518,776**, for
+   results the agent read once. What was yours: a search, a test run, a
+   big read? A limit on tool output is aimed at exactly this, and it's the
+   first thing Block 3 adds. (The `cached` column makes the re-sending
+   cheaper, but the model still processes every token.)
+2. **When it checked its work.** Find `tests` in the `tool calls` column.
+   How many turns were left when it first ran them? In the same run: once,
+   on turn 19 of 20. If they had failed, there was no room to fix
+   anything, and nothing in the harness watches the budget or prompts the
+   agent to test as it goes.
+3. **What the people around you got.** Same code, model and task: compare
+   endings and totals. One run tells you very little, which is where
+   Block 3 starts.
+
+**The point.** Every harness answers four questions, whether or not anyone
+decided. Yours answered each the simplest way:
+
+| Question | Your harness's answer |
 |---|---|
-| 1–4 | Lists the workspace, reads `MIGRATION.md`, then every test file and the core modules |
-| 5–15 | Reads the rest of the source — 106 files in all — plus 12 searches for the old names. Batches grow from 3 files per turn to 13 |
-| 16 | *"I now have the complete picture."* Writes its first 17 files — core, reports, CLI |
-| 17–20 | Bulk-writes the repetitive integration families, 14 per turn: auditors, reconcilers, snapshots, limits |
-| — | **Budget exhausted.** 73 files written of roughly 130 that needed it |
+| What goes into the conversation? | Every tool result, whole |
+| How long does it stay? | Forever, re-sent every turn |
+| When does the agent check its work? | Whenever the model happens to |
+| Does anything watch the budget? | No |
 
-The scoreboard prints two call-outs on the same turn, and together they
-are the whole lesson:
+Block 3 changes these answers one at a time and measures what each change
+is worth. Block 4 shows how five production harnesses answered them for
+you. Block 5's worksheet then takes your own agent to a harness decision.
 
-```
-   ▸ first edit — 15 turns went to reading before anything changed
-   ▸ 4 turns left, and nothing is tracking how much work remains
-```
+**Write down** the ending, the last turn, the total sent, and your biggest
+`added` with what it cost. You'll compare them with Block 3's harnesses on
+the same task. (Not wall time: that mostly measures the provider.)
 
-It started working at the moment it ran out of room to work. Three more
-things from that run:
+## Discussion (10 min)
 
-- **It never ran the tests. Not once in 20 turns.** `run_tests` was there
-  the whole time. It planned to read everything, write everything, then
-  verify — and never reached the verify.
-- **The transcript ended at ~39,000 tokens; the run was billed 469,341
-  input tokens** — roughly twelve times the conversation's final size,
-  because every turn re-sent all of it. Output was 16,278 tokens: you paid
-  about 29 tokens of input for every token the model actually wrote.
-- **The arithmetic was never going to work.** Reading took 15 turns;
-  writing ~130 files at 14 per turn needs ~10 more; verifying needs at
-  least one. That is 26+ turns against a budget of 20 — and nothing in the
-  system was tracking that, least of all the agent.
+**For the group:**
 
-Your run will differ in the details. The shape rarely does.
+1. How did your run end, and why? How many different endings did the room
+   get?
+2. Which of what you saw would a better *model* fix, and which needs a
+   better *harness*?
+3. **Would this matter for your own agent?** If so, what would you need a
+   harness to do about it, and how would you test that it does? Write your
+   answer down: Block 5's worksheet starts from these notes.
 
-**Watch these four things while it runs** — each one is a harness
-component doing nothing, because your harness doesn't have it:
+**More to think about, on your own or afterwards:**
 
-| What you'll see | What's missing |
-|---|---|
-| Every file it reads stays in the conversation forever, and the whole conversation is re-sent on the next turn | Context compaction |
-| One `run_tests` call returns every failing test's full traceback — thousands of characters, kept in full | Tool-output limits |
-| Write batches grow as it tries to edit many files in one turn | Nothing bounds what the model must produce in a single reply |
-| It re-reads files it already handled, because the only record of its progress is the conversation | Durable memory |
+- Where did the context go: reads, searches, test output, or the agent's
+  own writes? The scoreboard's tally has the counts.
+- If your run finished, how would you know without taking the agent's
+  word for it or running the tests by hand?
 
-**What to expect: it uses most or all of its 20 turns.** How it ends
-varies from run to run. All four of these have happened in our runs:
-
-- **It finished, and said so.** Every edit made, the tests run and
-  passing, and a closing summary from the agent. Nothing looks wrong, which
-  is exactly why the next section matters most for this outcome.
-- **It finished the work but never said so.** Every edit made, the tests
-  run on the very last turn, and the budget gone before it could read the
-  result. The scoreboard checks the tests itself and tells you.
-- **It ran out mid-job.** The codebase partly migrated, the tests still
-  failing.
-- **It crashed.** A raw Python traceback mid-run. The model tried to write
-  many large files in one turn, hit its output limit partway through, and
-  sent a tool call cut off in the middle. Your harness calls `json.loads`
-  on it with nothing to catch the error, so the process dies.
-
-The first two have been the most common recently, and crashes the rarest.
-
-**Read your output, whatever happened.** A clean finish teaches as much as
-a crash, as long as you know where to look. Three questions:
-
-1. **What did it cost?** The scoreboard's last lines compare what the
-   conversation finally weighed with everything the harness sent to get
-   there. In one of our runs the conversation ended at about 22,000 tokens,
-   and the harness had sent 455,000: it paid for that conversation about
-   20 times over, because it re-sends all of it on every turn. That gap is
-   what Block 3 goes after.
-2. **How close did it come?** Note the turn it ended on. A run that finished
-   on turn 20 of 20 had no room for one more surprise, and nothing in the
-   harness was watching the budget or how much work was left, so it
-   couldn't have warned you.
-3. **What did the people around you get?** Same code, same model, same
-   task. The room will usually see more than one of the outcomes above. One
-   run tells you very little, and that's where Block 3 starts.
-
-**Reset before any second attempt.** The agent edits files on disk, so a
-stranded run leaves real work behind — and if you re-run without
-resetting, the next agent inherits it and may finish what the first one
-started. That looks like success but isn't: it's two runs' worth of turns
-and tokens to do one task, with neither agent aware the other existed.
-(We did exactly this by accident while building the workshop: run one
-stranded 56 files, run two picked them up and reported "all 35 tests
-pass.") Run `uv run ../scripts/reset.py`, then
-`uv run ../scripts/check_fixtures.py` to confirm.
-
-**Record three things before moving on**: which outcome you got, the turn
-it ended on, and the input tokens it sent. Block 3 runs this same task
-through protected harnesses and compares against exactly these. (Wall time
-isn't one of them: it mostly measures how busy the provider was.)
-
-**Then look at what it left behind:**
-
-```
-uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
-```
-
-If it ran out mid-job, you'll see a partly migrated codebase: real work,
-stranded, with no record of what was done or what remained. If it
-finished, the tests pass, and whether the agent said so came down to
-whether it had a turn left. Either way the point is the same. When this
-harness struggles, it isn't for lack of *ability*. It's for lack of the
-things a harness provides: a record of its progress, a budget it can see,
-and a check on whether it's done.
-
-## Debrief questions
-
-Standard incident-review questions, applied to your run — a postmortem on
-an agent instead of an outage. Answer for yourself before the group
-discussion:
-
-1. How did YOUR run end, and what caused it? (Read the last few lines of
-   output.)
-2. Where did most of the context go? (Reads? Search results? Test output?
-   The agent's own file rewrites?)
-3. What did the agent "know" at turn 5 that it had effectively lost by the
-   end?
-4. Which of these would a better *model* fix? Which need a better *harness*?
-5. If your run finished, how would you know without either taking the
-   agent's word for it or running the tests by hand?
-
-The table at the top of this page maps each failure to the harness
-component that was missing. Block 3 adds those components one at a time —
-and measures what each is worth.
+Block 3 adds the missing pieces back one at a time and measures each.
 
 ## Starting over
 
-The tasks in this repo are fixtures: a bug that must still be there, a
-codebase that must still be on the old API. Agents edit them — that's the
-exercise — so after any run the fixture is no longer in its starting
-state, and a second run would begin from wherever the first one stopped.
-Two small scripts keep that straight.
+The tasks are fixtures: a bug that must still be there, code that must
+still be on v1. After a run, they aren't. Rerun without resetting and the
+next agent starts where the last one stopped, and may report a success it
+didn't earn. That happened to us: one run left 56 files migrated, the next
+finished the job and reported "all 35 tests pass."
 
-**`reset.py` — put the fixtures back.** It restores every task workspace
-to its committed state (including deleting files an agent created),
-clears the per-run copies Blocks 3 and 4 leave behind, and archives your
-Block 3 score table with a timestamp rather than deleting it. It prints
-what it changed. Safe to run any time; it's a no-op if nothing has moved.
-
-**`check_fixtures.py` — confirm the tasks are still the tasks.** It runs
-each workspace's test suite and asserts it *fails* (a fixture that passes
-is a solved task, and measuring against it is meaningless), checks the
-reference copies still pass, and re-derives the long-horizon task into a
-temporary directory to confirm the committed one still matches. Expect
-`ALL FIXTURES OK`.
-
-Run both from this directory:
-
-```
-uv run ../scripts/reset.py          # restore every task workspace
-uv run ../scripts/check_fixtures.py # confirm: ALL FIXTURES OK
+```bash
+uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py
 ```
 
-Then re-run whichever step you want — Step 3 for the short task, Step 4
-for the long one.
+Expect `ALL FIXTURES OK` at the end.
 
-If you remember one thing from this section: **reset before re-running a
-task**, or you'll be measuring an agent that got a head start.
+`reset.py` restores each workspace to its committed state, deletes files
+agents created, clears Blocks 3 and 4's run copies, and archives (doesn't
+delete) your Block 3 score table. `check_fixtures.py` changes nothing: it
+confirms every task still fails and every reference copy still passes.

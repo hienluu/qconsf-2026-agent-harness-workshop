@@ -37,7 +37,7 @@ def run(workspace_dir: str, task: str) -> None:
 
     `workspace_dir` is the directory the tools operate in; `task` is the
     natural-language instruction that becomes the first user message. The
-    conversation transcript (`messages`) is the agent's entire memory: every
+    conversation (`messages`) is the agent's entire memory: every
     file read, tool result, and edit accumulates there, and the full list is
     resent to the model on every turn.
     """
