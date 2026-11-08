@@ -8,9 +8,9 @@
 > | Hands-on | 15 min | Steps 0 to 2 under "Exercise" |
 > | Discussion | 10 min | The questions under "Discussion" near the end of this page |
 >
-> **If you're behind:** the two long runs are the slow part, so start them
-> side by side (step 1). If h3 hasn't finished twelve minutes into the
-> hands-on, read your h2 results and the h3 numbers in step 2. Steps 3 to
+> **If you're behind:** the two long runs are the slow part. If h3 hasn't
+> finished twelve minutes into the hands-on, stop it (Ctrl+C), and read
+> your h2 results and the h3 numbers in step 2. Steps 3 to
 > 7 are optional, for after the workshop. The discussion starts on time,
 > whether or not everyone has finished.
 
@@ -26,9 +26,13 @@ through the candidates and checking the result with something other than
 the agent's own report.
 
 **Bring your Block 2 numbers:** how it ended, the last turn, the total
-sent, and your biggest `added`. That run is your baseline. One caveat:
-Block 2 stopped at 20 turns, and these harnesses get 40, so a Block 2 run
-that "ran out" may simply have needed more turns.
+sent, and your biggest `added`. That run is your baseline.
+
+**One difference to keep in mind:** Block 2's harness had a 20-turn
+budget; these get 40. If your Block 2 run ran out, its total is what it
+spent before it was cut off, not what the whole job would cost. So compare
+turn by turn (what each turn sent, your biggest `added`), not just the
+totals.
 
 ## The two harnesses
 
@@ -39,24 +43,30 @@ that "ran out" may simply have needed more turns.
      cut). It targets single huge results: one search across all 149 files
      returns 13,000 to 22,000 characters, and a failing test run can return
      pages of tracebacks. It's per result, so a turn of many medium results
-     mostly passes under it; that's compaction's job.
+     mostly passes under it; that's compaction's job. Code: `truncate()`
+     in `harnesses/h2_managed.py`, 12 lines.
   2. **Recovery from a malformed tool call.** If the model sends a tool call
      that isn't valid JSON, the harness tells the model what went wrong and
      carries on instead of crashing. Block 2: one cut-off tool call killed
-     the whole run.
-  3. **Compaction.** Once the conversation passes 80,000 characters of
-     messages and tool results, the harness replaces tool results with a
-     placeholder, oldest first, until it's back under. The placeholder tells
-     the model to re-run the tool if it needs the result again, and the most
-     recent messages are never touched. Block 2: everything stayed forever
-     and was re-sent every turn.
+     the whole run. Code: the `[h2] Guarded parse` block in `run()`.
+  3. **Compaction.** Past 80,000 characters, the harness swaps the oldest
+     tool results for a short placeholder ("re-run the tool if you need
+     it"), never touching the newest messages. Why: old tool results are
+     most of the conversation, the agent has usually already acted on
+     them, and every turn pays to re-send them. Block 2: everything stayed
+     and was re-sent every turn. Code: `compact()`, about a dozen lines.
 - **`h3_full`**: h2 plus two things production harnesses ship:
   1. **Durable notes.** An `update_notes` tool, and a pinned message near
      the top of the conversation holding whatever the agent writes there.
      Compaction never drops it, so the agent's plan survives even when old
-     tool results are gone.
-  2. **A write guardrail.** Writes under `tests/` are refused by the harness
-     itself, instead of relying on the prompt's "don't modify the tests."
+     tool results are gone. Code: the `update_notes` tool and the pinned
+     message, tagged `[h3]` in `harnesses/h3_full.py`.
+  2. **A write guardrail.** Writes to test files (anything under `tests/`,
+     any `test_*.py`, and `conftest.py`) are refused by the harness itself,
+     instead of relying on the prompt's "don't modify the tests." Why:
+     success here means "the tests pass," and an agent that can edit the
+     tests can get there without fixing anything. Code: `is_test_file()`
+     and `guarded_write()`.
 
 Every addition is tagged `[h2]` or `[h3]` in the source; everything
 untagged is identical to the harness before it:
@@ -91,39 +101,81 @@ uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py
 Expect `ALL FIXTURES OK`. The runner also refuses to start on a task an
 agent has already touched, so nothing measures a head start by accident.
 
-### Step 1: Run h2 and h3 side by side (about 4 minutes)
+### Step 1: Run h2, then h3 (about 6 minutes)
 
-**First, write down a prediction:** will h3, the more capable harness,
-send more tokens than h2, or fewer?
+Run them one at a time, so you can watch each harness work. Each takes
+about 2 to 3 minutes. Both usually solve the task, in roughly 17 to 34
+turns; unlike Block 2, running out at 40 is unlikely.
 
-Then start both, each in its own terminal (they work on separate copies,
-so they don't interfere):
+#### 1a. h2
+
+Your Block 2 harness plus the cap, recovery and compaction, on the same
+migration. You're watching the harness manage what the model sees: cutting
+big results, and dropping old ones once the conversation gets large.
 
 ```bash
 uv run eval/run_eval.py h2 --task refactor_v2
 ```
 
+Watch for:
+
+- **The cap at work.** A yellow line like `✂ [h2_managed turn 6]
+  truncated search output: 14,056 → 5,540 chars`. That's one search
+  result cut down before the model sees it. In Block 2 that whole result
+  stayed in the conversation and was re-sent every turn after it.
+- **The conversation growing.** The scoreboard line under each turn shows
+  `conversation N chars`. If you have your Block 2 run's output, compare
+  them at the same turn: h2's should grow more slowly.
+- **Compaction.** Once `conversation` passes about 80,000 characters,
+  yellow lines like `✂ [h2_managed turn 14] compaction: dropped 3 old
+  tool output(s)` appear, usually on every turn after that. Then watch
+  the scoreboard's `re-read` count: if it starts climbing, compaction
+  dropped something the agent still needed, and it's fetching it again.
+- **The switch from reading to writing.** The green `agent says` lines
+  usually announce it ("Now I'll rewrite the core files"). Note the turn.
+- **When it first runs the tests** (`run_tests()` in the trace, `tests`
+  on the scoreboard). Usually late, as in Block 2: none of h2's
+  protections change when the agent checks its work.
+
+When it finishes, glance at the turn table's `fired` column: it marks
+the turns where the cap or compaction acted.
+
+#### 1b. h3
+
+h2 plus durable notes and the test guardrail. You're watching whether the
+agent uses the notes, and whether more capability makes this run cheaper
+or just different.
+
+**Note: no reset needed between the two.** Each run works on its own copy
+of the task, so h2 left the original untouched.
+
+**First, write down a prediction:** will h3, which adds notes and a
+guardrail, send more tokens than h2 did, or fewer?
+
 ```bash
 uv run eval/run_eval.py h3 --task refactor_v2
 ```
 
-**While they run**, watch for the harness acting:
-- `✂ truncated <tool> output: N → M chars`: the cap cutting a big result.
-- `✂ compaction: dropped N old tool output(s)`: compaction, once the
-  conversation passes its budget.
-- `✎ update_notes` (h3 only): the agent writing its notes. The harness
-  only offers the tool; whether and when the model uses it is part of the
-  result.
+Watch for everything above, plus:
 
-**What to expect:** both usually solve it, in roughly 17 to 34 turns.
-Unlike Block 2, running out of turns is unlikely at 40.
+- **The agent writing its notes.** A cyan line like `✎ [h3_full turn 8]
+  update_notes('## Plan ...')`. Note when it happens: early, as a plan it
+  can work from, or near the end, as a summary? The harness only offers
+  the tool; whether and when the model uses it is part of the result.
+  Some runs never use it.
+- **The guardrail.** A red `⛔ guardrail refused a write to ...` would
+  mean the agent tried to edit a test. On this task it almost never does;
+  optional step 4 shows it firing.
+- **The running totals against h2's.** Keep h2's final `sent so far` in
+  mind and watch h3's approach it. Whichever finishes cheaper, step 2
+  explains why one run can't settle it.
 
 ### Step 2: Read the results (about 5 minutes)
 
 Each run ends with Block 2's turn-by-turn table and run summary, plus a
 `fired` column marking the turns where a protection acted (`✂` a result
 was cut, `✂✂` old results were dropped, `↻` a malformed call was
-recovered). Then the comparison table prints; re-render it any time:
+recovered, `⛔` a write to a test file was refused). Then the comparison table prints; re-render it any time:
 
 ```bash
 uv run eval/compare.py
@@ -154,13 +206,18 @@ Four things to find:
    cat results/runs/h3_full__refactor_v2__*/agent_notes.md
    ```
 
-   Then compare h3's total with h2's. In our runs, h3 sent 365k to
-   702k tokens and h2 390k to 778k: no clear winner either way. Whichever
-   way yours went, someone near you probably got the opposite, and both of
-   you hold exactly the evidence one run provides. The notes themselves
-   varied as much: about 500 characters in two of our runs, nothing at all
-   in the third. The harness offers the tool; how well the model uses it
-   varies from run to run.
+   If it says the agent never called `update_notes`, that's a result, not
+   an error: in two of our five runs the agent never wrote notes at all. The
+   harness offers the tool; using it is the model's call.
+
+   Then compare h3's total with h2's, and check your prediction. h3's
+   only systematic extra cost is its notes overhead: about 115 to 240
+   tokens a turn, under 1% of a run this size (the guardrail costs
+   nothing). So if your h3 run cost 40% more or less than h2, that's how
+   the run went, not the harness. In our runs, h3 sent 365k to 702k and h2
+   390k to 778k. Whichever way yours went, someone near you probably got
+   the opposite, and both of you hold exactly the evidence one run
+   provides.
 
 **The method is what you take to work:** fix the model and the task, vary
 one thing, judge with an external checker (here, the tests), and run it
@@ -186,9 +243,10 @@ protection is only worth as much as the problem it solves on *your*
 workload, and a capability you don't use isn't free. Block 5's worksheet
 starts from exactly this: describe your agent before choosing a harness.
 
-**4. Make the two rare protections fire.** Malformed tool calls are rare,
-and compaction may not fire on every long run, so force each on a short
-task. These are demos, not measurements: the runner doesn't record them.
+**4. Make the rare protections fire.** Malformed tool calls are rare,
+compaction may not fire on every long run, and the guardrail never fires
+unless the agent tries to edit a test. So force each one on a short task.
+The first two are demos, not measurements: the runner doesn't record them.
 
 ```bash
 INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h1 --task fix_bug
@@ -212,6 +270,24 @@ This lowers the compaction budget to 4,000 characters. In our run, the
 turns 7, 8 and 11 (the conversation got smaller), and `cached` fell from
 64% to 10% on turn 7: compaction changes the start of the conversation,
 so the provider's cache no longer matches it.
+
+The guardrail needs an agent that wants to edit a test, so this task asks
+for one: fix the bug, then add a test to `test_stats.py`. Run it through
+both harnesses:
+
+```bash
+uv run eval/run_eval.py h2 --task touch_tests
+```
+
+```bash
+uv run eval/run_eval.py h3 --task touch_tests
+```
+
+h2 adds the test (5 tests pass). h3 prints `⛔ guardrail refused a write
+to 'test_stats.py'` and marks the turn `⛔`; the bug still gets fixed, and
+the agent carries on because the refusal comes back as an ordinary tool
+result, not a crash. In our run its closing summary said so itself: it
+tried to add the test, "but the workspace blocks writes to test files."
 
 **5. Do h3's notes earn their place?** Runs h3 with and without the notes,
 everything else identical:
@@ -270,8 +346,8 @@ they matter more on a tight one, where they might turn "ran out" into
 
 Compaction triggers on a threshold, and once a run crosses it, it keeps
 crossing on every later turn: you get none, or a lot. In our runs it fired
-in most long h2 runs (dropping 9, 13 and 40 old results in three of them)
-and not at all in one that finished early. If yours shows none, that's
+in three of our five long h2 runs (dropping 9, 13 and 40 old results)
+and not at all in the other two. If yours shows none, that's
 data, not a broken setup; step 4 shows it working.
 
 ### When compaction costs turns
@@ -404,9 +480,9 @@ and every reference copy passes.
   `fired` column and `not re-sent` before answering.
 - What would have to be true of a workload for h3's notes to pay off?
   Describe a task at your job that has that shape.
-- h3's write guardrail never fired: the model never tried to edit the
-  tests. Is it therefore worthless? (Consider what you could claim about
-  the runs nobody inspected.)
+- On the migration, h3's guardrail never fired: the model never tried to
+  edit the tests. Is it therefore worthless? (Consider what you could
+  claim about the runs nobody inspected.)
 
 These five protections are a small subset of what production harnesses
 ship. Block 4: what the professionals decided for you.
