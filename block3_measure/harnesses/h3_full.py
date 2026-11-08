@@ -18,8 +18,12 @@ from pathlib import PurePosixPath
 import time
 
 from base import (
+    BUDGET_SUFFIX,
     MAX_TURNS,
+    describe_call,
+    print_turn,
     MILESTONE_MARKER,
+    BUDGET_MARKER,
     CUT_MARKER,
     NOTES_MARKER,
     RECOVER_MARKER,
@@ -47,6 +51,20 @@ import os as _os
 
 NOTES_ENABLED = _os.environ.get("H3_NO_NOTES") != "1"
 NAME = "h3_full" if NOTES_ENABLED else "h3_no_notes"
+
+# [h3, optional] BUDGET_SIGNAL tells the model about its budget, one line
+# appended to the turn's last tool result (the end of the conversation, so
+# the provider's cache is unaffected). Off by default; each mode is recorded
+# as its own harness so it never mixes with plain h3's numbers.
+#   compaction  near the compaction budget: warn, and point at the notes
+#   progress    every turn: turns left plus the last test result
+#   pacing      at half the turns and with 5 left: what to do now
+BUDGET_SIGNAL = _os.environ.get("BUDGET_SIGNAL", "").strip().lower()
+if BUDGET_SIGNAL and BUDGET_SIGNAL not in ("compaction", "progress", "pacing"):
+    raise SystemExit(f"BUDGET_SIGNAL must be compaction, progress or pacing; got {BUDGET_SIGNAL!r}")
+if BUDGET_SIGNAL:
+    NAME += "+" + BUDGET_SIGNAL
+NAME += BUDGET_SUFFIX
 
 MAX_TOOL_RESULT_CHARS = 6_000
 # ~20k tokens; keeps cumulative cost linear on long tasks. Overridable so you
@@ -151,12 +169,44 @@ def run(workspace_dir: str, task: str) -> RunResult:
         messages[notes_index]["content"] = NOTES_PREFIX + args["notes"]
         return "notes updated"
 
+    # [h3, optional] The progress signal needs the last test result.
+    signal_state = {"turn": 0, "tests": None}
+
+    def run_tests_tracked(args):
+        out = ws.run_tests()
+        signal_state["tests"] = ((out.strip().splitlines() or [""])[-1], signal_state["turn"])
+        return out
+
+    def budget_signal(turn: int, chars: int):
+        left = MAX_TURNS - turn
+        if BUDGET_SIGNAL == "compaction" and NOTES_ENABLED and chars >= 0.85 * TRANSCRIPT_CHAR_BUDGET:
+            where = (f"is at {chars:,} of its {TRANSCRIPT_CHAR_BUDGET:,}-character budget, so older "
+                     f"tool results will soon be replaced by a placeholder"
+                     if chars < TRANSCRIPT_CHAR_BUDGET else
+                     f"is over its {TRANSCRIPT_CHAR_BUDGET:,}-character budget, so older tool "
+                     f"results are being replaced by a placeholder")
+            return (f"[harness] The conversation {where}. Save anything you will still need "
+                    f"to your notes with update_notes.")
+        if BUDGET_SIGNAL == "progress":
+            tests = signal_state["tests"]
+            status = (f"Last test run (turn {tests[1]}): {tests[0]}." if tests
+                      else "Tests not run yet.")
+            return f"[harness] Turn {turn} of {MAX_TURNS} used: {left} left. {status}"
+        if BUDGET_SIGNAL == "pacing":
+            if turn == MAX_TURNS // 2:
+                return (f"[harness] Half of your {MAX_TURNS} turns are used. If you haven't "
+                        f"started editing files, start now.")
+            if left == 5:
+                return ("[harness] 5 turns left. Run the tests, fix what fails, then reply "
+                        "with a summary.")
+        return None
+
     dispatch = {
         "list_files": lambda args: ws.list_files(),
         "read_file": lambda args: ws.read_file(args["path"]),
         "write_file": guarded_write,
         "search": lambda args: ws.search(args["pattern"]),
-        "run_tests": lambda args: ws.run_tests(),
+        "run_tests": run_tests_tracked,
     }
     if NOTES_ENABLED:
         dispatch["update_notes"] = update_notes
@@ -164,8 +214,10 @@ def run(workspace_dir: str, task: str) -> RunResult:
 
     result = RunResult(harness=NAME, task=workspace_dir)
     board = Scoreboard(MAX_TURNS)
+    board.budget_told = BUDGET_SIGNAL in ("progress", "pacing")
     board.legend()
-    marker_key(SPEECH_MARKER, CUT_MARKER, RECOVER_MARKER, NOTES_MARKER, MILESTONE_MARKER)
+    marker_key(SPEECH_MARKER, CUT_MARKER, RECOVER_MARKER, NOTES_MARKER, MILESTONE_MARKER,
+               *([BUDGET_MARKER] if BUDGET_SIGNAL else []))
     inject_turn = malformed_injection_turn()
     start = time.monotonic()
     try:
@@ -175,6 +227,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
         # run. That compounding is the real saving, not the one-time cut.
         trimmed_chars = 0
         for turn in range(1, MAX_TURNS + 1):
+            signal_state["turn"] = turn
             result.notes["chars_not_resent"] = (
                 result.notes.get("chars_not_resent", 0) + trimmed_chars
             )
@@ -203,11 +256,9 @@ def run(workspace_dir: str, task: str) -> RunResult:
             # Play-by-play, same as the Block 2 harness: models narrate
             # alongside their tool calls ("the tests expect X, so I'll..."),
             # and that narration is where a drifting plan shows up first.
-            # Unlike Block 2 this prints only when there IS commentary — the
-            # per-call lines just below already carry tool names and
-            # arguments, so an empty line every turn would be pure noise.
-            if msg.content and msg.content.strip():
-                print(f"\033[32m❝  [{NAME} turn {turn}] agent says: {msg.content.strip()}\033[0m")
+            # The turn number prints once, here; the calls below are indented
+            # under it.
+            print_turn(NAME, turn, msg.content, [c.function.name for c in msg.tool_calls])
 
             for call in msg.tool_calls:
                 name = call.function.name
@@ -253,7 +304,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                     print(f"\033[36m✎  [{NAME} turn {turn}] update_notes({str(args.get('notes', ''))[:60]!r}...)\033[0m")
                 else:
                     board.record_tool(name, turn, args)
-                    print(f"[{NAME} turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
+                    print(f"     {describe_call(name, args)}")
                 try:
                     result_text = dispatch[name](args)
                 except Exception as exc:
@@ -282,6 +333,14 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 result.notes["chars_compacted"] = result.notes.get("chars_compacted", 0) + freed
                 print(f"\033[33m✂  [{NAME} turn {turn}] compaction: dropped {dropped} old tool "
                       f"output(s), freeing {freed:,} chars\033[0m")
+            # [h3, optional] Budget signal, after compaction so it sees the
+            # conversation's real size, appended among the newest messages.
+            if BUDGET_SIGNAL and messages and messages[-1].get("role") == "tool":
+                signal = budget_signal(turn, transcript_chars(messages))
+                if signal:
+                    messages[-1]["content"] += "\n" + signal
+                    result.notes["budget_signals"] = result.notes.get("budget_signals", 0) + 1
+                    print(f"\033[1;34m⏱  told the model: {signal}\033[0m")
             board.report(turn, messages)
     except Exception as exc:
         result.status = "crashed"

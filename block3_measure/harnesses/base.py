@@ -35,6 +35,18 @@ When the tests are green, reply with a short summary instead of calling tools.""
 # so the experiment measures the protections, never the budget.
 MAX_TURNS = 40
 
+# For experiments only: MAX_TURNS=20 overrides the budget. A run with a
+# different budget isn't comparable to the 40-turn ones, so every harness
+# adds BUDGET_SUFFIX to its recorded name.
+if os.environ.get("MAX_TURNS"):
+    try:
+        MAX_TURNS = int(os.environ["MAX_TURNS"])
+    except ValueError:
+        MAX_TURNS = 0
+    if MAX_TURNS < 1:
+        raise SystemExit(f"MAX_TURNS must be a positive whole number; got {os.environ['MAX_TURNS']!r}")
+BUDGET_SUFFIX = "" if MAX_TURNS == 40 else f"-{MAX_TURNS}turns"
+
 
 @dataclass
 class RunResult:
@@ -101,6 +113,7 @@ CUT_MARKER = ("\033[33m✂\033[0m", "the harness managing context — capping a 
 RECOVER_MARKER = ("\033[35m↻\033[0m", "the harness recovering from a malformed tool call instead of crashing")
 NOTES_MARKER = ("\033[36m✎\033[0m", "the agent writing to its durable notes")
 MILESTONE_MARKER = ("\033[33m▸\033[0m", "a scoreboard milestone, e.g. the turn the agent first edited a file")
+BUDGET_MARKER = ("\033[1;34m⏱\033[0m", "the harness telling the model its budget (BUDGET_SIGNAL / TURN_NOTICE)")
 
 
 def marker_key(*entries) -> None:
@@ -109,3 +122,33 @@ def marker_key(*entries) -> None:
     for symbol, meaning in entries:
         print(f"     {symbol}  \033[2m{meaning}\033[0m")
     print("     \033[2mplain lines are the agent's tool calls; dim ┈ lines are the scoreboard.\033[0m\n")
+
+
+def describe_call(name: str, args: dict) -> str:
+    """One trace line per tool call, written like the call itself: what it's
+    about (the file, the pattern, how much was written), never a slice of
+    file content."""
+    if name == "write_file":
+        size = len(str(args.get("content", "")))
+        return f"write_file(file={args.get('path', '')}, chars={size:,})"
+    if name == "update_notes":
+        return f"update_notes(chars={len(str(args.get('notes', ''))):,})"
+    if name == "read_file":
+        return f"read_file(file={args.get('path', '')})"
+    if name == "search":
+        return f"search(pattern={args.get('pattern', '')})"
+    return name + "(" + ", ".join(f"{k}={str(v)[:40]}" for k, v in args.items()) + ")"
+
+
+def print_turn(harness: str, turn: int, said: str | None, calls: list = ()) -> None:
+    """One header per turn: the harness and turn, the agent's words if it
+    said anything, and how many calls of each tool it made, in order. The
+    calls themselves are indented below."""
+    counts: dict = {}
+    for call in calls:
+        counts[call] = counts.get(call, 0) + 1
+    tally = ("  [" + ", ".join(f"{n} × {k}" for n, k in counts.items()) + "]") if counts else ""
+    if said and said.strip():
+        print(f"\033[32m❝  [{harness} turn {turn}] agent says: {said.strip()}\033[0m{tally}")
+    else:
+        print(f"\033[2m   [{harness} turn {turn}]\033[0m{tally}")

@@ -14,7 +14,10 @@ import json
 import time
 
 from base import (
+    BUDGET_SUFFIX,
     MAX_TURNS,
+    describe_call,
+    print_turn,
     MILESTONE_MARKER,
     SPEECH_MARKER,
     marker_key,
@@ -32,6 +35,7 @@ from base import (
 from scoreboard import Scoreboard  # noqa: E402
 
 NAME = "h1_naive"
+NAME += BUDGET_SUFFIX
 
 
 def run(workspace_dir: str, task: str) -> RunResult:
@@ -81,11 +85,9 @@ def run(workspace_dir: str, task: str) -> RunResult:
             # Play-by-play, same as the Block 2 harness: models narrate
             # alongside their tool calls ("the tests expect X, so I'll..."),
             # and that narration is where a drifting plan shows up first.
-            # Unlike Block 2 this prints only when there IS commentary — the
-            # per-call lines just below already carry tool names and
-            # arguments, so an empty line every turn would be pure noise.
-            if msg.content and msg.content.strip():
-                print(f"\033[32m❝  [{NAME} turn {turn}] agent says: {msg.content.strip()}\033[0m")
+            # The turn number prints once, here; the calls below are indented
+            # under it.
+            print_turn(NAME, turn, msg.content, [c.function.name for c in msg.tool_calls])
 
             for call in msg.tool_calls:
                 name = call.function.name
@@ -100,7 +102,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 # Naive: unguarded parse — a truncated tool call kills the run.
                 args = json.loads(raw)
                 board.record_tool(name, turn, args)
-                print(f"[{NAME} turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
+                print(f"     {describe_call(name, args)}")
                 try:
                     result_text = dispatch[name](args)
                 except Exception as exc:

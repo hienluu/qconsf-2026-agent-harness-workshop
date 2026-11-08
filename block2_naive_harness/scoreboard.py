@@ -43,6 +43,9 @@ class Scoreboard:
         self.last_turn = 0
         self.last_chars = 0
         self.cached_tokens = 0
+        # Set by a harness that shows the model its turn budget (Block 3's
+        # BUDGET_SIGNAL / TURN_NOTICE), so the low-budget call-out stays true.
+        self.budget_told = False
         self.turns: list = []  # one dict per model call, for the turn-by-turn table
         self._counts_at_last_report: dict = {}
         self.cache_reported = False
@@ -154,6 +157,8 @@ class Scoreboard:
             ("big", chars > 150_000,
              "conversation past 150k chars — every remaining turn re-sends all of it"),
             ("low_budget", turn == self.max_turns - 4,
+             f"{self.max_turns - turn} turns left; the harness has been telling the model how many remain"
+             if self.budget_told else
              f"{self.max_turns - turn} turns left, and nothing is tracking how much work remains"),
         ]:
             if condition and key not in self.said:
