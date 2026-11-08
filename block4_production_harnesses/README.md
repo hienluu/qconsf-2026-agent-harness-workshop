@@ -1,5 +1,19 @@
 # Block 4 — The Production Harnesses
 
+> **In this block (35 min)**
+>
+> | Part | Time | What happens |
+> |---|---|---|
+> | Intro | 5 min | The presenter sets up the block and the exercise |
+> | Hands-on | 20 min | Steps 0 to 4 under "Exercise flow": six runs, then the table and `COMPARISON.md` |
+> | Discussion | 10 min | The presenter demo (step 5), then the questions under "Discussion" at the end |
+>
+> **If you're behind:** if you haven't started the Deep Agents pair ten minutes into the
+> hands-on, run just Pydantic AI and the Claude Agent SDK (the widest gap
+> on the spectrum) and take the other rows from a neighbor's table or from
+> `COMPARISON.md`. The discussion starts on time, whether or
+> not everyone has finished.
+
 **Why this block:** You wrote the loop, watched it die, and measured what
 five protections were worth. These five frameworks made every one of those
 decisions for you already — Claude Agent SDK, OpenAI Agents, Google ADK,
@@ -97,9 +111,11 @@ for that run, plus what the harness shipped that you didn't have to write.
 Receipts accumulate, so after the sixth run the table on your screen is the
 whole comparison, built from your runs rather than anyone's docs.
 
-All six runs together cost well under $1. Between runs, spend sixty
-seconds in the script you just ran on ONE question its receipt raised —
-each docstring says what to look for.
+All six runs together cost well under $1 and take about six minutes.
+Run them back to back, then read the table as a whole: the comparisons
+show up across its rows, not inside any one run. If a receipt raises a
+question, each script's docstring says where to look, and you can come
+back to it afterwards.
 
 0. **Start clean** (a few seconds, no API calls). You arrive here carrying
    state from Blocks 2 and 3, and two bits of it matter: the task fixtures
@@ -256,24 +272,32 @@ seconds. Differences between harnesses only show on work hard enough to
 differ over — which is the
 weight-vs-horizon question from Q1, run in the other direction.
 
-## Debrief questions
+## Discussion (10 min, after the presenter demo)
 
-1. Compare your wall-clock column with a neighbor's — the same script
-   has measured 23.3s and 10.6s on back-to-back runs. Which receipt
-   columns are noise on a 10-second task, and which are stable structural
-   facts? (Then: the heavy Claude harness *did* dominate the long-horizon
-   presenter demo. What experiment would you run to establish how harness
-   weight relates to task horizon — and what would Block 3 say about
-   sample size?)
-2. Which harness required the least code — and what did that convenience
+**For the group:**
+
+1. Which harness required the least code, and what did that convenience
    cost in provider coupling?
-3. Two harnesses needed an explicit workaround to run on our provider at
-   all (Bearer auth for Claude's SDK, an explicit model object for
-   OpenAI's). What does that predict about switching costs at your job?
-4. ADK and OpenAI's SDK share an environment here only because we hold
-   LiteLLM at an older release; ADK's convenient `[extensions]` install
-   can't coexist with OpenAI Agents at all. How would your team have caught
-   that before adopting both, and what happens the day you need a newer
-   LiteLLM?
-5. Every one of these solved the task. On what basis, then, would you
-   actually choose? (That's Block 5.)
+2. Every one of these solved the task. On what basis, then, would you
+   actually choose?
+3. **Would this matter for your own agent?** If so, what would you need a
+   harness to do about it, and how would you test that it does? Write your
+   answer down: Block 5's worksheet starts from these notes.
+
+**More to think about, on your own or afterwards:**
+
+- Compare your wall-clock column with a neighbor's: the same script
+  has measured 23.3s and 10.6s on back-to-back runs. Which receipt
+  columns are noise on a 10-second task, and which are stable structural
+  facts? (Then: the heavy Claude harness *did* dominate the long-horizon
+  presenter demo. What experiment would you run to establish how harness
+  weight relates to task horizon, and what would Block 3 say about
+  sample size?)
+- Two harnesses needed an explicit workaround to run on our provider at
+  all (Bearer auth for Claude's SDK, an explicit model object for
+  OpenAI's). What does that predict about switching costs at your job?
+- ADK and OpenAI's SDK share an environment here only because we hold
+  LiteLLM at an older release; ADK's convenient `[extensions]` install
+  can't coexist with OpenAI Agents at all. How would your team have caught
+  that before adopting both, and what happens the day you need a newer
+  LiteLLM?

@@ -1,5 +1,19 @@
 # Block 3 — Measure It
 
+> **In this block (30 min)**
+>
+> | Part | Time | What happens |
+> |---|---|---|
+> | Intro | 5 min | The presenter sets up the block and the exercise |
+> | Hands-on | 15 min | Steps 0 to 4 under "Exercise flow" |
+> | Discussion | 10 min | The questions under "Discussion" near the end of this page |
+>
+> **If you're behind:** the two long runs are the slow part. If h2 hasn't finished ten minutes
+> into the hands-on, skip h3: `reference_results.jsonl` holds our h2 and h3
+> runs on the same task, and "What it was actually worth" below has the
+> numbers. Steps 5 and 6 are optional, for after the workshop. The discussion starts on time, whether or
+> not everyone has finished.
+
 **Why this block:** sooner or later your team picks a harness — adopts
 one, extends one, or defends the one it already has — and that argument
 needs numbers. Published benchmark scores can't supply them: a score is
@@ -274,6 +288,9 @@ here, where it ran out of room in Block 2 — watch what it costs to do so.
    ```
    uv run eval/run_eval.py h2 --task refactor_v2
    ```
+
+   **While it runs:** read "Watching the protections fire" further down
+   this page, so you know what the marks mean when they start appearing.
 
    **What to expect, so you're not watching it blind:** 25–36 turns
    (typically around 26) and **2.5–4 minutes**. All nine of our h2 runs
@@ -746,29 +763,39 @@ long task into a temp directory to check the committed one hasn't drifted.
 
 Then rerun the exercise flow from step 1.
 
-## Debrief questions
+## Discussion (10 min)
+
+**For the group:**
 
 1. On `fix_bug`, h1 and h2 produced **identical** token counts. On
    `refactor_v2`, h2 came in under h1 in eight of our nine runs. Same two
-   harnesses, opposite verdicts. What changed — and how would you tell, in
-   advance, which of those two situations your own workload is in?
-2. What did ~40 lines of harness (h1→h2) buy on the long task, in tokens
-   and dollars — and which of h2's three protections did the work? Read the
-   `protections fired` and `not re-sent` columns before answering, and note
-   that `not re-sent` is the only part of the gap you can actually
-   attribute to the harness.
-3. h3's durable notes bought nothing on this task, and the re-read counter
-   says why. **What would have to be true of a workload for them to pay
-   off?** Describe a task at your job that has that shape.
-4. You just watched a capability that every major vendor ships fail to
-   earn its place on one specific workload. How would you have found that
-   out without running it — and if the answer is "you wouldn't," what does
-   that imply about choosing a harness from a feature comparison?
-5. h3's write guardrail never fired either: the model never tried to edit
-   the tests. Is the guardrail therefore worthless? (Consider what you'd
-   be able to claim about the runs nobody inspected.)
-6. These five protections are a tiny subset of what production harnesses
-   ship. Block 4: what the pros decided for you.
+   harnesses, opposite verdicts. What changed, and how would you tell in
+   advance which of those two situations your own workload is in?
+2. You just watched a capability that every major vendor ships (h3's
+   durable notes) fail to earn its place on one specific workload. How
+   would you have found that out without running it? And if the answer is
+   "you wouldn't," what does that say about choosing a harness from a
+   feature comparison?
+3. **Would this matter for your own agent?** If so, what would you need a
+   harness to do about it, and how would you test that it does? Write your
+   answer down: Block 5's worksheet starts from these notes.
+
+**More to think about, on your own or afterwards:**
+
+- What did ~40 lines of harness (h1→h2) buy on the long task, in tokens
+  and dollars, and which of h2's three protections did the work? Read the
+  `protections fired` and `not re-sent` columns before answering, and note
+  that `not re-sent` is the only part of the gap you can actually
+  attribute to the harness.
+- h3's durable notes bought nothing on this task, and the re-read counter
+  says why. **What would have to be true of a workload for them to pay
+  off?** Describe a task at your job that has that shape.
+- h3's write guardrail never fired either: the model never tried to edit
+  the tests. Is the guardrail therefore worthless? (Consider what you'd
+  be able to claim about the runs nobody inspected.)
+
+These five protections are a tiny subset of what production harnesses
+ship. Block 4: what the pros decided for you.
 
 ## What the ablation found
 

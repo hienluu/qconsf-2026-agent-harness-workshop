@@ -1,8 +1,8 @@
 # Block 1 — Why the Harness Matters
 
-**Nothing to run in this block.** It's 30 minutes of argument and vocabulary,
+**Nothing to run in this block.** It's 20 minutes of argument and vocabulary,
 and this page is the reference card: the terms defined here get used for the
-rest of the day, so keep it open.
+rest of the workshop, so keep it open.
 
 ## The claim
 
@@ -15,7 +15,7 @@ that turn raw intelligence into a working agent.* Google Cloud's: *all the
 deterministic components that wrap the LLM.* Pydantic's: *everything around
 the model that turns it into an agent.* Three vendors, one idea.
 
-The practical version, and the one the rest of the day keeps demonstrating:
+The practical version, and the one the rest of the workshop keeps demonstrating:
 **the harness decides what the model sees, what it may do, and what happens
 to its output.** The model weights never change. The environment does.
 

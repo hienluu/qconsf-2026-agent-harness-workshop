@@ -22,6 +22,10 @@ It takes about ten minutes.
 
 ## How it works
 
+**Start from your notes.** At the end of Blocks 2, 3 and 4 you wrote down
+what would matter for your own agent, and how you'd test for it. Keep
+those notes in front of you: Part 1 starts from them.
+
 **Start from your agent, not from the list of harnesses.** A feature only
 pays off when your workload actually needs it, and a feature you don't
 need still adds tokens to every request. So you describe your agent first,
