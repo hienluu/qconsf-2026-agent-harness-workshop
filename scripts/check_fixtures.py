@@ -35,6 +35,21 @@ REFERENCES = [
 ]
 
 
+
+def changed_files(path: Path):
+    """Files in `path` that differ from the last commit (modified, added or
+    deleted). A task an agent has touched still fails its tests if the work
+    is only half done, so "tests fail" alone can't prove a fixture is
+    pristine; git can. Returns None when this isn't a git checkout."""
+    proc = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", "."],
+        cwd=path, capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        return None
+    return [line[3:] for line in proc.stdout.splitlines() if line.strip()]
+
+
 def is_green(path: Path) -> bool:
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "-q"],
@@ -103,8 +118,14 @@ def main() -> int:
             problems.append(
                 f"SOLVED   {path.relative_to(REPO)} — tests pass but should fail; {expectation}"
             )
+        elif changed := changed_files(path):
+            problems.append(
+                f"EDITED   {path.relative_to(REPO)} — {len(changed)} file(s) differ from git, "
+                f"e.g. {changed[0]}; an agent has worked on it, so a run would start with a head start"
+            )
         else:
-            print(f"[ok  ] unsolved: {path.relative_to(REPO)}")
+            note = "" if changed is not None else "  (not a git checkout: checked tests only)"
+            print(f"[ok  ] unsolved: {path.relative_to(REPO)}{note}")
 
     for path, label in REFERENCES:
         if not is_green(path):

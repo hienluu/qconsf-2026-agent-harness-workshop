@@ -230,6 +230,20 @@ def anthropic_compat_base_url() -> str:
     return _os.environ["PROVIDER_BASE_URL"].removesuffix("/v1")
 
 
+def changed_files(path: Path):
+    """Files in `path` that differ from the last commit (modified, added or
+    deleted). A task an agent has touched still fails its tests if the work
+    is only half done, so "tests fail" alone can't prove a fixture is
+    pristine; git can. Returns None when this isn't a git checkout."""
+    proc = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", "."],
+        cwd=path, capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        return None
+    return [line[3:] for line in proc.stdout.splitlines() if line.strip()]
+
+
 def prepare_workspace(harness: str, source: Path = TASK_SOURCE) -> Path:
     """Fresh copy of a task workspace under runs/<harness>/.
 
@@ -242,9 +256,11 @@ def prepare_workspace(harness: str, source: Path = TASK_SOURCE) -> Path:
         [sys.executable, "-m", "pytest", "-q"],
         cwd=source, capture_output=True, text=True, timeout=180,
     )
-    if probe.returncode == 0:
+    changed = changed_files(source)
+    if probe.returncode == 0 or changed:
+        what = "already solved" if probe.returncode == 0 else f"edited ({len(changed)} file(s) differ from git)"
         raise SystemExit(
-            f"source fixture is already solved: {source}\n"
+            f"source fixture is {what}: {source}\n"
             f"A previous run (Block 2?) fixed it in place, so measuring against "
             f"it is meaningless. Reset first, from block4_production_harnesses/:\n"
             f"  uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py"

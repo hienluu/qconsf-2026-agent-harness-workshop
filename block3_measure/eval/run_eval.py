@@ -16,6 +16,7 @@ import argparse
 import contextlib
 import importlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -81,6 +82,20 @@ def check_tests(workspace: Path) -> tuple[bool, str]:
     return proc.returncode == 0, summary
 
 
+def changed_files(path: Path):
+    """Files in `path` that differ from the last commit (modified, added or
+    deleted). A task an agent has touched still fails its tests if the work
+    is only half done, so "tests fail" alone can't prove a fixture is
+    pristine; git can. Returns None when this isn't a git checkout."""
+    proc = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", "."],
+        cwd=path, capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        return None
+    return [line[3:] for line in proc.stdout.splitlines() if line.strip()]
+
+
 def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     module = importlib.import_module(HARNESSES[harness_key])
     task = TASKS[task_name]
@@ -90,10 +105,13 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     # happens in practice: a Block 2 run migrates the workspace in place.
     source = REPO / task["workspace"]
     already_green, _ = check_tests(source)
-    if already_green:
+    changed = changed_files(source)
+    if already_green or changed:
+        what = "already solved" if already_green else f"edited ({len(changed)} file(s) differ from git)"
         raise SystemExit(
-            f"source workspace is already solved: {task['workspace']}\n"
-            f"A previous run (Block 2?) modified it in place. Reset it first:\n"
+            f"source workspace is {what}: {task['workspace']}\n"
+            f"A previous run (Block 2?) modified it in place, so this run would\n"
+            f"start with a head start. Reset it first:\n"
             f"  uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py"
         )
 
@@ -112,7 +130,7 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     print(f"\n=== {label} × {task_name} ===")
     print(f"    harness: {(module.__doc__ or '').strip().splitlines()[0]}")
     if label != HARNESSES[harness_key]:
-        print(f"    ablation: running {HARNESSES[harness_key]} with a capability removed")
+        print(f"    variant: running {HARNESSES[harness_key]} with an option changed, recorded as {label}")
     print(f"    task: {task['description']}")
     log_path = run_dir / "console.log"
     with log_path.open("w") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):
@@ -160,12 +178,22 @@ def main() -> int:
     out_dir.mkdir(exist_ok=True)
     results_file = out_dir / "results.jsonl"
 
+    # A run with a fault injected or the compaction budget changed is a demo,
+    # not a measurement: it isn't the harness as defined. Keep it out of the
+    # results, or it would replace a real run in the comparison table.
+    demo = [v for v in ("INJECT_MALFORMED_TURN", "TRANSCRIPT_CHAR_BUDGET") if os.environ.get(v)]
+
     for harness_key in keys:
         for task_name in task_names:
             row = run_one(harness_key, task_name, out_dir)
-            with results_file.open("a") as fh:
-                fh.write(json.dumps(row) + "\n")
+            if not demo:
+                with results_file.open("a") as fh:
+                    fh.write(json.dumps(row) + "\n")
 
+    if demo:
+        print(f"\ndemo run ({', '.join(demo)} set): not recorded, so it can't replace a "
+              f"real run in the comparison table")
+        return 0
     print(f"\nresults appended to {results_file}")
     import compare
 
