@@ -18,24 +18,22 @@ uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
 
 (`MIGRATION.md` is inside the workspace, so the agent CAN read that one.)
 
-## What to watch for (observed in live tuning runs, Sep 2026, GLM-5.3)
+## What to watch for
 
-- The codebase (~150 files) cannot be read-and-rewritten inside one context
-  window, and the changelog is incomplete — the agent must search, sample,
-  and iterate rather than one-pass a plan.
-- `search` results spanning 149 files and full pytest tracebacks are context
-  bombs the naive harness feeds back whole.
-- When the agent batches many large `write_file` calls in one turn, the
-  model can hit its output ceiling mid-batch and emit a truncated tool
-  call. The naive harness has no error recovery: `json.loads` raises, the
-  run dies with a raw traceback, and the workspace is stranded
-  half-migrated. This exact death occurred at turn 11 of the first live
-  v0.3 run — 6 files migrated, suite still red, money spent.
-- Also possible: context-length API error late in the run, or the 40-turn
-  cap with tests still failing. All three deaths are harness-caused, not
-  model-caused — the same model solved the small tasks flawlessly.
-- Compare with a short task: same harness, same model, same tools. The only
-  thing that changed is the horizon.
+- The codebase (~150 files) is too big to read and rewrite comfortably in
+  one pass, and the changelog is incomplete: the agent has to search,
+  sample and work out 6 of the 14 renames from the failing tests.
+- `search` results across 149 files and full pytest tracebacks are large,
+  and the naive harness keeps them in the conversation and re-sends them
+  every turn.
+- When the agent writes many files in one turn, the model can hit its
+  output limit mid-batch and send a cut-off tool call. The naive harness
+  has no error recovery, so `json.loads` raises and the run dies.
+- With Block 2's 20-turn cap, a run ends one of four ways: finished and
+  said so, finished but never said so, ran out mid-job, or crashed. See
+  Block 2's README.
+- Compare with a short task: same harness, same model, same tools. Only
+  the size of the job changed.
 
 ## Maintenance
 

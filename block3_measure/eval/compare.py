@@ -26,7 +26,7 @@ def age(timestamp: float) -> str:
     return f"{seconds // 3600}h ago"
 
 RESULTS = Path(__file__).resolve().parent.parent / "results" / "results.jsonl"
-HARNESS_ORDER = ["h1_naive", "h2_managed", "h3_full", "h3_no_notes"]
+HARNESS_ORDER = ["h1_naive", "h2_managed", "h2_managed+turns", "h3_full", "h3_no_notes"]
 TASK_ORDER = ["fix_bug", "add_function", "small_rename", "bug_hunt", "refactor_v2"]
 
 
@@ -35,17 +35,7 @@ def main() -> int:
         print(f"no results yet — run eval/run_eval.py first ({RESULTS})")
         return 1
 
-    # Reference rows ship with the repo so the h1 baseline is present without
-    # every attendee paying to re-measure it. Their own runs always win.
     latest = {}
-    reference = RESULTS.parent.parent / "reference_results.jsonl"
-    if reference.exists():
-        for line in reference.read_text().splitlines():
-            row = json.loads(line)
-            if row["harness"] == "h1_naive" and row["task"] == "refactor_v2":
-                row["is_reference"] = True
-                latest[(row["harness"], row["task"])] = row
-
     with RESULTS.open() as fh:
         for line in fh:
             row = json.loads(line)
@@ -56,11 +46,9 @@ def main() -> int:
         title="Same model, same tasks, different harnesses (one run each)",
         caption=(
             "fired = times each protection acted: ✂cut tool output · ✂✂dropped old output · ↻recovered\n"
-            "not re-sent = transcript characters the harness kept off the wire, counted once per\n"
-            "turn they would otherwise have been re-sent (the whole transcript goes over on every turn)\n"
-            "wall-clock is in results.jsonl but not here — it is run-to-run noise, not a harness property\n"
-            "\"not your run\" = our h1 baseline on refactor_v2, shipped with the repo so you don't pay to\n"
-            "re-measure it. It is not in results.jsonl, so reset.py never clears it. Every other row is yours."
+            "not re-sent = conversation characters the harness kept off the wire, counted once per\n"
+            "turn they would otherwise have been re-sent (the whole conversation goes over on every turn)\n"
+            "wall-clock is in results.jsonl but not here — it is run-to-run noise, not a harness property"
         ),
         caption_justify="left",
     )
@@ -73,7 +61,10 @@ def main() -> int:
     table.add_column("not re-sent", justify="right")
     table.add_column("when")
 
-    for harness in HARNESS_ORDER:
+    # Variants (e.g. h2 with a TURN_NOTICE schedule) get their own rows after
+    # the known harnesses.
+    extras = sorted({h for h, _ in latest} - set(HARNESS_ORDER))
+    for harness in HARNESS_ORDER + extras:
         for task in TASK_ORDER:
             row = latest.get((harness, task))
             if not row:
@@ -103,13 +94,13 @@ def main() -> int:
                 f"{row['input_tokens']:,}",
                 " ".join(fired) if fired else "[dim]none[/dim]",
                 f"{saved // 1000:,}k" if saved else "[dim]—[/dim]",
-                "[dim]not your run[/dim]" if row.get("is_reference") else age(row["timestamp"]),
+                age(row["timestamp"]),
             )
         table.add_section()
 
     console.print(table)
-    # Rows only compare if they came from the same model and provider. The
-    # shipped baseline row was measured on GLM-5.3; say so if yours differs.
+    # Rows only compare if they came from the same model and provider; say so
+    # when they didn't.
     setups = {}
     for (harness, task), row in latest.items():
         setup = row.get("model") or "unknown model"

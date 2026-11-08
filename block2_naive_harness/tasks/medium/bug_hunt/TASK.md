@@ -9,14 +9,9 @@ fix, re-run, re-diagnose.
 
 Done means: `pytest` exits green, tests unmodified.
 
-**Tuning status (Sep 2026):** GLM-5.3 through the naive harness solves
-this in ~6 turns / ~13k tokens — the diagnosis is real but the package is
-small enough to read in one pass, so strong models batch-fix without
-iterating. That places bug_hunt between fix_bug and refactor_v2 in
-*tokens and breadth* (3× fix_bug's context, 8 files vs 1) but not yet in
-*turns*. October options if a longer horizon is wanted: scale the package
-(the refactor task's lesson — only exceeding one-read capacity forces
-iteration) or accept this as the "wide but shallow" middle step.
+**Its place in the suite:** wide but shallow. Eight files instead of one,
+and a real diagnosis, but small enough to read in one pass, so it takes a
+handful of turns rather than dozens.
 
 Run it through any harness, e.g. (from `block3_measure/`):
 
