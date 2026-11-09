@@ -1,8 +1,10 @@
 # Harness decision worksheet
 
-Every harness in the workshop solved the task. So the question was never
-which one *works*. It's which one fits your agent, and what you're
-signing up for when you pick it.
+On the same task, model and tools, three of Block 4's harnesses matched
+the one you built. The other two cost more or ran out of budget, doing
+exactly what they were designed to do. So the question isn't which one
+*works*. It's which one fits your agent, and what you're signing up for
+when you pick it.
 
 ## The goal
 
@@ -27,20 +29,19 @@ what would matter for your own agent, and how you'd test for it. Keep
 those notes in front of you: Part 1 starts from them.
 
 **Start from your agent, not from the list of harnesses.** A feature only
-pays off when your workload actually needs it, and a feature you don't
-need still adds tokens to every request. So you describe your agent first,
-and every question after that refers back to it.
+pays off when your workload needs it, and one you don't need still adds
+tokens to every request.
 
 **Rule options out instead of scoring them.** A weighted score turns a
 judgement into one number, and the workshop showed again and again how
-misleading single numbers are. Every harness we tested solved the task,
-and every feature list reads the same. What actually separates them is
-the constraint that rules one out.
+misleading single numbers are. Every feature list reads the same. What
+actually separates harnesses is a constraint that rules one out, or a
+default that doesn't fit your work.
 
 **There are two kinds of question.**
 
-- **Part 2: questions that rule harnesses out.** A "yes" makes some of
-  them a poor fit.
+- **Part 2: questions that rule harnesses out.** A "yes" (or a "no") makes
+  some of them a poor fit.
 - **Part 3: what's still your job.** These rule nothing out. They tell you
   what you'll have to build or check whichever harness you pick.
 
@@ -53,13 +54,11 @@ describe your  ──►  rule harnesses  ──►  list what's still ──►
 agent               out                  your job              and test
 ```
 
-**About the evidence.** Each question includes what we saw in the
-workshop's runs. Two things shaped those results. First, the harness
-versions: they're pinned in this repo's `uv.lock`, and newer releases may
-behave differently. Second, the setup: we ran one open model through a
-third-party provider, not through each vendor's own API. That's why the
-vendor-built harnesses needed workarounds. Treat what we saw as a starting
-point, and check it against your own versions and your own provider.
+**About the evidence.** Each question includes what we saw, with the
+versions pinned in `uv.lock` and one open model through a third-party
+provider, not each vendor's own API (which is why the vendor-built
+harnesses needed workarounds). Check it against your own versions and
+provider.
 
 ---
 
@@ -86,7 +85,8 @@ point, and check it against your own versions and your own provider.
 point at a different provider. Claude Agent SDK needed two workarounds and
 OpenAI Agents needed one; Google ADK needed a separate library (LiteLLM)
 to reach our provider at all. Pydantic AI and Deep Agents needed
-nothing.
+nothing. And off its home model, OpenAI Agents lost its own shell tools:
+our provider rejected one and never showed the other to the model.
 
 **Your answer:** ☐ Yes  ☐ No  ☐ Not sure yet
 
@@ -111,11 +111,11 @@ Some examples, grouped by when they happen:
 
 **Across the whole run**
 - "Done" means the tests pass, not that the model says it's finished
+- Tell the model how much budget it has left (Block 3's budget signal)
 - Save progress so a run that crashes at step 40 resumes there instead of
   starting over
 - Use a cheap model to explore and a stronger one to make the changes
 - Pause for a sign-off that might take a day, then continue
-- Run three attempts in parallel and keep the best
 
 **The test.** You wrote an agent loop in Block 2. For each step you need,
 ask two questions:
@@ -132,10 +132,13 @@ ask two questions:
 | | | |
 
 **What we saw:** all five harnesses in Block 4 run the loop for you, and
-four offer places to plug in your own code: OpenAI Agents through
-`RunHooks`, Deep Agents through LangChain callbacks, Pydantic AI through
-an event handler, Google ADK through callbacks and plugins. Claude Agent SDK's loop is closed: you can configure it,
-but not change it.
+all five let you plug in somewhere: OpenAI Agents through `RunHooks`,
+Deep Agents through LangChain callbacks, Pydantic AI through an event
+handler, Google ADK through callbacks and plugins, and Claude Agent SDK
+through hooks at the events it defines: before and after each tool call,
+before it compacts, when it's about to stop. What differs is how far in
+you can reach: with Claude you get its events, and a step it has no event
+for can't be added.
 
 **If you can plug in where you need to:** that's *extend* (Part 4).
 **If you can't:** you need to write the loop yourself. That's *drop down
@@ -144,26 +147,46 @@ a level*.
 ### Q3. Does it have to fit into an existing codebase?
 
 **What we saw:** Google ADK and OpenAI Agents share an environment in this
-repo, but only just. ADK reaches non-Google models through a library called
-LiteLLM, which is why this question connects to Q1. LiteLLM 1.84 and later
-require version 2 of the `openai` library, while OpenAI Agents requires
-version 3. ADK's convenient install option (`google-adk[extensions]`)
-requires LiteLLM 1.84 or later, so installed that way the two can't coexist
-at all. Installing LiteLLM on its own let us use 1.83.0, the last release
-without that limit, and cut ADK's install from 161 packages to 75.
-
-Three things to notice. Neither harness conflicts with the other directly:
-they disagree about a library underneath both. *How* you install changes
-the answer, not just *what* you install. And the workaround lasts only
-until you need a newer LiteLLM. We first wrote this conflict up as
+repo, but only because we hold one library back: they need incompatible
+versions of a library underneath both, and ADK's convenient install
+option can't coexist with OpenAI Agents at all. We first wrote that up as
 unavoidable. It wasn't, and we only found out by testing the exact
-combination.
+combination. (The details are in Block 4's `COMPARISON.md`.)
 
 **Your answer:** ☐ Yes  ☐ No
 
 **If yes:** install your candidate into your actual project, the way you'd
 really install it, before you compare anything else. Then check which
 library versions you've been held to, and why.
+
+### Q4. Do the harness's own tools fit your work?
+
+Some harnesses bring their own tools: file editing, a shell, subagents to
+hand work to. Those tools encode a style of work, and on the wrong task
+you pay for it.
+
+**What we saw on the migration** (same model, prompt and turn cap):
+
+- The four harnesses on **our** file tools, Claude's included, ran the
+  same algorithm and landed in your h2's range.
+- **The same Claude harness on its own tools** used Claude Code's `Edit`,
+  which replaces one exact string at a time: right for most coding, wrong
+  for a rename across 130 files. It made 200 to 380 edits and sent 2 to 4
+  times the tokens.
+- **Deep Agents** handed the work to a subagent that started from an empty
+  context, and ran out of budget in all three runs. Not broken, just
+  untuned: see Part 4.
+- **Given a shell,** every harness stopped editing files and wrote a
+  rename script: tool calls fell tenfold. A tool designed for renames cut
+  them fivefold, and unlike the shell could still refuse to touch the
+  tests.
+
+**Your answer:** ☐ Its tools fit  ☐ I'd replace or tune them  ☐ Not sure yet
+
+**How to find out:** run one representative task with its tools, and with
+yours if you can swap them in. Compare tool calls and tokens, not just
+whether it finished. If you'd replace its tools anyway, much of what you'd
+adopt it for is gone.
 
 ---
 
@@ -172,37 +195,24 @@ library versions you've been held to, and why.
 These rule nothing out. They're the work you'll do whichever harness you
 pick.
 
-### Q4. Will the conversation get big?
+### Q5. Will the conversation get big?
 
 The harness sends the whole conversation back to the model on every call,
-so what drives cost isn't how long a run takes. It's how big the
-conversation gets. Two things make it grow, and you answered both in
-Part 1. As a rough guide:
+so cost grows with the number of model calls and with how big the
+conversation gets. You answered both in Part 1. As a rough guide: under
+about ten calls is small, dozens is large; a screen of text per tool
+result is small, whole files and full logs are large.
 
-- **Model calls per run.** Under about ten is small. Dozens is large.
-- **The biggest thing a tool returns.** A screen or two of text is small.
-  Whole files, searches across a codebase and full test logs are large.
+**What we saw:** on the small tasks (5 or 6 calls) the features for
+managing a big conversation never fired, and our fuller harness cost
+11–13% more for nothing. On the migration (25 to 36 calls, tool results
+up to 22,000 characters) they fired every run. And it's model calls, not
+tool calls, that drive cost: the shell cut tool calls tenfold but tokens
+only 2 to 4 times, tracking the drop in model calls (20–25 against 26–46).
 
-**What we saw:**
-
-| Task | Model calls per run | Biggest tool result | Conversation at the end | Did the extra features help? |
-|---|---|---|---|---|
-| fix_bug | 5–6 | ~1,100 chars (test output) | ~2,500 chars | No, they never fired |
-| bug_hunt | 5–6 | ~3,300 chars (test output) | ~7,000 chars | No, they never fired |
-| refactor_v2 | 25–36 | ~22,000 chars (a codebase search) | ~77,000 chars | Yes, on every run |
-
-On the two small tasks our fuller harness (h3) cost 11–13% more than the
-simpler one (h2) and got nothing for it. How a harness handles a big
-conversation matters too: our h2 keeps the start and end of a large file
-and drops the middle, while Claude Code reads a large file page by page,
-so every part of it stays reachable.
-
-**How to find out:** if your agent already runs, log two numbers over a
-few runs: how many model calls it made, and the size of its largest tool
-result. Your provider's usage page also shows input tokens per run. If
-that's many times the size of a single request, the conversation is being
-resent and growing. If you haven't built it yet, estimate: how many steps
-would a person take, and how much would they need to read at once?
+**How to find out:** log model calls and the largest tool result over a
+few runs, or, before you've built it, estimate how many steps a person
+would take and how much they'd read at once.
 
 **Your answer:** ☐ Small  ☐ Large  ☐ It varies
 
@@ -211,82 +221,72 @@ a lighter harness costs less on every call.
 **If large:** find out *how* your candidate keeps the conversation in
 check, not just whether it does.
 
-### Q5. Can it write files outside the folder you gave it?
+### Q6. What can it write, and what can it run?
 
-**What we saw:** two of the five harnesses did. Both times, the setting
-that allowed it was one we had changed so the agent could run unattended.
+**What we saw:**
 
-- **Deep Agents** edited the original task files instead of its own copy.
-  By default it keeps file access inside the folder you give it. We had
-  turned that off by setting `virtual_mode=False`. The name makes that an
-  easy mistake: "virtual" sounds like the agent works on pretend files. It
-  doesn't. The default mode still writes real files; it just stops paths
-  from leaving the folder.
-- **Claude Agent SDK** created a new folder outside its workspace when the
-  model got one character of a file path wrong. We had turned off its
-  permission prompts (`bypassPermissions`) so it could run without a person
-  approving each step, so nothing stopped the write.
+- **Deep Agents** edited the original task files instead of its own copy,
+  after we'd set `virtual_mode=False` (the default keeps paths inside the
+  folder; "virtual" doesn't mean pretend files).
+- **Claude Agent SDK** created a folder outside its workspace from a
+  one-character path typo. With `bypassPermissions` on, nothing stopped it.
+- **Running the tests means running code.** With its shell taken away,
+  Claude wrote a rename script into an empty `conftest.py` and ran the
+  tests to execute it. Any tool that runs code the agent can edit is a
+  shell.
+- **A shell gets past per-call guardrails.** One global `sed` renamed a
+  function everywhere, a test file included. Block 3's guardrail checked
+  each `write_file`; a shell command has no such checkpoint.
 
-You'll make the same kind of change in production, because an agent that
-waits for approval on every step isn't much use unattended. That's exactly
-when these protections go away.
+You'll change settings like these in production too, so the agent can
+run unattended.
 
 **Before it goes near production:**
 
 ☐ I know which settings I changed from the defaults, and why
 ☐ I know where its file tools can write with those settings
-☐ I know what its shell access can reach, if it has any
+☐ I know which of its tools execute code, the test runner included
 ☐ I've asked it to write outside its folder and watched that get blocked
 
-### Q6. When something goes wrong in production, what will you need to see?
+### Q7. When something goes wrong in production, what will you need to see?
 
-You debug an agent from its trace. Each harness makes different things easy
-or hard to see, and none of that shows up on a feature list. Here's what
-we had to work for in Block 4:
+You debug an agent from its trace, and each harness makes different
+things easy or hard to see. Here's what we had to work for in Block 4:
 
-- **Every tool call, with its arguments.** Which file it read, which
-  command it ran. Deep Agents' own file tools didn't appear at all until we
-  hooked into its callbacks. In one run, the plain trace showed 2 tool
-  calls; the agent had actually made 15. A short trace can mean the work is
-  invisible, not that there was less of it.
+- **What the model is actually sent.** Claude Agent SDK sent an *empty*
+  system prompt until we set one: not ours, not Claude Code's. Check the
+  prompt and tool descriptions that really go out.
+- **Every tool call, with its arguments.** Deep Agents' own file tools
+  didn't appear at all until we hooked into its callbacks: the plain trace
+  showed 2 calls where the agent had made 15. And cutting arguments to 70
+  characters hid the one field that explained a failure.
 - **Which step it's on.** Every SDK counts "turns" its own way. Claude's
-  streams one model response as several messages, so the obvious
-  one-line count said 500 turns for a run of 45; it took grouping by
-  message id. Its own `max_turns` didn't stop that run either. Deep
-  Agents' limit counts graph steps, and each subagent gets its own. To cap
-  runs fairly we counted model calls ourselves.
-- **What it did, not a summary of it.** Cutting each call's arguments to
-  70 characters hid the one field that explained a failure (`replace_all`
-  came after the long `old_string`). A Deep Agents run that spent 33 of
-  its 50 calls inside a subagent looked, in the main transcript, like 17.
-- **What the model said between steps.** That's where a plan going wrong
-  shows up first. Claude's SDK and ADK hand you the model's text as it
-  happens. In the other three, the simple way of running the agent returns
-  only the final answer, and seeing anything along the way took a hook.
-  Pydantic AI then streamed the text a fragment at a time, so we had to
-  reassemble it.
+  streams one model response as several messages, so the obvious count
+  said 500 for a run of 45, and its own `max_turns` didn't stop that run.
+  Deep Agents' limit counts graph steps, and each subagent gets its own.
+  To cap runs fairly we counted model calls ourselves.
+- **What the model said between steps,** where a plan going wrong shows
+  up first. In three of the five, the simple way to run it returns only
+  the final answer.
 - **Cost per step.** OpenAI Agents and ADK reported tokens for each model
-  call. On our provider, Claude's SDK reported only the total; the
-  per-step numbers came back empty.
+  call. On our provider, Claude's SDK reported only the total.
 - **What the harness did on its own.** Cutting a long result, dropping old
-  history, refusing a malformed tool call. These change what the model
-  sees, so they belong in the trace. ADK's events include a field for when
-  it compacts history; Pydantic AI has an event for a tool call it rejected
-  before running it.
+  history, refusing a malformed tool call, handing work to a subagent.
+  These change what the model sees, so they belong in the trace.
 
 **Check your candidate:**
 
 | I need to see | Can my candidate show it? | How much code did it take? |
 |---|---|---|
+| What the model is actually sent | | |
 | Every tool call, with arguments | | |
 | Which step it's on | | |
 | What the model said between steps | | |
 | Cost per step | | |
 | What the harness did on its own | | |
 
-**Then:** build this trace while you're still evaluating. If one of these
-takes real work to get, you want to know before you choose, not in the
-middle of your first incident.
+**Then:** build this trace while you're still evaluating, so you find
+out what's hard to get before you choose, not during your first incident.
 
 ---
 
@@ -294,9 +294,19 @@ middle of your first incident.
 
 Use your Part 2 answers to pick one:
 
-1. **Adopt:** a harness survives Q1–Q3 and does what you need as it is.
-2. **Extend:** it survives, but you need steps it doesn't have, and Q2
-   showed you can plug them in. Add them there.
+1. **Adopt:** a harness survives Q1–Q4 and does what you need as it is.
+2. **Extend:** it survives, but you need steps it doesn't have (Q2) or its
+   defaults don't fit your work (Q4), and you can change that. Deep
+   Agents on the migration is the example: 0 of 3 with its defaults, 3 of
+   3 after two documented settings, no subagent and one line of prompt:
+
+   ```python
+   register_harness_profile("openai", HarnessProfile(
+       excluded_tools=frozenset({"task"}),
+       general_purpose_subagent=GeneralPurposeSubagentProfile(enabled=False)))
+   ```
+
+   Finding out *what* to change was the work: it took reading the trace.
 3. **Drop down a level:** you need to write the loop yourself, because you
    can't plug in where you need to. Use a lower-level framework such as
    LangGraph, under Deep Agents. Everything the harness shipped, from
@@ -313,6 +323,13 @@ Use your Part 2 answers to pick one:
 ______________________________________________________________________
 
 **How to test it:** run one real task from your own codebase through your
-top two candidates, using the same model in each, and compare what each
-one decided for you. The scripts in Block 3 and Block 4 are a starting
-point.
+top two candidates, the way Block 4 did:
+
+- the same model, the same prompt and the same budget for each;
+- several runs, not one (one harness's turns ranged from 25 to 50 on
+  the same task);
+- judge by your own check, like the tests, never the agent's word;
+- and read the traces, not just the verdicts: every finding above came
+  from a trace.
+
+Block 4's `run_all.py` and `common.py` are a starting point.
