@@ -124,10 +124,41 @@ def marker_key(*entries) -> None:
     print("     \033[2mplain lines are the agent's tool calls; dim ┈ lines are the scoreboard.\033[0m\n")
 
 
+# Two habits worth seeing in every run, the same ones Block 4 prints: when
+# the agent runs the tests, and whether it rewrites files it never read.
+# print_turn() and describe_call() see every turn and call in all three
+# harnesses, so they keep count; run_eval.py prints habits_line().
+_habits: dict = {}
+
+
+def reset_habits() -> None:
+    _habits.update(turn=0, test_turns=[], read=set(), unread_writes=set())
+
+
+reset_habits()
+
+
+def habits_line(total_turns: int | None = None) -> str:
+    turns = _habits["test_turns"]
+    if turns:
+        tests = (f"tests run {len(turns)} time{'s' if len(turns) != 1 else ''}, first at turn "
+                 f"{turns[0]} of {total_turns or _habits['turn']}")
+    else:
+        tests = "tests never run"
+    blind = len(_habits["unread_writes"])
+    return f"--- what the trace shows: {tests} · {blind} file{'s' if blind != 1 else ''} rewritten without being read first"
+
+
 def describe_call(name: str, args: dict) -> str:
     """One trace line per tool call, written like the call itself: what it's
     about (the file, the pattern, how much was written), never a slice of
     file content."""
+    if name == "run_tests":
+        _habits["test_turns"].append(_habits["turn"])
+    elif name == "read_file":
+        _habits["read"].add(str(args.get("path", "")))
+    elif name == "write_file" and str(args.get("path", "")) not in _habits["read"]:
+        _habits["unread_writes"].add(str(args.get("path", "")))
     if name == "write_file":
         size = len(str(args.get("content", "")))
         return f"write_file(file={args.get('path', '')}, chars={size:,})"
@@ -144,6 +175,7 @@ def print_turn(harness: str, turn: int, said: str | None, calls: list = ()) -> N
     """One header per turn: the harness and turn, the agent's words if it
     said anything, and how many calls of each tool it made, in order. The
     calls themselves are indented below."""
+    _habits["turn"] = turn
     counts: dict = {}
     for call in calls:
         counts[call] = counts.get(call, 0) + 1

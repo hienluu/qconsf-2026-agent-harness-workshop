@@ -17,6 +17,7 @@ import contextlib
 import importlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -27,18 +28,22 @@ from pathlib import Path
 
 class Tee:
     """Write harness output to the terminal AND a per-run log file, so
-    'why did this run cost what it cost' stays answerable afterward."""
+    'why did this run cost what it cost' stays answerable afterward. The
+    file gets plain text, without color codes, so grep works on it."""
 
-    def __init__(self, *streams):
-        self.streams = streams
+    ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+    def __init__(self, terminal, log):
+        self.terminal, self.log = terminal, log
 
     def write(self, text):
-        for s in self.streams:
-            s.write(text)
+        self.terminal.write(text)
+        self.log.write(self.ANSI.sub("", text))
+        return len(text)
 
     def flush(self):
-        for s in self.streams:
-            s.flush()
+        self.terminal.flush()
+        self.log.flush()
 
 HERE = Path(__file__).resolve().parent
 BLOCK3 = HERE.parent
@@ -47,6 +52,10 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(BLOCK3 / "harnesses"))
 
 from tasks import TASKS  # noqa: E402
+import base  # noqa: E402  (the harnesses' shared helpers: habits_line)
+
+sys.path.insert(0, str(REPO / "scripts"))
+from reference_check import summary_line  # noqa: E402
 
 HARNESSES = {"h1": "h1_naive", "h2": "h2_managed", "h3": "h3_full"}
 
@@ -133,6 +142,7 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
         print(f"    variant: running {HARNESSES[harness_key]} with an option changed, recorded as {label}")
     print(f"    task: {task['description']}")
     log_path = run_dir / "console.log"
+    base.reset_habits()
     with log_path.open("w") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):
         result = module.run(str(workspace), task["prompt"])
     print(f"    trace saved: {log_path.relative_to(BLOCK3)}")
@@ -163,11 +173,14 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
         **run_context(),
     )
     verdict = "SOLVED" if tests_green else f"NOT SOLVED ({result.status})"
-    print(
-        f"--- {verdict} | turns={result.turns} "
-        f"tokens={result.input_tokens}+{result.output_tokens} "
-        f"wall={result.wall_seconds}s | {pytest_summary}"
-    )
+    ending = (f"--- {verdict} | turns={result.turns} "
+              f"tokens={result.input_tokens}+{result.output_tokens} "
+              f"wall={result.wall_seconds}s | {pytest_summary}\n{base.habits_line(result.turns)}")
+    if task_name == "refactor_v2":   # a rename has one right answer: compare it
+        ending += "\n" + summary_line(workspace)
+    print(ending)
+    with log_path.open("a") as log:   # the saved trace ends the way the screen does
+        log.write(ending + "\n")
     return row
 
 

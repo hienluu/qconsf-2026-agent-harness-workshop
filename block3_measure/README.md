@@ -148,7 +148,7 @@ Each run ends with Block 2's turn table and summary, plus a `fired` column:
 recovered, `⛔` a test write refused. Then the comparison table prints
 (`uv run eval/compare.py` re-renders it).
 
-Four things to find:
+Six things to find:
 
 1. **Against your Block 2 run.** Find the biggest `added` in each. In one
    of our pairs, Block 2's was 12 searches adding 19,747 tokens, re-sent on
@@ -174,6 +174,23 @@ Four things to find:
    to 240 tokens a turn, under 1% of a run this size. So if your h3 cost
    40% more or less than h2, that's the run, not the harness. Ours: h3
    365k to 702k, h2 390k to 778k.
+5. **When the agent ran the tests.** The line after the verdict:
+   `what the trace shows: tests run 2 times, first at turn 24 of 28 · 0
+   files rewritten without being read first`. Note when your h2 and h3
+   first tested: step 3 asks whether telling the agent its budget changes
+   that. You'll see the same line in Block 4, for every harness.
+6. **Against the reference.** On `refactor_v2`, the last line compares the
+   final code with a careful hand migration: `against the reference
+   migration: matches`, or how many files differ. Tests passing and this
+   line disagreeing is a finding, not a bug in the checker.
+
+Every run's full trace is saved, as plain text, to
+`results/runs/<harness>__<task>__<time>/console.log`, one file per run,
+so you can search it after it scrolls past:
+
+```bash
+grep -n "run_tests" results/runs/h2_managed__refactor_v2__*/console.log
+```
 
 ### Step 3: Tell the agent its budget (about 4 minutes)
 
@@ -227,9 +244,19 @@ alone did little: h2's `TURN_NOTICE=every` adds just "turn 12 of 40 used:
 28 left", and its costs overlapped plain h2's. What `progress` adds is the
 test status.
 
+**Read the last line, too.** One of our 20-turn runs without the signal
+finished in 14 turns at half the cost of any other, and the scoreboard
+called it solved. The line under it said `against the reference
+migration: 120 files differ`. The agent had renamed the core functions,
+then added aliases (`make_ledger = new_ledger`) so the old names kept
+working, and left 70 files still calling v1 functions. All 35 tests
+passed: they exercise only the v2 API. Under a tight budget, the
+cheapest run was the one that didn't do the job.
+
 **The method is what you take to work:** fix the model and the task, vary
 one thing, judge with an external checker, and run enough times to tell a
-result from noise.
+result from noise. Then check the checker: a test suite measures what it
+tests, and an agent under pressure will find what it doesn't.
 
 ## Optional steps
 
@@ -338,11 +365,15 @@ copy. **A test that can't reproduce the real failure still passes.**
 ### How scoring works
 
 - Each run works on a copy of the task under `results/runs/`, so runs
-  never touch the repo or each other. The runner refuses a task whose
-  tests already pass or whose files differ from git.
+  never touch the repo or each other, and its trace is saved next to that
+  copy (`console.log`). The runner refuses a task whose tests already
+  pass or whose files differ from git.
 - Solved means **pytest passes** afterwards; the agent's report is never
   consulted. Green tests are this exercise's definition of done, not proof
-  of correctness: your checker is only as good as your bar.
+  of correctness: your checker is only as good as your bar. On
+  `refactor_v2`, a second line compares the code with the reference
+  migration (`../scripts/reference_check.py`); the score table still
+  counts only the tests.
 - `results/results.jsonl` keeps every run with its model and provider;
   `compare.py` shows the latest per harness and task.
 - h2 changes three things at once, so it can't say which protection earned
