@@ -5,12 +5,11 @@
 > | Part | Time | What happens |
 > |---|---|---|
 > | Intro | 5 min | The presenter sets up the block and the exercise |
-> | Hands-on | 20 min | Steps 0 to 5 under "Exercise": watch two harnesses work, design a tool, run one answer, then compare with all five |
-> | Discussion | 10 min | The presenter demo (step 6), then the questions under "Discussion" |
+> | Hands-on | 20 min | Steps 0 to 4 under "Exercise": watch two harnesses work, design a tool, run one answer |
+> | Discussion | 10 min | The presenter demo (step 5), then the questions under "Discussion" |
 >
-> **If you're behind:** skip the optional Deep Agents run, and if step 2
-> hasn't finished when the discussion starts, stop it (Ctrl-C) and use
-> the reference table in step 5. The discussion starts on time, whether or
+> **If you're behind:** if step 2 hasn't finished when the discussion
+> starts, stop it (Ctrl-C); step 2 lists what a full run looks like. The discussion starts on time, whether or
 > not everyone has finished.
 
 In Blocks 2 and 3 you built a harness for the migration and added
@@ -20,7 +19,7 @@ Agents and Pydantic AI.
 
 Same task, same model, same turn cap (50 model calls), and every harness
 works through **file tools**: read a file, write or edit a file, run the
-tests. No shell; that's step 6. So the numbers line up with your h2 and
+tests. No shell; that's step 5. So the numbers line up with your h2 and
 h3, and the question is simple: what does a production harness do that
 yours didn't, and what does it leave to you? Every framework's feature
 list mentions memory, tools, context management and guardrails. Running
@@ -29,17 +28,17 @@ them side by side shows how they actually differ.
 There's no code to write. You'll run two of the five and **watch** them
 work, one after the other: the trace shows every turn and every call, the
 way Block 3's did. Then you'll design a better tool for the job and run
-one. Pydantic AI and ADK behave like the first two; Deep Agents, which
-brings its own tools, doesn't, and is optional. All five are in step 5,
-and `run_all.py` runs them side by side if you want them yourself.
+one. The other three harnesses are under "Optional", with numbers for
+all five.
 
 ## The task
 
 The migration from Blocks 2 and 3: move `pyledger` (140 files, about 130
-of which need changes) to its v2 API following `MIGRATION.md`, until all 35 tests pass, without
-touching the tests. Two traps you've seen: `MIGRATION.md` is incomplete,
-so some renames only show up in the tests, and `webhook.py` has a `post()`
-that is the HTTP verb, not the ledger's `post()`, and must keep its name.
+of which need changes) to its v2 API following `MIGRATION.md`, until all
+35 tests pass, without touching the tests. Two traps you've seen:
+`MIGRATION.md` is incomplete, so some renames only show up in the tests,
+and `webhook.py` has a `post()` that is the HTTP verb, not the ledger's
+`post()`, and must keep its name.
 
 ## The scripts
 
@@ -49,8 +48,8 @@ that is the HTTP verb, not the ledger's `post()`, and must keep its name.
 | `claude_agent_sdk/run.py` | Claude Agent SDK, our four file tools (`CLAUDE_TOOLS=own` for Claude Code's) | step 2 |
 | `deepagents/run.py` | Deep Agents (LangGraph underneath), its own tools | optional |
 | `openai_agents/run_replace.py` | step 1, plus a tool designed for the job | step 4 |
-| `pydantic_ai/run.py` | Pydantic AI, our four file tools | reference (step 5) |
-| `google_adk/run.py` | Google ADK, our four file tools | reference (step 5) |
+| `pydantic_ai/run.py` | Pydantic AI, our four file tools | optional |
+| `google_adk/run.py` | Google ADK, our four file tools | optional |
 
 Each is 130 to 190 lines, meant to be read as much as run: what you had to
 write, what came free, and what the harness assumed about you. Each
@@ -136,13 +135,6 @@ step 3 while it runs. Watch:
 While it runs, open `claude_agent_sdk/run.py`: our tools served through
 `create_sdk_mcp_server`, and `tools=[]` switching off Claude Code's own.
 
-**Optional, if you have 3 minutes: a harness with its own tools.**
-`uv run deepagents/run.py`. Deep Agents ships its own file tools, a
-planning tool and subagents (marked `· harness tool`). Watch it hand the
-work to a subagent (`task(...)`) that starts from an empty context, edit
-one exact string per call (`edit_file`), and usually hit the 50-call cap:
-`NOT SOLVED` is the finding, not your setup.
-
 ### Step 3: What tool would you design?
 
 Two different harnesses, one algorithm: about 130 reads and 130 writes,
@@ -186,74 +178,58 @@ design notes in `tool_design/README.md`.)
 uv run openai_agents/run_replace.py
 ```
 
-Watch for the renames (`replace_in_files × 1` per turn, 14 to 25 in all),
+Watch for the renames, in bold cyan (`replace_in_files × 1` per turn, 14
+to 27 in all),
 and whether the agent excludes `webhook.py` when it renames `post`. At the
 end, the results table shows it as `openai_agents+replace`, right under
 step 1's `openai_agents`. Compare the two:
 
-| Over three runs each | Turns | Tool calls | Tokens sent |
-|---|---|---|---|
-| step 1, file tools | 26–46 | 278–315 | 0.62–1.29M |
-| step 4, plus `replace_in_files` | 23–29 | 46–54 | 0.25–0.39M |
+| Over several runs each | Turns | Tool calls | Tokens sent | Tokens written |
+|---|---|---|---|---|
+| step 1, file tools | 26–46 | 278–315 | 0.62–1.29M | ~22–28k |
+| step 4, plus `replace_in_files` | 23–35 | 35–88 | 0.22–0.69M | ~3k |
+
+Tool calls always drop, three to eight times. Tokens sent usually drop
+too, but not always: they follow **turns**, since every turn re-sends the
+conversation, and one run took 35 turns (more than its step 1) and sent
+0.69M. What reliably drops is **tokens written**: with `write_file` the
+model re-types every file it changes, and output is generated a token at
+a time, which is why step 4 finishes in about half the time even when it
+sends as much. The results table shows both columns.
 
 How close is it to the tool you designed?
 
-### Step 5: Compare with all five
-
-Each run printed two tables. **Results** (measured): solved, turns, tool
-calls, tokens sent, wall time, with your h2 and h3 from Block 3 as the
-last row. **Receipts** (facts about each harness): who owns the loop,
-the tools you wrote versus the harness's own, what it took to run on our
-provider, and how long the script is.
-
-Here's all five over several runs each on GLM-5.3-Flash, so you can tell
-a typical run from an unlucky one:
-
-| Harness | Solved | Turns | Tool calls | Tokens sent |
-|---|---|---|---|---|
-| Pydantic AI | 3/3 | 20–26 | 186–283 | 0.36–0.66M |
-| Google ADK | 3/3 | 24–31 | 276–279 | 0.66–0.82M |
-| OpenAI Agents | 5 of 6 | 25–50 | 176–287 | 0.46–1.18M |
-| Claude Agent SDK | 3/3 | 29–30 | 276–281 | 0.71–0.79M |
-| Deep Agents *(its own tools)* | 0/3 | 50 (the cap) | 146–250 | 0.71–0.86M |
-| Claude Agent SDK *(its own file tools, `CLAUDE_TOOLS=own`)* | 4 of 5 | 31–50 | 293–555 | 1.40–3.49M |
-| *your h2 / h3* | | *17–34* | *181–299* | *0.37–0.78M* |
-
-The four harnesses on **our** file tools land where your h2 and h3 did:
-their loops add nothing you can measure on this task. The runs on a
-harness's **own** file tools are the expensive ones. Claude Code's `Edit`
-replaces one exact string per call, so it made 200 to 380 edits where our
-tools rewrote about 130 files, and sent 2 to 4 times the tokens. Deep
-Agents ran out of budget every time; with two documented settings it
-solves it (see `COMPARISON.md`).
-
-One Claude run on its own file tools is left out of the table: with no
-shell, it wrote a rename
-script into the empty `conftest.py`, ran the tests (which runs
-`conftest.py`), then emptied the file again. Clever, and against the
-rules: a run that changes a test file now fails, even if it changes it
-back. And a reminder that "run the tests" means "run code".
-
-Then read `COMPARISON.md`, the full comparison row by row, and argue with
-it against what you watched. To run all five yourself, side by side
-(4 to 6 minutes): `uv run run_all.py`.
-
-### Step 6: The presenter demo (watch, don't run)
+### Step 5: The presenter demo
 
 The other answer to step 3: give the agent a shell. The presenter runs
 the same harness with a single shell tool, then Claude Code's harness with
-its own Bash, for what a product gives you out of the box. Both run
-commands on the machine with no sandbox, which is why you watch rather
-than run them.
+its own Bash, for what a product gives you out of the box.
+
+OpenAI Agents with one shell tool:
+
+```bash
+uv run tool_design/run_openai_shell.py
+```
+
+The Claude Agent SDK with Claude Code's whole kit, Bash included:
+
+```bash
+uv run tool_design/run_claude.py
+```
+
+**Watch first. If you run them yourself, it's at your own risk:** both
+run shell commands the model writes, on your machine, with no sandbox.
+They work on a copy of the task and get no API keys, but a command can
+reach anything you can. Read the script before you run it.
 
 | Tools | Turns | Tool calls | Tokens sent |
 |---|---|---|---|
 | our four file tools (your step 1) | 26–46 | 278–315 | 0.62–1.29M |
-| plus `replace_in_files` (your step 4) | 23–29 | 46–54 | 0.25–0.39M |
+| plus `replace_in_files` (your step 4) | 23–35 | 35–88 | 0.22–0.69M |
 | one shell tool | 20–25 | 19–24 | 0.16–0.43M |
 | Claude Agent SDK with its Bash | 16–23 | 17–23 | 0.41–0.61M |
 
-(GLM-5.3-Flash, three runs each, all solved.)
+(GLM-5.3-Flash, three to six runs each, all solved.)
 
 The designed tool and the shell both get leverage: one call changes every
 file. The difference is **where the guardrail can go**:
@@ -277,6 +253,86 @@ permission rules, hooks and sandboxing.
 
 The scripts, how `replace_in_files` was designed, and Deep Agents with a
 shell to try at home: [`tool_design/README.md`](tool_design/README.md).
+
+## Optional: more to run and read
+
+None of this is part of the hands-on. Try it if you finish early, or at
+home.
+
+**Compare with all five.** Each run printed two tables. **Results**
+(measured): solved, turns, tool calls, tokens sent, wall time, with your
+h2 and h3 from Block 3 as the last row. **Receipts** (facts about each
+harness): who owns the loop, the tools you wrote versus the harness's
+own, what it took to run on our provider, and how long the script is.
+
+Here's all five over several runs each on GLM-5.3-Flash, so you can tell
+a typical run from an unlucky one:
+
+| Harness | Solved | Turns | Tool calls | Tokens sent |
+|---|---|---|---|---|
+| Pydantic AI | 3/3 | 20–26 | 186–283 | 0.36–0.66M |
+| Google ADK | 3/3 | 24–31 | 276–279 | 0.66–0.82M |
+| OpenAI Agents | 5 of 6 | 25–50 | 176–287 | 0.46–1.18M |
+| Claude Agent SDK | 3/3 | 29–30 | 276–281 | 0.71–0.79M |
+| Deep Agents *(its own tools)* | 0/3 | 50 (the cap) | 146–250 | 0.71–0.86M |
+| Claude Agent SDK *(its own file tools, `CLAUDE_TOOLS=own`)* | 4 of 5 | 31–50 | 293–555 | 1.40–3.49M |
+| *your h2 / h3* | | *17–34* | *181–299* | *0.37–0.78M* |
+
+The four harnesses on **our** file tools land where your h2 and h3 did:
+their loops add nothing you can measure on this task. The runs on a
+harness's **own** file tools are the expensive ones. Claude Code's `Edit`
+replaces one exact string per call, so it made 200 to 380 edits where our
+tools rewrote about 130 files, and sent 2 to 4 times the tokens. Deep
+Agents ran out of budget every time; with two documented settings it
+solves it (see `COMPARISON.md`).
+
+One Claude run on its own file tools is left out of the table: with no
+shell, it wrote a rename script into the empty `conftest.py`, ran the
+tests (which runs `conftest.py`), then emptied the file again. Clever,
+and against the rules: a run that changes a test file now fails, even if
+it changes it back. And a reminder that "run the tests" means "run code".
+
+Then read `COMPARISON.md`, the full comparison row by row, and argue with
+it against what you watched.
+
+**A harness with its own tools** (2 to 3 minutes):
+
+```bash
+uv run deepagents/run.py
+```
+
+Deep Agents ships its own file tools, a planning tool and subagents
+(marked `· harness tool`). Watch it hand the work to a subagent
+(`task(...)`) that starts from an empty context, edit one exact string
+per call (`edit_file`), and usually hit the 50-call cap. `NOT SOLVED` is
+the finding, not your setup: its summary shows how many calls went to the
+subagent. With two documented settings it solves the task; see
+`COMPARISON.md`.
+
+**All five side by side** (4 to 6 minutes, traces in `runs/logs/`):
+
+```bash
+uv run run_all.py
+```
+
+**A quicker task**, if the migration is too slow for your provider or
+your time:
+
+```bash
+BLOCK4_TASK=bug_hunt uv run run_all.py
+```
+
+`bug_hunt` is a small order-pricing package with three bugs, two of which
+affect the same totals (`../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`).
+About a minute for all five. On the trivial Block 2 task there's nothing
+to differ over, so the runs collapse toward the same few turns:
+
+```bash
+BLOCK4_TASK=fix_bug uv run pydantic_ai/run.py
+```
+
+Differences between harnesses only show on work hard enough to differ
+about. `BLOCK4_MAX_TURNS` changes the turn cap for any of these.
 
 ## Starting over
 
@@ -321,34 +377,13 @@ application code, not operating-system isolation like a container or VM.
 Fine for a workshop task on your laptop; for an agent that runs untrusted
 code, the isolation is your job, whichever harness you pick.
 
-## The quick fallback, and the trivial task
-
-If the migration is too slow for your provider or your time:
-
-```bash
-BLOCK4_TASK=bug_hunt uv run run_all.py
-```
-
-`bug_hunt` is a small order-pricing package with three bugs, two of which
-affect the same totals (`../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`).
-About a minute for all five. And on the
-trivial Block 2 task there's nothing to differ over, so the runs collapse
-toward the same few turns:
-
-```bash
-BLOCK4_TASK=fix_bug uv run pydantic_ai/run.py
-```
-
-Differences between harnesses only show on work hard enough to differ
-about. `BLOCK4_MAX_TURNS` changes the turn cap for any of these.
-
 ## Discussion (10 min, after the presenter demo)
 
 **For the group:**
 
 1. Two vendors' harnesses on the same tools ran the same algorithm, with
    nearly the same numbers. Then one tool, designed for the job, cut the
-   calls fivefold. For your agent, where is the effort better spent:
+   calls three to eight times. For your agent, where is the effort better spent:
    choosing the harness, or designing its tools?
 2. On their own tools, Claude's harness cost 2 to 4 times more and Deep
    Agents ran out of budget, each doing what it was designed to do. Is that

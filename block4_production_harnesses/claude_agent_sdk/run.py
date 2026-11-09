@@ -40,6 +40,7 @@ from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
     ClaudeAgentOptions,
     ResultMessage,
+    StreamEvent,
     TextBlock,
     ToolUseBlock,
     create_sdk_mcp_server,
@@ -94,6 +95,24 @@ OUR_TOOLS = [run_tests] if OWN_TOOLS else [list_files, read_file, write_file, ru
 
 
 
+_sent = {"total": 0}
+
+
+def _turn_cost(event: dict) -> None:
+    """A model call's tokens. Through our gateway, the AssistantMessage's
+    usage is all zeros; the real numbers arrive in the raw API's closing
+    `message_delta` event, which the SDK streams only with
+    include_partial_messages=True. Sent counts cached input too, as the
+    other harnesses' lines do."""
+    if event.get("type") != "message_delta":
+        return
+    u = event.get("usage") or {}
+    sent = sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+    if sent:
+        _sent["total"] += sent
+        trace_cost(NAME, sent, u.get("output_tokens") or 0, _sent["total"])
+
+
 async def _stream(options) -> None:
     current = None
     async for message in query(prompt=TASK, options=options):
@@ -108,11 +127,6 @@ async def _stream(options) -> None:
                 if _turn["n"] >= TASK_MAX_TURNS:
                     raise TurnCapReached(f"turn cap reached: {TASK_MAX_TURNS} model calls")
                 new_turn()
-            u = getattr(message, "usage", None) or {}
-            sent = u.get("input_tokens") if isinstance(u, dict) else getattr(u, "input_tokens", None)
-            got = (u.get("output_tokens") if isinstance(u, dict) else getattr(u, "output_tokens", 0)) or 0
-            if sent:
-                trace_cost(NAME, sent, got)
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
                     if block.name.startswith("mcp__workspace__"):
@@ -120,6 +134,8 @@ async def _stream(options) -> None:
                     trace_tool(NAME, block.name, tool_detail(block.input), harness_tool=True)
                 elif isinstance(block, TextBlock) and block.text.strip():
                     trace_say(NAME, block.text)
+        elif isinstance(message, StreamEvent):
+            _turn_cost(message.event)
         elif isinstance(message, ResultMessage):
             for d in (getattr(message, "permission_denials", None) or []):
                 trace_note(NAME, f"permission denied: {str(d)[:80]}")
@@ -129,7 +145,7 @@ async def _stream(options) -> None:
             u = message.usage or {}
             sent = sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens",
                                                 "cache_creation_input_tokens"))
-            set_tokens_sent(sent)
+            set_tokens_sent(sent, u.get("output_tokens"))
             end_turn()
             print(f"[{NAME}] tokens sent this run: {sent:,} "
                   f"({u.get('output_tokens') or 0:,} written by the model)")
@@ -147,6 +163,7 @@ async def main() -> int:
         cwd=str(workspace),
         model=os.environ["MODEL"],
         max_turns=TASK_MAX_TURNS,
+        include_partial_messages=True,   # for per-turn token counts; see _turn_cost
         # Without this the SDK sends an EMPTY system prompt (not Claude
         # Code's): set ours, the same as every other harness.
         system_prompt=SYSTEM_PROMPT,

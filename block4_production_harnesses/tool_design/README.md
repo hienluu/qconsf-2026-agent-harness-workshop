@@ -4,7 +4,7 @@ In Block 4's exercise, the harnesses spend most of their calls changing
 one file at a time. Step 3 asks what tool you'd design instead; step 4
 runs one answer, a tool **designed** for the job
 (`openai_agents/run_replace.py`). This folder holds the other answer, a
-**shell**: two scripts for the presenter demo (step 6) and one for
+**shell**: two scripts for the presenter demo (step 5) and one for
 take-home. Same task, model, prompt and turn cap as the exercise, the same
 trace, and every run adds a row to the same results table.
 
@@ -39,18 +39,20 @@ sets:
 | Run | Tools | Turns | Tool calls | Tokens sent |
 |---|---|---|---|---|
 | step 1, `openai_agents/run.py` | our four file tools | 26–46 | 278–315 | 0.62–1.29M |
-| step 4, `openai_agents/run_replace.py` | file tools + `replace_in_files` | 23–29 | 46–54 | 0.25–0.39M |
+| step 4, `openai_agents/run_replace.py` | file tools + `replace_in_files` | 23–35 | 35–88 | 0.22–0.69M |
 | `run_openai_shell.py` | one shell tool | 20–25 | 19–24 | 0.16–0.43M |
 | `run_claude.py` | Claude Code's kit, Bash included | 16–23 | 17–23 | 0.41–0.61M |
 
-(GLM-5.3-Flash, three runs each, all solved. Step 1's numbers come from
+(GLM-5.3-Flash, three to six runs each, all solved. Step 1's numbers come from
 the same harness and tools run three times in a row.)
 
 **File tools:** the agent rewrites ~130 files one `write_file` at a time,
 as your h2 and h3 did.
 
 **A designed tool:** `replace_in_files` cut the calls from about 280 to
-about 50 (14 to 25 of them renames). How it was designed is below.
+35 to 88 (14 to 27 of them renames). Tokens sent fell less reliably,
+because they follow turns; tokens written fell from ~25k to ~3k. How it
+was designed is below.
 
 **A shell:** the agent greps for the old names and writes a rename
 script. As fast, and it works on tasks nobody anticipated. But nothing

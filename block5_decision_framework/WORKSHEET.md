@@ -178,8 +178,8 @@ you pay for it.
   untuned: see Part 4.
 - **Given a shell,** every harness stopped editing files and wrote a
   rename script: tool calls fell tenfold. A tool designed for renames cut
-  them fivefold, and unlike the shell could still refuse to touch the
-  tests.
+  them three to eight times, and unlike the shell could still refuse to
+  touch the tests.
 
 **Your answer:** ☐ Its tools fit  ☐ I'd replace or tune them  ☐ Not sure yet
 

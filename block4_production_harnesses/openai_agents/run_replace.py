@@ -28,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import end_turn, is_test_path, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_result, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import end_turn, spotlight, is_test_path, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_result, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 from agents import Agent, OpenAIChatCompletionsModel, RunHooks, Runner, function_tool, set_tracing_disabled  # noqa: E402
 from openai import AsyncOpenAI  # noqa: E402
@@ -115,6 +115,7 @@ def rename_everywhere(workspace: Path, old: str, new: str, exclude=None, dry_run
 async def main() -> int:
     global workspace
     workspace = prepare_workspace(NAME)
+    spotlight("replace_in_files")   # the tool this step is about: easy to spot as it scrolls
     trace_key(NAME, ["list_files", "read_file", "write_file", "run_tests", "replace_in_files"])
 
     set_tracing_disabled(True)  # tracing ships to OpenAI's platform by default

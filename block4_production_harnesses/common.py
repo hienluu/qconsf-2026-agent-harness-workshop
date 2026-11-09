@@ -77,6 +77,16 @@ class TurnCapReached(Exception):
 SAY = "\033[32m"
 DIM = "\033[2m"
 OFF = "\033[0m"
+SPOT = "\033[1;36m"   # bold cyan: the tools a script asks to spotlight
+
+# Tools whose calls should stand out, e.g. the one tool a comparison is
+# about. A script fills this with spotlight(); the turn printer colors those
+# calls, and the header of any turn that has one.
+_spotlight: set = set()
+
+
+def spotlight(*names: str) -> None:
+    _spotlight.update(names)
 
 
 # Turn counting. Block 3 could just print `turn` because it owned the loop;
@@ -90,12 +100,14 @@ _turn = {"n": 0}
 _pending = {"harness": "", "said": [], "calls": [], "after": []}
 # What each run measures for its receipt: tool calls and tokens sent (all
 # input the model read, cached or not, as Block 2's scoreboard counts it).
-_usage = {"calls": 0, "sent": 0}
+_usage = {"calls": 0, "sent": 0, "out": 0}
 
 
-def set_tokens_sent(total: int) -> None:
-    """For an SDK that reports usage only as a run total."""
+def set_tokens_sent(total: int, out: int | None = None) -> None:
+    """For an SDK that reports usage as a run total: replaces the per-turn sum."""
     _usage["sent"] = int(total or 0)
+    if out is not None:
+        _usage["out"] = int(out or 0)
 
 
 def run_context() -> dict:
@@ -130,15 +142,19 @@ def end_turn() -> None:
         counts: dict = {}
         for name, _, _, _ in calls:
             counts[name] = counts.get(name, 0) + 1
+        lit = any(name in _spotlight for name in counts)
         tally = "  [" + ", ".join(f"{k} × {v}" for k, v in counts.items()) + "]"
+        if lit:
+            tally = f"{SPOT}{tally}{OFF}"
         text = " ".join(" ".join(said).split())
         if text:
             print(f"\n{SAY}❝  [{where}] agent says: {text}{OFF}{tally}")
         else:
-            print(f"\n{DIM}   [{where}]{OFF}{tally}")
+            print(f"\n{SPOT if lit else DIM}   [{where}]{OFF}{tally}")
         for name, detail, theirs, result in calls:
             mark = f"{DIM}  · harness tool{OFF}" if theirs else ""
-            print(f"     {name}({detail}){mark}")
+            call = f"{name}({detail})"
+            print(f"     {SPOT}{call}{OFF}{mark}" if name in _spotlight else f"     {call}{mark}")
             if result:
                 print(result)
     elif said:
@@ -250,6 +266,7 @@ def trace_cost(harness: str, sent: int, out: int, cumulative: int | None = None)
     that the transcript is re-sent every turn; here you can watch the
     `sent` number climb while the task stays the same size."""
     _usage["sent"] += sent
+    _usage["out"] += out or 0
     tail = f" · {cumulative:,} in total" if cumulative is not None else ""
     _pending["after"].append(f"{DIM}     ┈ {sent:,} tokens in / {out:,} out{tail}{OFF}")
 
@@ -270,6 +287,9 @@ def trace_key(harness: str, ours: list, theirs: str = "") -> None:
     print(f"     {DIM}one header per turn ({OFF}{SAY}❝{OFF}{DIM} = the model talking), its tool calls"
           f" counted by type, each call indented below{OFF}")
     print(f"     {DIM}tools we wrote: {', '.join(ours) if ours else 'none'}{OFF}")
+    if _spotlight:
+        print(f"     {SPOT}{', '.join(sorted(_spotlight))}{OFF}{DIM}: in bold cyan, and so is the"
+              f" header of any turn that calls it{OFF}")
     if theirs:
         print(f"     {DIM}the harness's own tools, marked \"· harness tool\": {theirs}{OFF}")
 
@@ -546,6 +566,9 @@ def receipt(
         "turns": _turn["n"],
         "tool_calls": _usage["calls"],
         "tokens_sent": _usage["sent"] or None,
+        # Written by the model: what makes a run slow. Input mostly comes
+        # from cache; output is generated a token at a time.
+        "tokens_out": _usage["out"] or None,
         "origin": origin,
         "loop_owner": loop_owner,
         "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or '—'})",
@@ -585,9 +608,12 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
     def k(n):
         return f"{n / 1e6:.2f}M" if n else "?"
 
+    def thousands(n):
+        return f"{n / 1e3:,.1f}k" if n else "?"
+
     results = Table(title="Results: what each harness did with the same task, model and turn cap",
                     title_style="bold")
-    for col in ("harness", "solved", "turns", "tool calls", "tokens sent", "wall s"):
+    for col in ("harness", "solved", "turns", "tool calls", "tokens sent", "tokens out", "wall s"):
         results.add_column(col, justify="left" if col == "harness" else "right",
                            no_wrap=col == "harness")
     for r in latest.values():
@@ -595,10 +621,11 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
             continue
         results.add_row(r.get("harness") or r["specimen"],
                         "yes" if r["solved"] else "NO", str(r.get("turns", "?")),
-                        str(r.get("tool_calls", "?")), k(r.get("tokens_sent")), str(r["wall_s"]))
+                        str(r.get("tool_calls", "?")), k(r.get("tokens_sent")),
+                        thousands(r.get("tokens_out")), str(r["wall_s"]))
     if task_name == "migration":
         results.add_row("[dim]our h2 / h3 (Block 3)[/dim]", "", "[dim]17–34[/dim]",
-                        "[dim]181–299[/dim]", "[dim]0.37–0.78M[/dim]", "")
+                        "[dim]181–299[/dim]", "[dim]0.37–0.78M[/dim]", "", "")
 
     table = Table(
         title="Receipts: what each harness decided for you, and what it left to you",

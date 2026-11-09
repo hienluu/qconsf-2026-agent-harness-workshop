@@ -25,13 +25,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import _turn, TurnCapReached, end_turn, set_tokens_sent, tool_detail, SYSTEM_PROMPT, TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, trace_key, trace_note, trace_result, trace_say, trace_tool, verify  # noqa: E402
+from common import _turn, TurnCapReached, end_turn, set_tokens_sent, trace_cost, tool_detail, SYSTEM_PROMPT, TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, trace_key, trace_note, trace_result, trace_say, trace_tool, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
     ClaudeAgentOptions,
     HookMatcher,
     ResultMessage,
+    StreamEvent,
     TextBlock,
     ToolUseBlock,
     query,
@@ -72,6 +73,7 @@ async def main() -> int:
         cwd=str(workspace),
         model=os.environ["MODEL"],
         max_turns=TASK_MAX_TURNS,
+        include_partial_messages=True,   # per-turn token counts arrive as stream events
         system_prompt=SYSTEM_PROMPT,  # unset, the SDK sends an empty one
         permission_mode="bypassPermissions",
         env={
@@ -89,7 +91,7 @@ async def main() -> int:
     )
 
     started = time.monotonic()
-    current = None
+    current, total = None, 0
     try:
         async for message in query(prompt=TASK, options=options):
             if isinstance(message, AssistantMessage):
@@ -105,10 +107,20 @@ async def main() -> int:
                         trace_tool(NAME, block.name, tool_detail(block.input), harness_tool=True)
                     elif isinstance(block, TextBlock) and block.text.strip():
                         trace_say(NAME, block.text)
+            elif isinstance(message, StreamEvent) and message.event.get("type") == "message_delta":
+                # Per-turn tokens: only the closing message_delta carries
+                # them through our gateway (see claude_agent_sdk/run.py).
+                u = message.event.get("usage") or {}
+                sent = sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens",
+                                                    "cache_creation_input_tokens"))
+                if sent:
+                    total += sent
+                    trace_cost(NAME, sent, u.get("output_tokens") or 0, total)
             elif isinstance(message, ResultMessage):
                 u = message.usage or {}
                 set_tokens_sent(sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens",
-                                                             "cache_creation_input_tokens")))
+                                                             "cache_creation_input_tokens")),
+                                u.get("output_tokens"))
     except Exception as exc:  # the turn cap is an outcome, not a crash
         end_turn()
         print(f"[{NAME}] run ended without finishing: {str(exc).splitlines()[0][:120]}")
