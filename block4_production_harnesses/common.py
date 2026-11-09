@@ -101,6 +101,9 @@ _pending = {"harness": "", "said": [], "calls": [], "after": []}
 # What each run measures for its receipt: tool calls and tokens sent (all
 # input the model read, cached or not, as Block 2's scoreboard counts it).
 _usage = {"calls": 0, "sent": 0, "out": 0}
+# Two habits worth seeing in every run: when it runs the tests, and whether
+# it rewrites files it never read. Filled in by trace_tool().
+_habits = {"test_turns": [], "read": set(), "unread_writes": set()}
 
 
 def set_tokens_sent(total: int, out: int | None = None) -> None:
@@ -177,8 +180,36 @@ def trace_tool(harness: str, name: str, detail: str = "", harness_tool: bool = F
     harnesses explore. `harness_tool` marks a tool the harness brought rather
     than one we wrote: the whole point of the block, made visible."""
     _usage["calls"] += 1
+    _note_habits(name, detail)
     _pending["harness"] = harness
     _pending["calls"].append([name, detail, harness_tool, None])
+
+
+def _note_habits(name: str, detail: str) -> None:
+    import re
+    if name == "run_tests" or (name in ("shell", "Bash", "execute") and "pytest" in detail):
+        _habits["test_turns"].append(_turn["n"])
+    m = re.search(r"(?:file_path|path)='([^']+)'", detail or "")
+    if not m:
+        return
+    path = m.group(1)
+    if name in ("read_file", "Read"):
+        _habits["read"].add(path)
+    elif name in ("write_file", "Write") and path not in _habits["read"]:
+        _habits["unread_writes"].add(path)
+
+
+def habits_line() -> str:
+    """One line for the end of a run: when the tests ran, and how many files
+    were rewritten without being read first."""
+    turns = _habits["test_turns"]
+    if turns:
+        tests = (f"tests run {len(turns)} time{'s' if len(turns) != 1 else ''}, first at turn "
+                 f"{turns[0]} of {_turn['n']}")
+    else:
+        tests = "tests never run"
+    blind = len(_habits["unread_writes"])
+    return f"--- what the trace shows: {tests} · {blind} file{'s' if blind != 1 else ''} rewritten without being read first"
 
 
 def trace_result(harness: str, name: str, output, failed: bool = False) -> None:
@@ -462,6 +493,39 @@ def remove_run_dir(path: Path) -> None:
     shutil.rmtree(path)
 
 
+class _Tee:
+    """stdout that also goes to a file, without the color codes, so a trace
+    can be searched after it has scrolled past (grep run_tests ...)."""
+
+    def __init__(self, stream, path: Path):
+        import re
+        self._stream, self._file, self._ansi = stream, path.open("w"), re.compile(r"\x1b\[[0-9;]*m")
+
+    def write(self, s):
+        self._stream.write(s)
+        self._file.write(self._ansi.sub("", s))
+        return len(s)
+
+    def flush(self):
+        self._stream.flush()
+        self._file.flush()
+
+    def __getattr__(self, name):          # isatty, encoding, fileno: the terminal's
+        return getattr(self._stream, name)
+
+
+def _save_trace(harness: str) -> None:
+    """Every run's trace also goes to runs/logs/<harness>.log, overwritten
+    each run. run_all.py already captures output there, and says so with
+    BLOCK4_LOGGED=1."""
+    if _os.environ.get("BLOCK4_LOGGED") or isinstance(sys.stdout, _Tee):
+        return
+    log = BLOCK4 / "runs" / "logs" / f"{harness}.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    sys.stdout = _Tee(sys.stdout, log)
+    print(f"\033[2m   ┈ this trace is also saved to runs/logs/{harness}.log\033[0m")
+
+
 def prepare_workspace(harness: str, source: Path = TASK_SOURCE) -> Path:
     """Fresh copy of a task workspace under runs/<harness>/.
 
@@ -486,6 +550,7 @@ def prepare_workspace(harness: str, source: Path = TASK_SOURCE) -> Path:
 
     run_dir = BLOCK4 / "runs" / harness
     workspace = run_dir / "workspace"
+    _save_trace(harness)
     remove_run_dir(run_dir)
     shutil.copytree(source, workspace, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache"))
     _lock_tests(workspace)
@@ -527,6 +592,7 @@ def verify(harness: str, workspace: Path, started: float) -> int:
     solved = proc.returncode == 0 and not tampered and not earlier
     verdict = "SOLVED" if solved else "NOT SOLVED"
     print(f"\n--- {harness}: {verdict} | wall={wall:.1f}s | {summary} (original tests)")
+    print(habits_line())
     if tampered:
         print(f"\033[1;31m--- {harness}: the agent modified {len(tampered)} test file(s), which fails "
               f"the run: {', '.join(map(str, tampered))}\033[0m")

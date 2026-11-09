@@ -59,7 +59,8 @@ def main() -> int:
         log = logs / f"{name}.log"
         procs[name] = (subprocess.Popen([sys.executable, SCRIPTS[name]], cwd=BLOCK4,
                                          stdout=log.open("w"), stderr=subprocess.STDOUT,
-                                         env={**os.environ, "PYTHONUNBUFFERED": "1"}),
+                                         env={**os.environ, "PYTHONUNBUFFERED": "1",
+                                              "BLOCK4_LOGGED": "1"}),   # we capture it here
                        log, time.monotonic())
         time.sleep(1)   # stagger the starts a little
 

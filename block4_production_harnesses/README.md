@@ -105,6 +105,16 @@ The OpenAI Agents SDK gets the four file tools you know from Blocks 2 and
   50-turn cap, and changed nothing: Block 3's budget problem, since
   nothing tells it the turns are running out. If that happens to you,
   keep the result for step 4.
+- **When it runs the tests, and whether it reads before it writes.** The
+  line after the verdict tells you: `what the trace shows: tests run 2
+  times, first at turn 31 of 35 · 0 files rewritten without being read
+  first`. Most runs test only at the end. Some rewrite dozens of files they
+  never read, reconstructing them from the pattern of the others, and
+  still pass. Keep your numbers for the discussion.
+
+The whole trace is also saved to `runs/logs/openai_agents.log` (each
+script saves to `runs/logs/<harness>.log`), so you can search it after it
+scrolls past: `grep -n "run_tests" runs/logs/openai_agents.log`.
 
 While it runs, open `openai_agents/run.py`: the loop is theirs
 (`Runner.run`), and so are the hooks we watch it through (`RunHooks`);
