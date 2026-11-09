@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from langchain_core.callbacks import BaseCallbackHandler  # noqa: E402
-from common import end_turn, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, TurnCapReached, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_run_tests  # noqa: E402
+from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, TurnCapReached, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_run_tests  # noqa: E402
 
 from deepagents import create_deep_agent  # noqa: E402
 from deepagents.backends import FilesystemBackend  # noqa: E402
@@ -33,7 +33,9 @@ workspace: Path
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
     trace_tool(NAME, "run_tests")
-    return ws_run_tests(workspace)
+    out = ws_run_tests(workspace)
+    trace_result(NAME, "run_tests", out)
+    return out
 
 
 class Watch(BaseCallbackHandler):

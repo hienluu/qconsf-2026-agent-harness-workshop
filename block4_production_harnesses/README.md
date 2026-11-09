@@ -268,8 +268,8 @@ say exactly what it can't do; and no shell at all without a sandbox.
 Production harnesses do both: Claude Code ships Bash together with
 permission rules, hooks and sandboxing.
 
-The scripts, and the same experiment for Deep Agents, Pydantic AI and ADK
-to try at home: [`tool_design/README.md`](tool_design/README.md).
+The scripts, how `replace_in_files` was designed, and Deep Agents with a
+shell to try at home: [`tool_design/README.md`](tool_design/README.md).
 
 ## Starting over
 

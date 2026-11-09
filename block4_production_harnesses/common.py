@@ -128,7 +128,7 @@ def end_turn() -> None:
     where = f"{h} turn {_turn['n']}" if _turn["n"] else h
     if calls:
         counts: dict = {}
-        for name, _, _ in calls:
+        for name, _, _, _ in calls:
             counts[name] = counts.get(name, 0) + 1
         tally = "  [" + ", ".join(f"{k} × {v}" for k, v in counts.items()) + "]"
         text = " ".join(" ".join(said).split())
@@ -136,9 +136,11 @@ def end_turn() -> None:
             print(f"\n{SAY}❝  [{where}] agent says: {text}{OFF}{tally}")
         else:
             print(f"\n{DIM}   [{where}]{OFF}{tally}")
-        for name, detail, theirs in calls:
+        for name, detail, theirs, result in calls:
             mark = f"{DIM}  · harness tool{OFF}" if theirs else ""
             print(f"     {name}({detail}){mark}")
+            if result:
+                print(result)
     elif said:
         print(f"\n\033[1;32m❝  [{where}] agent finished:{OFF}")
         print(SAY + "\n\n".join(said) + OFF)
@@ -160,7 +162,31 @@ def trace_tool(harness: str, name: str, detail: str = "", harness_tool: bool = F
     than one we wrote: the whole point of the block, made visible."""
     _usage["calls"] += 1
     _pending["harness"] = harness
-    _pending["calls"].append((name, detail, harness_tool))
+    _pending["calls"].append([name, detail, harness_tool, None])
+
+
+def trace_result(harness: str, name: str, output, failed: bool = False) -> None:
+    """A call's result, printed under it as one line: the last line of its
+    output (`→`), or `✗` when it failed. Only where a result says something
+    a call doesn't: a shell command's output, a rename's count. Shell tools
+    end with an exit-code line (ours "[exit code N]", Deep Agents'
+    "[Command succeeded with exit code N]"): a non-zero one is a failure."""
+    import re
+    lines = [ln for ln in str(output if output is not None else "").splitlines() if ln.strip()]
+    if lines:
+        m = re.match(r"^\[(?:Command (?:succeeded|failed) with )?exit code (-?\d+)\]$", lines[-1].strip())
+        if m:
+            lines = lines[:-1]
+            failed = failed or m.group(1) != "0"
+            if failed:
+                lines.append(f"(exit code {m.group(1)})")
+    shown = (" ".join(lines[-2:]) if failed and len(lines) > 1 else lines[-1]) if lines else "(no output)"
+    line = f"\033[31m       ✗ {shown[:110]}{OFF}" if failed else f"{DIM}       → {shown[:110]}{OFF}"
+    for call in _pending["calls"]:          # results come back in the order the calls ran
+        if call[0] == name and call[3] is None:
+            call[3] = line
+            return
+    _pending["after"].append(line)
 
 
 def trace_reject(harness: str, why: str) -> None:
@@ -501,7 +527,6 @@ def receipt(
     tools_we_wrote: list,
     tools_harness_shipped: str,
     provider_friction: str,
-    measured: dict | None = None,
 ) -> None:
     """Print this run's harness receipt and the comparison table so far.
 
@@ -518,11 +543,9 @@ def receipt(
         "task": task_name,
         "solved": solved,
         "wall_s": round(time.monotonic() - started, 1),
-        # `measured` is for a script that counts with its own trace (the
-        # tool_design/ scripts); everything else counts through this module.
-        "turns": (measured or {}).get("turns", _turn["n"]),
-        "tool_calls": (measured or {}).get("tool_calls", _usage["calls"]),
-        "tokens_sent": (measured or {}).get("tokens_sent", _usage["sent"]) or None,
+        "turns": _turn["n"],
+        "tool_calls": _usage["calls"],
+        "tokens_sent": _usage["sent"] or None,
         "origin": origin,
         "loop_owner": loop_owner,
         "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or '—'})",
