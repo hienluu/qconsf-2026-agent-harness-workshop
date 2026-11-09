@@ -35,25 +35,26 @@ and `run_all.py` runs them side by side if you want them yourself.
 
 ## The task
 
-The migration from Blocks 2 and 3: move `pyledger` (about 130 files) to
-its v2 API following `MIGRATION.md`, until all 35 tests pass, without
+The migration from Blocks 2 and 3: move `pyledger` (140 files, about 130
+of which need changes) to its v2 API following `MIGRATION.md`, until all 35 tests pass, without
 touching the tests. Two traps you've seen: `MIGRATION.md` is incomplete,
 so some renames only show up in the tests, and `webhook.py` has a `post()`
 that is the HTTP verb, not the ledger's `post()`, and must keep its name.
 
-## The five scripts
+## The scripts
 
-Arranged as three comparisons:
+| Script | Harness and tools | Used in |
+|---|---|---|
+| `openai_agents/run.py` | OpenAI Agents, our four file tools | step 1 |
+| `claude_agent_sdk/run.py` | Claude Agent SDK, our four file tools (`CLAUDE_TOOLS=own` for Claude Code's) | step 2 |
+| `deepagents/run.py` | Deep Agents (LangGraph underneath), its own tools | optional |
+| `openai_agents/run_replace.py` | step 1, plus a tool designed for the job | step 4 |
+| `pydantic_ai/run.py` | Pydantic AI, our four file tools | reference (step 5) |
+| `google_adk/run.py` | Google ADK, our four file tools | reference (step 5) |
 
-| Comparison | Scripts |
-|---|---|
-| A kit vs a composable harness | `google_adk/run.py` · `pydantic_ai/run.py` |
-| Two routes to an opinionated harness | `claude_agent_sdk/run.py` · `openai_agents/run.py` |
-| A harness built on a runtime | `deepagents/run.py` (LangGraph underneath) |
-
-Each script is 130 to 190 lines, meant to be read as much as run: notice
-what you had to write, what came free, and what the harness assumed about
-you. Each docstring says what to look for.
+Each is 130 to 190 lines, meant to be read as much as run: what you had to
+write, what came free, and what the harness assumed about you. Each
+docstring says what to look for.
 
 Plain `uv sync` installs all five frameworks (setup did this). Two notes,
 both part of the lesson. ADK reaches non-Google models through LiteLLM,
@@ -186,11 +187,16 @@ uv run openai_agents/run_replace.py
 ```
 
 Watch for the renames (`replace_in_files × 1` per turn, 14 to 25 in all),
-and whether the agent excludes `webhook.py` when it renames `post`. At
-the end, the results table shows it as `openai_agents+replace`, right
-under step 1's `openai_agents`: compare turns, tool calls and tokens. Over three runs each on GLM-5.3-Flash: 23 to 29 turns and
-46 to 54 calls, against 26 to 46 and 278 to 315; tokens 0.25 to 0.39M
-against 0.62 to 1.29M. How close is it to the tool you designed?
+and whether the agent excludes `webhook.py` when it renames `post`. At the
+end, the results table shows it as `openai_agents+replace`, right under
+step 1's `openai_agents`. Compare the two:
+
+| Over three runs each | Turns | Tool calls | Tokens sent |
+|---|---|---|---|
+| step 1, file tools | 26–46 | 278–315 | 0.62–1.29M |
+| step 4, plus `replace_in_files` | 23–29 | 46–54 | 0.25–0.39M |
+
+How close is it to the tool you designed?
 
 ### Step 5: Compare with all five
 
@@ -217,11 +223,12 @@ The four harnesses on **our** file tools land where your h2 and h3 did:
 their loops add nothing you can measure on this task. The runs on a
 harness's **own** file tools are the expensive ones. Claude Code's `Edit`
 replaces one exact string per call, so it made 200 to 380 edits where our
-tools rewrote about 130 files, and sent about twice the tokens. Deep
+tools rewrote about 130 files, and sent 2 to 4 times the tokens. Deep
 Agents ran out of budget every time; with two documented settings it
 solves it (see `COMPARISON.md`).
 
-One Claude run is left out of the table: with no shell, it wrote a rename
+One Claude run on its own file tools is left out of the table: with no
+shell, it wrote a rename
 script into the empty `conftest.py`, ran the tests (which runs
 `conftest.py`), then emptied the file again. Clever, and against the
 rules: a run that changes a test file now fails, even if it changes it
@@ -241,8 +248,8 @@ than run them.
 
 | Tools | Turns | Tool calls | Tokens sent |
 |---|---|---|---|
-| our four file tools | 26–46 | 278–315 | 0.62–1.29M |
-| file tools + `replace_in_files`, a tool designed for renames | 23–29 | 46–54 | 0.25–0.39M |
+| our four file tools (your step 1) | 26–46 | 278–315 | 0.62–1.29M |
+| plus `replace_in_files` (your step 4) | 23–29 | 46–54 | 0.25–0.39M |
 | one shell tool | 20–25 | 19–24 | 0.16–0.43M |
 | Claude Agent SDK with its Bash | 16–23 | 17–23 | 0.41–0.61M |
 
@@ -302,11 +309,11 @@ keeps runs repeatable; it isn't security.
 | Deep Agents | its own | its `FilesystemBackend` with `virtual_mode=True`. With `False`, the boundary is gone: we watched an agent edit the original task that way |
 | Claude Agent SDK | ours by default (same `_inside()` rule); with `CLAUDE_TOOLS=own`, Claude Code's `Read`, `Write`, `Edit`, `Glob`, `Grep` | with its own tools, **nothing.** They accept absolute paths, and `bypassPermissions` approves every call. The copy is only where it starts |
 
-The tests get one more layer. At the start of every run the test files are
-made read-only, and afterwards `verify()` compares them with the
-originals: a run that changed, added or deleted one fails, whatever
-pytest says. (An agent with a shell can `chmod` its way past the first
-layer; not the second.)
+The tests get more. At the start of every run the test files are made
+read-only; `run_tests` refuses to run if any of them changed; and
+afterwards `verify()` compares them with the originals: a run that
+changed, added or deleted one fails, whatever pytest says. (An agent with
+a shell can `chmod` its way past the first; not the last.)
 
 And every harness runs `run_tests`, which **executes the code the agent
 wrote with your permissions.** Every boundary here is a rule in
@@ -324,7 +331,7 @@ BLOCK4_TASK=bug_hunt uv run run_all.py
 
 `bug_hunt` is a small order-pricing package with three bugs, two of which
 affect the same totals (`../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`).
-About a minute for all five, and every harness solves it. And on the
+About a minute for all five. And on the
 trivial Block 2 task there's nothing to differ over, so the runs collapse
 toward the same few turns:
 
