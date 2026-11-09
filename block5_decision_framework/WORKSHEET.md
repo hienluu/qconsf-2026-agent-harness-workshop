@@ -85,8 +85,8 @@ point, and check it against your own versions and your own provider.
 **What we saw:** the harnesses built by model vendors were the hardest to
 point at a different provider. Claude Agent SDK needed two workarounds and
 OpenAI Agents needed one; Google ADK needed a separate library (LiteLLM)
-to reach our provider at all. Pydantic AI, Deep Agents and LangGraph
-needed nothing.
+to reach our provider at all. Pydantic AI and Deep Agents needed
+nothing.
 
 **Your answer:** ☐ Yes  ☐ No  ☐ Not sure yet
 
@@ -131,10 +131,10 @@ ask two questions:
 | | | |
 | | | |
 
-**What we saw:** five of the six harnesses in Block 4 run the loop for you
-and offer different places to plug in your own code: OpenAI Agents
-through `RunHooks`, LangGraph through callbacks, Pydantic AI through an
-event handler. Claude Agent SDK's loop is closed: you can configure it,
+**What we saw:** all five harnesses in Block 4 run the loop for you, and
+four offer places to plug in your own code: OpenAI Agents through
+`RunHooks`, Deep Agents through LangChain callbacks, Pydantic AI through
+an event handler, Google ADK through callbacks and plugins. Claude Agent SDK's loop is closed: you can configure it,
 but not change it.
 
 **If you can plug in where you need to:** that's *extend* (Part 4).
@@ -249,8 +249,16 @@ we had to work for in Block 4:
   hooked into its callbacks. In one run, the plain trace showed 2 tool
   calls; the agent had actually made 15. A short trace can mean the work is
   invisible, not that there was less of it.
-- **Which step it's on.** Getting a step number took one line in Claude's
-  SDK and close to twenty in Pydantic AI's.
+- **Which step it's on.** Every SDK counts "turns" its own way. Claude's
+  streams one model response as several messages, so the obvious
+  one-line count said 500 turns for a run of 45; it took grouping by
+  message id. Its own `max_turns` didn't stop that run either. Deep
+  Agents' limit counts graph steps, and each subagent gets its own. To cap
+  runs fairly we counted model calls ourselves.
+- **What it did, not a summary of it.** Cutting each call's arguments to
+  70 characters hid the one field that explained a failure (`replace_all`
+  came after the long `old_string`). A Deep Agents run that spent 33 of
+  its 50 calls inside a subagent looked, in the main transcript, like 17.
 - **What the model said between steps.** That's where a plan going wrong
   shows up first. Claude's SDK and ADK hand you the model's text as it
   happens. In the other three, the simple way of running the agent returns
@@ -291,8 +299,8 @@ Use your Part 2 answers to pick one:
    showed you can plug them in. Add them there.
 3. **Drop down a level:** you need to write the loop yourself, because you
    can't plug in where you need to. Use a lower-level framework such as
-   LangGraph. When we did that, the number of tools we had to write went
-   from 1 to 4.
+   LangGraph, under Deep Agents. Everything the harness shipped, from
+   file tools to subagents, becomes yours to write.
 4. **Build your own:** rarely the right call. Blocks 2 and 3 showed what
    it costs.
 

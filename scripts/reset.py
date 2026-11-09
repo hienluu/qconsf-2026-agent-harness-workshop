@@ -46,6 +46,9 @@ def main() -> None:
         (REPO / "block4_production_harnesses" / "runs", "block 4 harness runs + receipts"),
     ]:
         if runs.exists():
+            for p in [runs, *runs.rglob("*")]:   # Block 4 locks test files read-only
+                if not p.is_symlink():
+                    p.chmod(0o755 if p.is_dir() else 0o644)
             shutil.rmtree(runs)
             print(f"[reset] {label} removed")
         else:

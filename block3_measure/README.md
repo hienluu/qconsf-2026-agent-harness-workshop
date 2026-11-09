@@ -381,7 +381,7 @@ delete) your score table. `check_fixtures.py` only checks.
 - The guardrail never fired on the migration. Is it worthless? (What could
   you claim about the runs nobody inspected?)
 
-Block 4: what five production harnesses decided for you.
+Block 4: what five production harnesses decide for you, and what they leave to you.
 
 ## Where these ideas come from
 

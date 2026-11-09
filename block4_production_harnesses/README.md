@@ -1,276 +1,241 @@
-# Block 4 — The Production Harnesses
+# Block 4: The Production Harnesses
 
 > **In this block (35 min)**
 >
 > | Part | Time | What happens |
 > |---|---|---|
 > | Intro | 5 min | The presenter sets up the block and the exercise |
-> | Hands-on | 20 min | Steps 0 to 4 under "Exercise flow": six runs, then the table and `COMPARISON.md` |
-> | Discussion | 10 min | The presenter demo (step 5), then the questions under "Discussion" at the end |
+> | Hands-on | 20 min | Steps 0 to 4 under "Exercise": start all five runs, read the scripts while they work, then the tables and `COMPARISON.md` |
+> | Discussion | 10 min | The presenter demo (step 5), then the questions under "Discussion" |
 >
-> **If you're behind:** if you haven't started the Deep Agents pair ten minutes into the
-> hands-on, run just Pydantic AI and the Claude Agent SDK (the widest gap
-> on the spectrum) and take the other rows from a neighbor's table or from
-> `COMPARISON.md`. The discussion starts on time, whether or
-> not everyone has finished.
+> **If you're behind:** the runs take 4 to 6 minutes, and nothing else
+> needs to wait for them. If your provider is slow or you started late,
+> run the quick fallback task instead (`BLOCK4_TASK=bug_hunt`, about a
+> minute; see the end of this page). The discussion starts on time,
+> whether or not everyone has finished.
 
-**Why this block:** You wrote the loop, watched it die, and measured what
-five protections were worth. These five frameworks made every one of those
-decisions for you already — Claude Agent SDK, OpenAI Agents, Google ADK,
-Deep Agents, Pydantic AI.
+In Blocks 2 and 3 you built a harness for the migration and added
+protections to it. Now you'll run the same migration through five
+production frameworks: Claude Agent SDK, OpenAI Agents, Google ADK, Deep
+Agents and Pydantic AI.
 
-**All five solve the task**, on the same model. That's the design: hold the
-outcome constant, and what's left to compare is what each one decided on
-your behalf — who owns the loop, which tools you still had to write, what
-you had to work around to use your own provider, and how much code it took.
+Same task, same model, same turn cap (50 model calls), and every harness
+works through **file tools**: read a file, write or edit a file, run the
+tests. No shell; that's step 5. So the numbers line up with your h2 and
+h3, and the question is simple: what does a production harness do that
+yours didn't, and what does it leave to you? Every framework's feature
+list mentions memory, tools, context management and guardrails. Running
+them side by side shows how they actually differ.
 
-Feature lists can't tell you any of that. Every one of them says memory,
-tools, context management, guardrails. They only start to differ once
-you've built those yourself, which you now have.
+There's no code to write. One command starts all five; each adds a row to
+two tables.
 
-**What you leave with:** the ability to look at any agent framework and say
-what it decides for you — plus a comparison you ran yourself instead of one
-a vendor published. Block 5 turns that into a choice.
+## The task
 
-No code to write here. Six scripts, well under a minute each, and a table
-that fills in as you go.
+The migration from Blocks 2 and 3: move `pyledger` (about 130 files) to
+its v2 API following `MIGRATION.md`, until all 35 tests pass, without
+touching the tests. Two traps you've seen: `MIGRATION.md` is incomplete,
+so some renames only show up in the tests, and `webhook.py` has a `post()`
+that is the HTTP verb, not the ledger's `post()`, and must keep its name.
 
-## The five harnesses (and one escape hatch)
+## The five scripts
 
-Same task, same model, same provider key. The task is `bug_hunt`: a small
-order-pricing package (8 modules, 18 tests, 5 failing) with three bugs that
-interact. Real diagnosis rather than a typo hunt, and big enough that
-differences in how each harness explores, plans and batches have room to
-show.
-
-You may have run this task once already — it's what Block 3's compaction
-demo uses — but you were watching the harness then, not the bugs. Here they
-are, so you can follow what the agents are doing. The agents get no such
-help:
-
-1. **One wrong line, wrong answers in two modules.**
-   `discounts.percent_off` is `cents * pct // 100`. Integer division
-   throws away the remainder, so 5% of a $1.50 item is 7.5¢ and the
-   function returns **7¢ instead of 8¢**. `tax.py` calls that same helper
-   to compute tax, so a single rounding mistake produces wrong numbers in
-   two places that look unrelated from the test output.
-2. **A bug that disappears whenever there's no discount.**
-   `pricing.price_cart` computes `tax_cents(subtotal)` where it should be
-   `tax_cents(taxable)` — customers get taxed on money the discount took
-   off. On a cart with no coupon, `subtotal` and `taxable` are the same
-   number, so that test passes. The passing test is a clue, not luck.
-3. **A crash that has nothing to do with the other two.**
-   `receipt.format_receipt` divides the subtotal by the item count to
-   print an average, and nothing handles an empty cart. The resulting
-   `ZeroDivisionError` lands at the top of the pytest output, so it's the
-   first thing the agent sees and the least useful.
-
-(The exact diffs live in `scripts/derive_bug_hunt.py`, which injects them
-into the green reference; task details in
-`../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`.)
-
-One runner script per harness, organized as three side-by-side comparisons:
+Arranged as three comparisons:
 
 | Comparison | Scripts |
 |---|---|
-| Kit vs composable | `google_adk/` · `pydantic_ai/` |
-| Two roads to opinionated | `claude_agent_sdk/` · `openai_agents/` |
-| Harness on a runtime | `deepagents/` · its escape hatch, `deepagents/langgraph_escape_hatch.py` |
+| A kit vs a composable harness | `google_adk/run.py` · `pydantic_ai/run.py` |
+| Two routes to an opinionated harness | `claude_agent_sdk/run.py` · `openai_agents/run.py` |
+| A harness built on a runtime | `deepagents/run.py` (LangGraph underneath) |
 
-Each `run.py` is ~100 lines, meant to be read as much as run — notice what
-you had to write, what came free, and what the harness assumed about who
-you are.
+Each script is 110 to 165 lines, meant to be read as much as run: notice
+what you had to write, what came free, and what the harness assumed about
+you. Each docstring says what to look for.
 
-Setup: the usual `.env` plus `uv sync --group block4`, which installs all
-five harnesses into one environment. Two notes baked into that sync, both
-part of the lesson. First, getting ADK to share that environment took care.
-ADK reaches non-Google models through LiteLLM, and LiteLLM 1.84 and later
-require version 2 of the `openai` library, while OpenAI Agents requires
-version 3. So we install LiteLLM directly and stay on 1.83.0, the last
-release without that limit. ADK's own `[extensions]` bundle requires a newer
-LiteLLM and couldn't share the environment at all. Second, the Claude Agent
-SDK wheel bundles a compiled Claude Code CLI (~90MB download, ~190MB
-installed), one more reason the sync happens at home, not on venue WiFi.
+Plain `uv sync` installs all five frameworks (setup did this). Two notes,
+both part of the lesson. ADK reaches non-Google models through LiteLLM,
+and LiteLLM 1.84+ needs version 2 of the `openai` library while OpenAI
+Agents needs version 3, so we hold LiteLLM at 1.83.0; ADK's own
+`[extensions]` install can't share an environment with OpenAI Agents at
+all. And the Claude Agent SDK ships a compiled Claude Code CLI inside its
+wheel (~190MB installed).
 
-## Exercise flow
+## Exercise
 
-**Run every command in this section from the
-`block4_production_harnesses/` directory** — the paths below are relative
-to it, and they will fail from anywhere else:
+Run every command from `block4_production_harnesses/`. From the repo root:
 
-```
-cd block4_production_harnesses   # from the repo root
-pwd                              # .../agent-harness-workshop/block4_production_harnesses
+```bash
+cd block4_production_harnesses
 ```
 
-Every command on this page, including the reset script, runs from here —
-nothing requires switching directories mid-exercise.
+### Step 0: Start clean (a few seconds)
 
-Every run prints a **harness receipt** — the things named above, measured
-for that run, plus what the harness shipped that you didn't have to write.
-Receipts accumulate, so after the sixth run the table on your screen is the
-whole comparison, built from your runs rather than anyone's docs.
+```bash
+uv run ../scripts/check_fixtures.py
+```
 
-All six runs together cost well under $1 and take about six minutes.
-Run them back to back, then read the table as a whole: the comparisons
-show up across its rows, not inside any one run. If a receipt raises a
-question, each script's docstring says where to look, and you can come
-back to it afterwards.
+Expect `ALL FIXTURES OK`. If not, run `uv run ../scripts/reset.py` (it
+also archives your Block 3 score table). Then empty the receipts table so
+it ends up yours:
 
-0. **Start clean** (a few seconds, no API calls). You arrive here carrying
-   state from Blocks 2 and 3, and two bits of it matter: the task fixtures
-   must still be unsolved, and the receipts table should be empty so it
-   ends up being *yours*.
-   ```
-   uv run ../scripts/check_fixtures.py   # expect: ALL FIXTURES OK
-   rm -f runs/receipts.jsonl             # start the table empty
-   ```
-   `check_fixtures.py` only reads — it never changes anything. If it
-   complains, run `uv run ../scripts/reset.py` and try again. Note that a
-   full reset also archives your Block 3 score table (timestamped, not
-   deleted), so run it only if you need it — Block 4 doesn't require it.
+```bash
+rm -f runs/receipts.jsonl
+```
 
-   This matters most for the extra credit at the bottom of this page:
-   `fix_bug` is the one workspace Block 2 edits in place, so if you fixed
-   it there it is already solved. The scripts refuse to run against a
-   finished task rather than quietly reporting that every harness
-   succeeded in one turn.
+### Step 1: Start all five (4 to 6 minutes, while you do step 2)
 
-1. **Kit vs composable.** Run both, and compare their friction cells.
-   Pydantic AI's says the provider is just a constructor argument; ADK's
-   lists the LiteLLM setup it needed:
-   ```
-   uv run --group block4 google_adk/run.py
-   ```
+```bash
+uv run run_all.py
+```
 
-   ```
-   uv run --group block4 pydantic_ai/run.py
-   ```
-2. **Two roads to an opinionated harness.** Claude's receipt will say
-   "tools we wrote: 0" — go find the line that made that possible (there
-   isn't one; that's the point). Then notice it also has the most
-   provider friction: convenience and coupling, same row:
-   ```
-   uv run --group block4 claude_agent_sdk/run.py
-   ```
+All five run side by side, each on its own copy of the task. A status line
+per harness shows its latest turn; each full trace goes to
+`runs/logs/<harness>.log`. To watch one work, in a second terminal:
 
-   ```
-   uv run --group block4 openai_agents/run.py
-   ```
-3. **A harness on a runtime, then the layer below it.** Watch
-   "tools we wrote" jump from 1 to 4 when you drop from Deep Agents to
-   bare LangGraph — the price of the escape hatch, as a number:
-   ```
-   uv run --group block4 deepagents/run.py
-   ```
+```bash
+tail -f runs/logs/deepagents.log
+```
 
-   ```
-   uv run --group block4 deepagents/langgraph_escape_hatch.py
-   ```
-4. **Read `COMPARISON.md`** — the full comparison table — and argue with
-   it against your receipts.
-5. Presenter demo (watch, don't run — ~$1): `refactor_v2`, the task that
-   killed the naive harness, through Claude Code's harness:
-   ```
-   uv run --group block4 presenter_demo/run.py
-   ```
-   The closing question: **did the professionals' harness beat our
-   285-line h3?** Whatever the answer, it teaches — a big win shows what
-   production harness engineering buys; anything else is the harness-model
-   fit lesson from Block 1, live.
+One after another they'd take 12 minutes or more. (Any single script also
+runs on its own: `uv run pydantic_ai/run.py`.)
 
-   For calibration, two live runs (Sep 2026, GLM-5.3) agree: SOLVED in
-   17–19 turns with ~16–18 tool calls, against 22–38 turns (median 27) for
-   our h3 across ten runs — roughly **1.5× fewer turns**. Wall-clock ran
-   65–97s versus h3's 117–222s, but read that second: it is the column
-   this page and Block 3 both tell you not to rank on, and quoting the
-   wall-clock ratio instead of the turn ratio is how the "2–3× faster"
-   claim that used to sit here got inflated. The tool profile is the real
-   story: Bash-dominated, with a single Edit for a ~130-file migration. Both runs chose the same approach: survey the
-   code via grep/cat, detect that MIGRATION.md is incomplete from the tests,
-   then *write a word-boundary-regex rename script* and run it — followed
-   by collateral-damage checks on display strings. Given a shell, the
-   model stopped rewriting files and started scripting; the decisive
-   advantage wasn't the loop or compaction but tool design changing which
-   algorithm the model chose. (The same Bash tool is why production
-   harnesses need sandboxing and permissions. We ran `bypassPermissions`
-   on a disposable copy, deliberately, and a copy is not a sandbox: see
-   "What 'sandbox' means here" below.)
+### Step 2: Read the scripts while they run
+
+Three comparisons, one question each:
+
+- **`google_adk/run.py` and `pydantic_ai/run.py`**: a kit and a composable
+  harness. Compare how each gets pointed at our provider: a constructor
+  argument for Pydantic AI, a LiteLLM setup for ADK.
+- **`claude_agent_sdk/run.py` and `openai_agents/run.py`**: two
+  opinionated harnesses. Claude's ships its own file tools, so we write
+  one tool (`run_tests`, because we withheld Bash); OpenAI's ships none
+  that work on our model, so we write four.
+- **`deepagents/run.py`**: a harness built on a runtime (LangGraph). Count
+  what it ships: its own file tools, a planning tool and subagents it can
+  hand work to. We write one tool, `run_tests`.
+
+### Step 3: Read the two tables
+
+When the runs finish, `run_all.py` prints two tables.
+
+**Results** (measured this run): solved, turns, tool calls, tokens sent,
+wall time, with your h2 and h3 from Block 3 as the last row. Start here:
+which harnesses landed where h2 did, and which didn't?
+
+**Receipts** (facts about each harness): who owns the loop, the tools you
+wrote versus the harness's own tools, what it took to run on our provider,
+and how long the script is.
+
+Here's what we saw over several runs each on GLM-5.3-Flash, so you can
+tell a typical run from an unlucky one:
+
+| Harness | Solved | Turns | Tool calls | Tokens sent |
+|---|---|---|---|---|
+| Pydantic AI | 3/3 | 20–26 | 186–283 | 0.36–0.66M |
+| Google ADK | 3/3 | 24–31 | 276–279 | 0.66–0.82M |
+| OpenAI Agents | 3/3 | 25–50 | 176–287 | 0.46–1.18M |
+| Claude Agent SDK | 1 of 2 | 39–50 | 392–555 | 1.72–3.49M |
+| Deep Agents | 0/3 | 50 (the cap) | 146–250 | 0.71–0.86M |
+| *your h2 / h3* | | *17–34* | *181–299* | *0.37–0.78M* |
+
+The three harnesses that use **our** file tools land where your h2 and h3
+did: their loops add nothing you can measure on this task. The two that
+bring **their own** file tools are the expensive ones:
+
+- **Claude Agent SDK** edits one exact string at a time (`Edit`), so it made
+  200 to 380 edits where the others rewrote about 130 files. One of its
+  runs is left out of the table: with no shell, it wrote a rename script
+  into the empty `conftest.py`, ran the tests (which runs `conftest.py`),
+  then emptied the file again. Clever, and against the rules: a run that
+  changes a test file now fails, even if it changes it back. And it's a
+  reminder that "run the tests" means "run code".
+- **Deep Agents usually runs out of budget.** Its defaults hand the work
+  to a subagent, which spends calls rediscovering the code, and edit
+  occurrence by occurrence. Expect `NOT SOLVED` at 50 calls; that's the
+  finding, not a bug in your setup. Its summary line shows how many calls
+  went to subagents. (With two documented settings it solves the task; see
+  `COMPARISON.md`.)
+
+A batch of five took 4 to 5.5 minutes, set by the slowest harness.
+
+### Step 4: Read `COMPARISON.md`
+
+The full comparison, row by row. Argue with it against your tables.
+
+### Step 5: The presenter demo (watch, don't run)
+
+The same migration, the same harness (OpenAI Agents), run twice: once
+with our four file tools, once with a single shell tool. Turns barely
+move; tool calls drop about tenfold, because with a shell the agent stops
+rewriting files and writes a rename script. Then the other side: one
+global `sed` can break forty files at once, tests included, and Block 3's
+test guardrail has nothing to check. Details, and the same experiment for
+Claude, Deep Agents, Pydantic AI and ADK to try at home, in
+[`migration/README.md`](migration/README.md).
 
 ## Starting over
 
-Two different things accumulate here, and you usually only want to clear
-one of them.
+Two things accumulate: the receipts table and the task fixtures.
 
-**The receipts table.** Every run appends to `runs/receipts.jsonl`, and the
-table shows the latest run per (harness, task). To start the table fresh
-without touching anything else:
-
-```
-rm runs/receipts.jsonl                          # discard it
-mv runs/receipts.jsonl runs/receipts.round1.jsonl   # or keep the round
+```bash
+rm -f runs/receipts.jsonl
 ```
 
-**The task fixtures.** The tasks are fixtures: a bug that must still be
-there. Each run works on its own copy under `runs/`, so the originals
-normally stay clean — but Block 2 edits the `fix_bug` workspace *in place*,
-so if you did Block 2 and then come here for the extra credit, that fixture
-is already fixed. The scripts now refuse to run in that state rather than
-quietly measuring a finished task. Both scripts run from this directory:
+That clears only the table (or `mv` it to keep the round). For a full
+start-over:
 
-```
-uv run ../scripts/reset.py          # restore the fixtures
-uv run ../scripts/check_fixtures.py # confirm: ALL FIXTURES OK
+```bash
+uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py
 ```
 
-**`reset.py`** restores every task workspace to its committed state
-(including deleting files an agent created), clears the per-run copies
-under `runs/`, and archives the Block 3 score table with a timestamp. It
-also removes `runs/receipts.jsonl`, so it is the full start-over — use the
-`rm`/`mv` above if you only want the table gone.
-
-**`check_fixtures.py`** asserts each workspace's tests still *fail* — a
-fixture that passes is a solved task, and measuring against it is
-meaningless — and confirms the reference copies still pass.
-
-Then rerun the exercise flow from step 1.
+`reset.py` restores every task, clears run copies and the receipts, and
+archives your Block 3 score table. Each run works on its own copy, so the
+task normally stays clean; the scripts refuse a task that's already
+solved or edited.
 
 ## What "sandbox" means here (less than you might think)
 
 Every run works on a **disposable copy** of the task under `runs/`. That
-makes runs repeatable and keeps the original task unsolved. It is not
-security. Here is what each run can actually reach:
+keeps runs repeatable; it isn't security.
 
 | Harness | File tools | What enforces the boundary |
 |---|---|---|
-| Google ADK, Pydantic AI, OpenAI Agents, LangGraph | ours, from `common.py` | Python code in `_inside()`: paths that climb out (`../`) or start at `/` are refused |
-| Deep Agents | its own | its `FilesystemBackend` with `virtual_mode=True`. Set it to `False` and the boundary is gone: we watched an agent edit the original task that way |
-| Claude Agent SDK | Claude Code's, including Bash | **nothing.** `bypassPermissions` gives it a shell as you. The copy is only where it starts, and it has written outside it |
+| Google ADK, Pydantic AI, OpenAI Agents | ours, from `common.py` | Python code in `_inside()`: paths that climb out (`../`) or start at `/` are refused |
+| Deep Agents | its own | its `FilesystemBackend` with `virtual_mode=True`. With `False`, the boundary is gone: we watched an agent edit the original task that way |
+| Claude Agent SDK | Claude Code's `Read`, `Write`, `Edit`, `Glob`, `Grep` (Bash withheld) | **nothing.** They accept absolute paths, and `bypassPermissions` approves every call. The copy is only where it starts |
 
-And one thing every harness shares: `run_tests` runs pytest on the copy,
-which **executes the code the agent wrote, with your user's permissions.**
-Whatever that code does, it can do anything you can.
+The tests get one more layer. At the start of every run the test files are
+made read-only, and afterwards `verify()` compares them with the
+originals: a run that changed, added or deleted one fails, whatever
+pytest says. (An agent with a shell can `chmod` its way past the first
+layer; not the second.)
 
-So every boundary here is a rule in application code, not operating-system
-isolation such as a container or a VM. That's acceptable for a workshop
-task on your own laptop. For an agent that runs untrusted code, or can
-reach anything you care about, the isolation is your job, whichever
-harness you pick.
+And every harness runs `run_tests`, which **executes the code the agent
+wrote with your permissions.** Every boundary here is a rule in
+application code, not operating-system isolation like a container or VM.
+Fine for a workshop task on your laptop; for an agent that runs untrusted
+code, the isolation is your job, whichever harness you pick.
 
-## Extra credit: the trivial task
+## The quick fallback, and the trivial task
 
-Rerun any of the scripts against `fix_bug` — the one-line Block 2 bug you know
-by heart:
+If the migration is too slow for your provider or your time:
 
+```bash
+BLOCK4_TASK=bug_hunt uv run run_all.py
 ```
-BLOCK4_TASK=fix_bug uv run --group block4 pydantic_ai/run.py
+
+`bug_hunt` is a small order-pricing package with three bugs, two of which
+affect the same totals (`../block2_naive_harness/tasks/medium/bug_hunt/TASK.md`).
+About a minute for all five, and every harness solves it. And on the
+trivial Block 2 task there's nothing to differ over, so the runs collapse
+toward the same few turns:
+
+```bash
+BLOCK4_TASK=fix_bug uv run pydantic_ai/run.py
 ```
 
-Watch what happens to the receipts table: on a task with nothing to
-differentiate on, the runs collapse toward the same few turns and
-seconds. Differences between harnesses only show on work hard enough to
-differ over — which is the
-weight-vs-horizon question from Q1, run in the other direction.
+Differences between harnesses only show on work hard enough to differ
+about. `BLOCK4_MAX_TURNS` changes the turn cap for any of these.
 
 ## Discussion (10 min, after the presenter demo)
 
@@ -278,26 +243,20 @@ weight-vs-horizon question from Q1, run in the other direction.
 
 1. Which harness required the least code, and what did that convenience
    cost in provider coupling?
-2. Every one of these solved the task. On what basis, then, would you
-   actually choose?
+2. On the same tools, three harnesses matched the one you built in Block
+   3. Two cost more or ran out of budget, doing what they're designed to
+   do. Is that a flaw in those harnesses or a mismatch with the task, and
+   how would you find out before adopting one?
 3. **Would this matter for your own agent?** If so, what would you need a
-   harness to do about it, and how would you test that it does? Write your
-   answer down: Block 5's worksheet starts from these notes.
+   harness to do, and how would you test that it does? Write it down:
+   Block 5's worksheet starts from these notes.
 
-**More to think about, on your own or afterwards:**
+**More to think about:**
 
-- Compare your wall-clock column with a neighbor's: the same script
-  has measured 23.3s and 10.6s on back-to-back runs. Which receipt
-  columns are noise on a 10-second task, and which are stable structural
-  facts? (Then: the heavy Claude harness *did* dominate the long-horizon
-  presenter demo. What experiment would you run to establish how harness
-  weight relates to task horizon, and what would Block 3 say about
-  sample size?)
-- Two harnesses needed an explicit workaround to run on our provider at
-  all (Bearer auth for Claude's SDK, an explicit model object for
-  OpenAI's). What does that predict about switching costs at your job?
-- ADK and OpenAI's SDK share an environment here only because we hold
-  LiteLLM at an older release; ADK's convenient `[extensions]` install
-  can't coexist with OpenAI Agents at all. How would your team have caught
-  that before adopting both, and what happens the day you need a newer
-  LiteLLM?
+- Compare your results table with a neighbor's. Which columns move from
+  run to run, and which receipt cells are stable facts about a harness?
+- Two harnesses needed a workaround to run on our provider at all (Bearer
+  auth for Claude's SDK, an explicit model object for OpenAI's). What does
+  that predict about switching providers at work?
+- ADK and OpenAI's SDK share an environment only because we hold LiteLLM
+  back. What happens the day you need a newer one?

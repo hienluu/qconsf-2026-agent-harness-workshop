@@ -1,6 +1,6 @@
 """fix_bug through the OpenAI Agents SDK.
 
-    uv run --group block4 openai_agents/run.py       (from block4_production_harnesses/)
+    uv run openai_agents/run.py       (from block4_production_harnesses/)
 
 Where it came from: model-native — a harness co-designed with the vendor's models,
 organized around a trusted control plane (loop, handoffs, guardrails,
@@ -23,7 +23,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import end_turn, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
 
 from agents import (  # noqa: E402
     Agent,
@@ -50,14 +50,14 @@ def list_files() -> str:
 @function_tool
 def read_file(path: str) -> str:
     """Read one file, path relative to the workspace."""
-    trace_tool(NAME, "read_file", f"path={path!r}")
+    trace_tool(NAME, "read_file", tool_detail({"path": path}))
     return ws_read(workspace, path)
 
 
 @function_tool
 def write_file(path: str, content: str) -> str:
     """Overwrite one file, path relative to the workspace."""
-    trace_tool(NAME, "write_file", f"path={path!r}, {len(content)} chars")
+    trace_tool(NAME, "write_file", tool_detail({"path": path, "content": content}))
     return ws_write(workspace, path, content)
 
 
@@ -71,7 +71,7 @@ def run_tests() -> str:
 async def main() -> int:
     global workspace
     workspace = prepare_workspace(NAME)
-    trace_key(NAME, ["list_files", "read_file", "write_file", "run_tests"], "")
+    trace_key(NAME, ["list_files", "read_file", "write_file", "run_tests"])
 
     # Redirect the harness from its home (OpenAI's Responses API) to the
     # workshop provider's OpenAI-compatible chat-completions endpoint. An
@@ -89,11 +89,7 @@ async def main() -> int:
     agent = Agent(
         name="bug-fixer",
         model=model,
-        instructions=(
-            "You fix bugs in a small Python workspace using the provided "
-            "tools. The task is complete only when run_tests reports every "
-            "test passing."
-        ),
+        instructions=SYSTEM_PROMPT,
         tools=[list_files, read_file, write_file, run_tests],
     )
 
@@ -128,6 +124,7 @@ async def main() -> int:
                                   hooks=Watch())
         trace_say(NAME, str(result.final_output))
     except Exception as exc:  # turn-cap etc. are outcomes, not crashes
+        end_turn()
         print(f"[{NAME}] run ended without finishing: {exc}")
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
