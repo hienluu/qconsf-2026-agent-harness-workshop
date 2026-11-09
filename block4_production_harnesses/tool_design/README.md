@@ -3,7 +3,7 @@
 In Block 4's exercise, the harnesses spend most of their calls changing
 one file at a time. Step 3 asks what tool you'd design instead; step 4
 runs one answer, a tool **designed** for the job
-(`openai_agents/run_replace.py`). This folder holds the other answer, a
+(`openai_agents/run_replace_in_files.py`). This folder holds the other answer, a
 **shell**: two scripts for the presenter demo (step 5) and one for
 take-home. Same task, model, prompt and turn cap as the exercise, the same
 trace, and every run adds a row to the same results table.
@@ -39,7 +39,7 @@ sets:
 | Run | Tools | Turns | Tool calls | Tokens sent |
 |---|---|---|---|---|
 | step 1, `openai_agents/run.py` | our four file tools | 26–46 | 278–315 | 0.62–1.29M |
-| step 4, `openai_agents/run_replace.py` | file tools + `replace_in_files` | 23–35 | 35–88 | 0.22–0.69M |
+| step 4, `openai_agents/run_replace_in_files.py` | file tools + `replace_in_files` | 23–35 | 35–88 | 0.22–0.69M |
 | `run_openai_shell.py` | one shell tool | 20–25 | 19–24 | 0.16–0.43M |
 | `run_claude.py` | Claude Code's kit, Bash included | 16–23 | 17–23 | 0.41–0.61M |
 

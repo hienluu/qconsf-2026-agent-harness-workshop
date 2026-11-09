@@ -1,6 +1,6 @@
 """Step 4: the OpenAI Agents SDK with a tool designed for the job.
 
-    uv run openai_agents/run_replace.py       (from block4_production_harnesses/)
+    uv run openai_agents/run_replace_in_files.py       (from block4_production_harnesses/)
 
 Identical to step 1 (openai_agents/run.py) except for one extra tool:
 replace_in_files, a whole-word rename across the source in one call.
@@ -34,7 +34,7 @@ from agents import Agent, OpenAIChatCompletionsModel, RunHooks, Runner, function
 from openai import AsyncOpenAI  # noqa: E402
 
 load_dotenv()
-NAME = "openai_agents+replace"
+NAME = "openai_agents+replace_in_files"
 workspace: Path
 
 

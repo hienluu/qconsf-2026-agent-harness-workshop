@@ -47,7 +47,7 @@ and `webhook.py` has a `post()` that is the HTTP verb, not the ledger's
 | `openai_agents/run.py` | OpenAI Agents, our four file tools | step 1 |
 | `claude_agent_sdk/run.py` | Claude Agent SDK, our four file tools (`CLAUDE_TOOLS=own` for Claude Code's) | step 2 |
 | `deepagents/run.py` | Deep Agents (LangGraph underneath), its own tools | optional |
-| `openai_agents/run_replace.py` | step 1, plus a tool designed for the job | step 4 |
+| `openai_agents/run_replace_in_files.py` | step 1, plus a tool designed for the job | step 4 |
 | `pydantic_ai/run.py` | Pydantic AI, our four file tools | optional |
 | `google_adk/run.py` | Google ADK, our four file tools | optional |
 
@@ -171,17 +171,17 @@ rule.
 
 It sits alongside the four file tools, which are still there for anything
 that isn't a rename. It runs no shell commands, so it's as safe on your
-laptop as step 1. (About 50 lines, in `openai_agents/run_replace.py`;
+laptop as step 1. (About 50 lines, in `openai_agents/run_replace_in_files.py`;
 design notes in `tool_design/README.md`.)
 
 ```bash
-uv run openai_agents/run_replace.py
+uv run openai_agents/run_replace_in_files.py
 ```
 
 Watch for the renames, in bold cyan (`replace_in_files × 1` per turn, 14
 to 27 in all),
 and whether the agent excludes `webhook.py` when it renames `post`. At the
-end, the results table shows it as `openai_agents+replace`, right under
+end, the results table shows it as `openai_agents+replace_in_files`, right under
 step 1's `openai_agents`. Compare the two:
 
 | Over several runs each | Turns | Tool calls | Tokens sent | Tokens written |
