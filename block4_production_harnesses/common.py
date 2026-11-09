@@ -143,7 +143,7 @@ def end_turn() -> None:
     where = f"{h} turn {_turn['n']}" if _turn["n"] else h
     if calls:
         counts: dict = {}
-        for name, _, _, _ in calls:
+        for name, *_ in calls:
             counts[name] = counts.get(name, 0) + 1
         lit = any(name in _spotlight for name in counts)
         tally = "  [" + ", ".join(f"{k} × {v}" for k, v in counts.items()) + "]"
@@ -154,7 +154,7 @@ def end_turn() -> None:
             print(f"\n{SAY}❝  [{where}] agent says: {text}{OFF}{tally}")
         else:
             print(f"\n{SPOT if lit else DIM}   [{where}]{OFF}{tally}")
-        for name, detail, theirs, result in calls:
+        for name, detail, theirs, result, _ in calls:
             mark = f"{DIM}  · harness tool{OFF}" if theirs else ""
             call = f"{name}({detail})"
             print(f"     {SPOT}{call}{OFF}{mark}" if name in _spotlight else f"     {call}{mark}")
@@ -174,7 +174,7 @@ def new_turn() -> int:
     return _turn["n"]
 
 
-def trace_tool(harness: str, name: str, detail: str = "", harness_tool: bool = False) -> None:
+def trace_tool(harness: str, name: str, detail: str = "", harness_tool: bool = False, call_id=None) -> list:
     """One tool call, held for the turn's block. Args are shown because
     *which* file it reached for is the interesting part when comparing how
     harnesses explore. `harness_tool` marks a tool the harness brought rather
@@ -182,7 +182,9 @@ def trace_tool(harness: str, name: str, detail: str = "", harness_tool: bool = F
     _usage["calls"] += 1
     _note_habits(name, detail)
     _pending["harness"] = harness
-    _pending["calls"].append([name, detail, harness_tool, None])
+    call = [name, detail, harness_tool, None, call_id]
+    _pending["calls"].append(call)
+    return call   # hand it to trace_result(call=...) to attach the result exactly
 
 
 def _note_habits(name: str, detail: str) -> None:
@@ -212,7 +214,7 @@ def habits_line() -> str:
     return f"--- what the trace shows: {tests} · {blind} file{'s' if blind != 1 else ''} rewritten without being read first"
 
 
-def trace_result(harness: str, name: str, output, failed: bool = False) -> None:
+def trace_result(harness: str, name: str, output, failed: bool = False, call=None, call_id=None) -> None:
     """A call's result, printed under it as one line: the last line of its
     output (`→`), or `✗` when it failed. Only where a result says something
     a call doesn't: a shell command's output, a rename's count. Shell tools
@@ -229,11 +231,17 @@ def trace_result(harness: str, name: str, output, failed: bool = False) -> None:
                 lines.append(f"(exit code {m.group(1)})")
     shown = (" ".join(lines[-2:]) if failed and len(lines) > 1 else lines[-1]) if lines else "(no output)"
     line = f"\033[31m       ✗ {shown[:110]}{OFF}" if failed else f"{DIM}       → {shown[:110]}{OFF}"
-    for call in _pending["calls"]:          # results come back in the order the calls ran
-        if call[0] == name and call[3] is None:
-            call[3] = line
-            return
-    _pending["after"].append(line)
+    # Attach to the right call: the one handed back by trace_tool, or the one
+    # with the SDK's id for it. Calls made in the same turn can finish in any
+    # order, so "the first one still waiting" mislabeled results.
+    if call is None:
+        waiting = [c for c in _pending["calls"] if c[3] is None]
+        call = next((c for c in waiting if call_id is not None and c[4] == call_id), None) \
+            or next((c for c in waiting if call_id is None and c[0] == name), None)
+    if call is not None:
+        call[3] = line
+    else:
+        _pending["after"].append(line)
 
 
 def trace_reject(harness: str, why: str) -> None:

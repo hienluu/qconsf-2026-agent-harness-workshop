@@ -40,9 +40,9 @@ workspace: Path
 @function_tool
 def shell(command: str) -> str:
     """Run a shell command in the workspace and return its output and exit code."""
-    trace_tool(NAME, "shell", command)
+    call = trace_tool(NAME, "shell", command)
     out = ws_shell(workspace, command)
-    trace_result(NAME, "shell", out)
+    trace_result(NAME, "shell", out, call=call)
     return out
 
 

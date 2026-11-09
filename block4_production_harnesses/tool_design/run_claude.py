@@ -51,12 +51,12 @@ async def on_result(inp, tool_use_id, context):
         out = f"read {content.count(chr(10)) + 1:,} lines"
     else:
         out = str(r or "")
-    trace_result(NAME, inp.get("tool_name", ""), out)
+    trace_result(NAME, inp.get("tool_name", ""), out, call_id=tool_use_id)
     return {}
 
 
 async def on_failure(inp, tool_use_id, context):
-    trace_result(NAME, inp.get("tool_name", ""), inp.get("error") or "failed", failed=True)
+    trace_result(NAME, inp.get("tool_name", ""), inp.get("error") or "failed", failed=True, call_id=tool_use_id)
     return {}
 
 
@@ -104,7 +104,7 @@ async def main() -> int:
                     new_turn()
                 for block in message.content:
                     if isinstance(block, ToolUseBlock):
-                        trace_tool(NAME, block.name, tool_detail(block.input), harness_tool=True)
+                        trace_tool(NAME, block.name, tool_detail(block.input), harness_tool=True, call_id=block.id)
                     elif isinstance(block, TextBlock) and block.text.strip():
                         trace_say(NAME, block.text)
             elif isinstance(message, StreamEvent) and message.event.get("type") == "message_delta":

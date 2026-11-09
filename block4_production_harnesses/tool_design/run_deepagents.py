@@ -67,15 +67,15 @@ class Watch(BaseCallbackHandler):
         Watch.names[run_id] = name
         args = kwargs.get("inputs")
         detail = tool_detail(args, virtual=True) if isinstance(args, dict) else str(input_str)[:70]
-        trace_tool(NAME, name, detail, harness_tool=True)
+        trace_tool(NAME, name, detail, harness_tool=True, call_id=run_id)
 
     def on_tool_end(self, output, *, run_id=None, **kwargs) -> None:
         name = Watch.names.pop(run_id, "tool")
         if name in ("execute", "grep", "glob", "edit_file", "write_file", "task"):
-            trace_result(NAME, name, getattr(output, "content", output))
+            trace_result(NAME, name, getattr(output, "content", output), call_id=run_id)
 
     def on_tool_error(self, error, *, run_id=None, **kwargs) -> None:
-        trace_result(NAME, Watch.names.pop(run_id, "tool"), error, failed=True)
+        trace_result(NAME, Watch.names.pop(run_id, "tool"), error, failed=True, call_id=run_id)
 
 
 def main() -> int:

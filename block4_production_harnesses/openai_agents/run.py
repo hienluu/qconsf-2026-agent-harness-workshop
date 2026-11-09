@@ -64,9 +64,9 @@ def write_file(path: str, content: str) -> str:
 @function_tool
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
-    trace_tool(NAME, "run_tests")
+    call = trace_tool(NAME, "run_tests")
     out = ws_run_tests(workspace)
-    trace_result(NAME, "run_tests", out)
+    trace_result(NAME, "run_tests", out, call=call)
     return out
 
 

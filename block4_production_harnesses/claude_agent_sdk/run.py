@@ -85,9 +85,9 @@ async def write_file(args) -> dict:
 
 @tool("run_tests", "Run pytest in the workspace; done means all tests pass.", {})
 async def run_tests(args) -> dict:
-    trace_tool(NAME, "run_tests")
+    call = trace_tool(NAME, "run_tests")
     out = ws_run_tests(workspace)
-    trace_result(NAME, "run_tests", out)
+    trace_result(NAME, "run_tests", out, call=call)
     return _text(out)
 
 

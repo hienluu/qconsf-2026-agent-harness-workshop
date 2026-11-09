@@ -92,7 +92,11 @@ rule.
   so renaming `post` leaves `posted` alone. It deliberately reaches into
   strings, because the v1 field names also appear as dict keys. A
   code-aware rename (through the syntax tree) would be more precise and
-  miss those keys.
+  miss those keys. **This choice has a cost we've seen:** renaming the
+  function `balanced` to `is_balanced` also changed the message the CLI
+  prints (`"balanced"` became `"is_balanced"`), and all 35 tests still
+  passed, because the test only checks that `"balanced"` appears in the
+  output. The tool can't tell a dict key from a user-facing message.
 - **Test files are never touched.** The same rule `verify()` uses (anything
   under `tests/`, `test_*.py`, `conftest.py`). Skipped files are counted in
   the result, so the model sees the tool held the line. Because the
@@ -136,6 +140,12 @@ Ideas to try:
   its own tools. Does it reach for it?
 - Give `replace_in_files` a mistake to make: drop the exclude list and see
   whether the agent still protects `webhook.py`.
+- Give `replace_in_files` a `strings` option, default off, so it renames
+  identifiers in code only. Does the CLI message survive? Do the dict keys
+  still migrate, and do the tests notice if they don't? Making a tool's
+  semantics explicit is half of designing it.
+- Check any run against the reference solution:
+  `uv run compare_reference.py`.
 - Put a `PreToolUse` hook on Claude's Bash that blocks commands mentioning
   `tests/`, then look for a command that gets past it.
 

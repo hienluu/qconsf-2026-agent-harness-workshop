@@ -62,9 +62,9 @@ def write_file(path: str, content: str) -> str:
 @function_tool
 def run_tests() -> str:
     """Run pytest in the workspace; done means all tests pass."""
-    trace_tool(NAME, "run_tests")
+    call = trace_tool(NAME, "run_tests")
     out = ws_run_tests(workspace)
-    trace_result(NAME, "run_tests", out)
+    trace_result(NAME, "run_tests", out, call=call)
     return out
 
 
@@ -76,9 +76,9 @@ def replace_in_files(old: str, new: str, exclude: list[str] | None = None, dry_r
     leave alone (paths relative to the workspace). With dry_run=true, only
     reports where it would change, without changing anything."""
     args = f"old={old!r}, new={new!r}" + (f", exclude={exclude}" if exclude else "") + (", dry_run=True" if dry_run else "")
-    trace_tool(NAME, "replace_in_files", args)
+    call = trace_tool(NAME, "replace_in_files", args)
     out = rename_everywhere(workspace, old, new, exclude, dry_run)
-    trace_result(NAME, "replace_in_files", out)
+    trace_result(NAME, "replace_in_files", out, call=call)
     return out
 
 

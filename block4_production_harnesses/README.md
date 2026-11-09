@@ -391,15 +391,28 @@ code, the isolation is your job, whichever harness you pick.
 
 **For the group:**
 
-1. Two vendors' harnesses on the same tools ran the same algorithm, with
+1. **Every run you did passed all 35 tests. Which would you merge?** Decide
+   first, then check each one against the reference solution (a careful
+   hand migration):
+
+   ```bash
+   uv run compare_reference.py
+   ```
+
+   In our runs, two of five that passed every test still changed something
+   they shouldn't have, and the tests couldn't tell. What would have caught
+   it: a stronger test, a review step, or a tool that couldn't make that
+   change?
+
+2. Two vendors' harnesses on the same tools ran the same algorithm, with
    nearly the same numbers. Then one tool, designed for the job, cut the
    calls three to eight times. For your agent, where is the effort better spent:
    choosing the harness, or designing its tools?
-2. On their own tools, Claude's harness cost 2 to 4 times more and Deep
+3. On their own tools, Claude's harness cost 2 to 4 times more and Deep
    Agents ran out of budget, each doing what it was designed to do. Is that
    a flaw or a mismatch with the task, and how would you find out before
    adopting one?
-3. **Would this matter for your own agent?** If so, what would you need a
+4. **Would this matter for your own agent?** If so, what would you need a
    harness to do, and how would you test that it does? Write it down:
    Block 5's worksheet starts from these notes.
 
