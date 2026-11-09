@@ -1,6 +1,6 @@
 """Optional: the migration through Google ADK, with a shell tool we wrote.
 
-    uv run migration/run_adk_shell.py      (from block4_production_harnesses/)
+    uv run tool_design/run_adk_shell.py      (from block4_production_harnesses/)
 
 Take-home or extra credit, for completeness. ADK's built-in code executor
 runs only on Gemini, so on GLM it gets the same shell tool as the OpenAI

@@ -1,6 +1,6 @@
 """The migration through the OpenAI Agents SDK, with a shell tool we wrote.
 
-    uv run migration/run_openai_shell.py      (from block4_production_harnesses/)
+    uv run tool_design/run_openai_shell.py      (from block4_production_harnesses/)
 
 Identical to run_openai_files.py except for the tools: one `shell` function
 tool (ws_shell in common.py, a dozen lines) instead of four file tools. (The SDK's

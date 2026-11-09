@@ -1,6 +1,6 @@
 """The migration through LangChain Deep Agents, with its own tools.
 
-    uv run migration/run_deepagents.py      (from block4_production_harnesses/)
+    uv run tool_design/run_deepagents.py      (from block4_production_harnesses/)
 
 We define no tools. Deep Agents ships them: file tools (ls, read_file,
 write_file, edit_file, glob, grep), planning todos, subagents, and with

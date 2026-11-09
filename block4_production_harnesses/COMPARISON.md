@@ -19,7 +19,7 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 |---|---|---|---|---|---|
 | **Where it came from** | product-extracted (Claude Code as a library) | the model vendor's own SDK, defaulting to its Responses API | construction kit (typed state, sessions, graph runtime) | harness on a runtime (LangGraph underneath) | composable typed core, capabilities à la carte |
 | **The loop** | Claude Code's, closed: you configure, not modify | SDK-owned; handoffs + guardrails are loop primitives | Runner + session services; graph workflows in 2.x | LangGraph ReAct + middleware stack | lean typed loop; capabilities hook it |
-| **Tools out of the box** | Claude Code's full set (Bash, Read, Edit, search, web); we withheld Bash, so we wrote one tool, run_tests | none for this task; we wrote all four | none for this task; we wrote all four | filesystem suite + planning todos + subagents; we wrote only run_tests | none for this task; we wrote all four (typed; schema from signatures) |
+| **Tools out of the box** | Claude Code's full set (Bash, Read, Edit, search, web); the exercise switches them all off and serves it our four (`CLAUDE_TOOLS=own` keeps its file tools) | none for this task; we wrote all four | none for this task; we wrote all four | filesystem suite + planning todos + subagents; we wrote only run_tests | none for this task; we wrote all four (typed; schema from signatures) |
 | **Context management** | automatic compaction, product-tuned | session-managed | you (kit primitives available) | summarization/offload middleware | opt-in capability |
 | **Durable memory** | CLAUDE.md conventions | sessions/state | session state; you design it | filesystem + AGENTS.md conventions | opt-in capability (notebooks) |
 | **Guardrails/permissions** | permission modes (we ran bypassPermissions on a disposable copy, which is not isolation) | guardrails built into the loop | callbacks/plugins: mechanisms, not policies | filesystem permissions, interrupt_on | opt-in capability (limits, masking) |
@@ -34,26 +34,31 @@ never magnitude. What the harnesses did on the migration is in the next section.
 
 ## What the migration showed
 
-Three rounds, GLM-5.3-Flash, same prompt, file tools only, 50-call cap:
+Three or more runs each, GLM-5.3-Flash, same prompt, file tools only,
+50-call cap:
 
 | Harness | Solved | Turns | Tool calls | Tokens sent |
 |---|---|---|---|---|
 | Pydantic AI | 3/3 | 20–26 | 186–283 | 0.36–0.66M |
 | Google ADK | 3/3 | 24–31 | 276–279 | 0.66–0.82M |
-| OpenAI Agents | 3/3 | 25–50 | 176–287 | 0.46–1.18M |
-| Claude Agent SDK | 1 of 2 | 39–50 | 392–555 | 1.72–3.49M |
-| Deep Agents | 0/3 | 50 | 146–250 | 0.71–0.86M |
+| OpenAI Agents | 5 of 6 | 25–50 | 176–287 | 0.46–1.18M |
+| Claude Agent SDK, our tools | 3/3 | 29–30 | 276–281 | 0.71–0.79M |
+| Claude Agent SDK, its own file tools | 4 of 5 | 31–50 | 293–555 | 1.40–3.49M |
+| Deep Agents, its own tools | 0/3 | 50 | 146–250 | 0.71–0.86M |
 | *our h2 / h3 (Block 3)* | | *17–34* | *181–299* | *0.37–0.78M* |
 
-**Same tools, same results.** Pydantic AI, ADK and OpenAI Agents use the
-file tools from `common.py`, the same ones as your h2, and land in h2's
-range. On this task their loops make no measurable difference.
+**Same tools, same results.** Pydantic AI, ADK, OpenAI Agents and the
+Claude Agent SDK, given the file tools from `common.py` (the same ones as
+your h2), all run the same algorithm (read everything, then rewrite each
+file once) and land in h2's range. On this task their loops make no
+measurable difference.
 
-**Their own tools, their own costs.** Claude Agent SDK and Deep Agents
-bring file tools built for surgical edits: replace one exact string, keep
-the rest of the file. Most coding work wants that. A rename across 130
-files doesn't: Claude made 200 to 380 edits where the others rewrote each
-file once, and sent 2 to 4 times the tokens.
+**Their own tools, their own costs.** Claude Code and Deep Agents bring
+file tools built for surgical edits: replace one exact string, keep the
+rest of the file. Most coding work wants that. A rename across 130 files
+doesn't. The same Claude harness on its own `Edit` made 200 to 380 edits
+where it had rewritten each file once with ours, and sent 2 to 4 times
+the tokens: the tools changed, the harness didn't.
 
 **Deep Agents ran out of budget, and it's not misconfigured.** Each run
 handed the rename to a subagent, which started with an empty context and
@@ -113,11 +118,11 @@ while keeping every byte reachable. Neither is magic: a paginated read
 that still blows the limit errors out and sends the model to Grep instead.
 The difference is that one of them leaves the agent somewhere to go.
 
-You already ran this. The Claude Agent SDK script defines only
-`run_tests`, so the `Read` in that run was Claude Code's, the paginating
-one. Its "tools we wrote: 1" cell is not only about convenience; it means
-you also inherited someone else's answer to a problem you solved by hand
-in Block 3, and you did not get to see it happen.
+You can run this. With `CLAUDE_TOOLS=own`, the Claude Agent SDK script
+defines only `run_tests`, so its `Read` is Claude Code's, the paginating
+one. That's not only convenience: you inherit someone else's answer to a
+problem you solved by hand in Block 3, and you don't get to see it
+happen.
 
 That is the general shape of this block. Every cell in the matrix above is
 a decision someone made for you. Convenient when you agree with it, and
@@ -147,8 +152,9 @@ machinery is overhead a short task can't fully use. On the migration it
 didn't pay off either; the harnesses with the most machinery were the
 most expensive (see "What the migration showed"). Where a harness's
 built-in tools do pay off is when they include a shell: see
-`migration/README.md`, where every harness given one scripted the rename
-in 12 to 42 calls.
+`tool_design/README.md`, where every harness given one scripted the rename
+in 14 to 30 calls, and a tool designed for renames did nearly as well
+while keeping its guardrails.
 
 ## What the scripts show, one line each
 

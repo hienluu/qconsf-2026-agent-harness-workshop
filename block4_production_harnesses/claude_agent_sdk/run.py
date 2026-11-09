@@ -2,11 +2,17 @@
 
     uv run claude_agent_sdk/run.py        (from block4_production_harnesses/)
 
-Where it came from: product-extracted. This is the same loop, file tools and
-context management that power Claude Code, driven programmatically. Notice
-what we do NOT write: no loop, no dispatcher, no truncation, no compaction.
-The harness ships with all of it decided. We withhold Bash so every harness
-here works through file tools, which leaves us one tool to write: run_tests.
+Where it came from: product-extracted. This is the same loop and context
+management that power Claude Code, driven programmatically. Notice what we
+do NOT write: no loop, no dispatcher, no truncation, no compaction. The
+harness ships with all of it decided.
+
+The tools are ours: the same four as OpenAI Agents, Pydantic AI and ADK,
+served to Claude Code as in-process SDK tools, with its own built-in tools
+switched off. Same tools, so what differs from step 1 is the harness.
+CLAUDE_TOOLS=own gives it Claude Code's own file tools instead (Read,
+Write, Edit, Glob, Grep; still no Bash): that's where the Edit-per-string
+numbers in COMPARISON.md come from. Bash is in tool_design/run_claude.py.
 
 Provider note: the SDK reads ANTHROPIC_BASE_URL / ANTHROPIC_API_KEY (names
 the SDK dictates — provider coupling made visible in env-var form). We
@@ -28,7 +34,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import end_turn, SYSTEM_PROMPT, _turn, TurnCapReached, set_tokens_sent, trace_cost, trace_note, tool_detail, TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_run_tests  # noqa: E402
+from common import end_turn, ws_list, ws_read, ws_write, SYSTEM_PROMPT, _turn, TurnCapReached, set_tokens_sent, trace_cost, trace_note, tool_detail, TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_run_tests  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -44,18 +50,45 @@ from claude_agent_sdk import (  # noqa: E402
 load_dotenv()
 NAME = "claude_agent_sdk"
 
-# File tools only, like the other harnesses: Claude Code's own file tools,
-# no Bash. Without a shell it can't run pytest, so it gets our run_tests,
-# served in-process as an SDK tool. The full kit, Bash included, is in
-# migration/run_claude.py (presenter demo / take-home).
+# Our four tools by default; CLAUDE_TOOLS=own for Claude Code's own file
+# tools (run_tests stays ours either way: without a shell, it's the only
+# way to run pytest).
+OWN_TOOLS = os.environ.get("CLAUDE_TOOLS") == "own"
+if OWN_TOOLS:
+    NAME = "claude_agent_sdk_own"   # its own row in the tables, its own workspace
 CLAUDE_FILE_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep"]
 workspace: Path
+
+
+def _text(s: str) -> dict:
+    return {"content": [{"type": "text", "text": s}]}
+
+
+@tool("list_files", "List every file in the workspace as relative paths.", {})
+async def list_files(args) -> dict:
+    trace_tool(NAME, "list_files")
+    return _text(ws_list(workspace))
+
+
+@tool("read_file", "Read one file, path relative to the workspace.", {"path": str})
+async def read_file(args) -> dict:
+    trace_tool(NAME, "read_file", tool_detail({"path": args["path"]}))
+    return _text(ws_read(workspace, args["path"]))
+
+
+@tool("write_file", "Overwrite one file, path relative to the workspace.", {"path": str, "content": str})
+async def write_file(args) -> dict:
+    trace_tool(NAME, "write_file", tool_detail({"path": args["path"], "content": args["content"]}))
+    return _text(ws_write(workspace, args["path"], args["content"]))
 
 
 @tool("run_tests", "Run pytest in the workspace; done means all tests pass.", {})
 async def run_tests(args) -> dict:
     trace_tool(NAME, "run_tests")
-    return {"content": [{"type": "text", "text": ws_run_tests(workspace)}]}
+    return _text(ws_run_tests(workspace))
+
+
+OUR_TOOLS = [run_tests] if OWN_TOOLS else [list_files, read_file, write_file, run_tests]
 
 
 
@@ -80,8 +113,8 @@ async def _stream(options) -> None:
                 trace_cost(NAME, sent, got)
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
-                    if block.name.endswith("__run_tests"):
-                        continue   # traced by run_tests itself
+                    if block.name.startswith("mcp__workspace__"):
+                        continue   # our tools trace themselves as they run
                     trace_tool(NAME, block.name, tool_detail(block.input), harness_tool=True)
                 elif isinstance(block, TextBlock) and block.text.strip():
                     trace_say(NAME, block.text)
@@ -103,7 +136,10 @@ async def _stream(options) -> None:
 async def main() -> int:
     global workspace
     workspace = prepare_workspace(NAME)
-    trace_key(NAME, ["run_tests"], "Claude Code's Read, Write, Edit, Glob, Grep (Bash withheld)")
+    if OWN_TOOLS:
+        trace_key(NAME, ["run_tests"], "Claude Code's Read, Write, Edit, Glob, Grep (Bash withheld)")
+    else:
+        trace_key(NAME, ["list_files", "read_file", "write_file", "run_tests"])
 
     options = ClaudeAgentOptions(
         cwd=str(workspace),
@@ -112,9 +148,11 @@ async def main() -> int:
         # Without this the SDK sends an EMPTY system prompt (not Claude
         # Code's): set ours, the same as every other harness.
         system_prompt=SYSTEM_PROMPT,
-        tools=CLAUDE_FILE_TOOLS,     # the base toolset; anything not listed is gone
-        mcp_servers={"workspace": create_sdk_mcp_server("workspace", tools=[run_tests])},
-        allowed_tools=CLAUDE_FILE_TOOLS + ["mcp__workspace__run_tests"],
+        # The base toolset: anything not listed is gone. [] switches off
+        # every built-in tool, so ours are all it has.
+        tools=CLAUDE_FILE_TOOLS if OWN_TOOLS else [],
+        mcp_servers={"workspace": create_sdk_mcp_server("workspace", tools=OUR_TOOLS)},
+        allowed_tools=(CLAUDE_FILE_TOOLS if OWN_TOOLS else []) + [f"mcp__workspace__{t.name}" for t in OUR_TOOLS],
         # Headless: auto-approve edits inside the copied workspace.
         permission_mode="bypassPermissions",
         env={
@@ -142,8 +180,9 @@ async def main() -> int:
     receipt(NAME, script=__file__, started=started, solved=solved,
         origin="product-extracted (Claude Code as a library)",
         loop_owner="theirs — closed; we only configure",
-        tools_we_wrote=["run_tests"],
-        tools_harness_shipped="Claude Code's file tools (Read, Write, Edit, Glob, Grep); Bash withheld",
+        tools_we_wrote=[t.name for t in OUR_TOOLS],
+        tools_harness_shipped=("Claude Code's file tools (Read, Write, Edit, Glob, Grep); Bash withheld" if OWN_TOOLS
+                               else "Read, Edit, Bash and more, all switched off for this run"),
         provider_friction="2 workarounds: Bearer auth via AUTH_TOKEN; warns unrecognized_model")
     return 0 if solved else 1
 

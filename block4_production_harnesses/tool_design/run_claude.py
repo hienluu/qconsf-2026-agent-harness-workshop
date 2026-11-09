@@ -1,6 +1,6 @@
 """The migration through the Claude Agent SDK, with its own tools.
 
-    uv run migration/run_claude.py      (from block4_production_harnesses/)
+    uv run tool_design/run_claude.py      (from block4_production_harnesses/)
 
 Block 2's migration, through Claude Code's harness as a library. We define
 no tools: it brings its own, including Bash. The trace comes from the

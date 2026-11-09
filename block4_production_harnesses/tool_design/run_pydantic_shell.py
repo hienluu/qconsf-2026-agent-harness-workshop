@@ -1,6 +1,6 @@
 """Optional: the migration through Pydantic AI, with a shell tool we wrote.
 
-    uv run migration/run_pydantic_shell.py      (from block4_production_harnesses/)
+    uv run tool_design/run_pydantic_shell.py      (from block4_production_harnesses/)
 
 Take-home or extra credit, for completeness. Pydantic AI ships no file or
 shell tools (its bundled tools are web search, web fetch and image

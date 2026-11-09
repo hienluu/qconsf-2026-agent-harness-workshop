@@ -501,6 +501,7 @@ def receipt(
     tools_we_wrote: list,
     tools_harness_shipped: str,
     provider_friction: str,
+    measured: dict | None = None,
 ) -> None:
     """Print this run's harness receipt and the comparison table so far.
 
@@ -517,9 +518,11 @@ def receipt(
         "task": task_name,
         "solved": solved,
         "wall_s": round(time.monotonic() - started, 1),
-        "turns": _turn["n"],
-        "tool_calls": _usage["calls"],
-        "tokens_sent": _usage["sent"] or None,
+        # `measured` is for a script that counts with its own trace (the
+        # tool_design/ scripts); everything else counts through this module.
+        "turns": (measured or {}).get("turns", _turn["n"]),
+        "tool_calls": (measured or {}).get("tool_calls", _usage["calls"]),
+        "tokens_sent": (measured or {}).get("tokens_sent", _usage["sent"]) or None,
         "origin": origin,
         "loop_owner": loop_owner,
         "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or '—'})",

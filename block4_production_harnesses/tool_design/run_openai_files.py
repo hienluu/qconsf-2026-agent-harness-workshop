@@ -1,6 +1,6 @@
 """The migration through the OpenAI Agents SDK, with file tools.
 
-    uv run migration/run_openai_files.py      (from block4_production_harnesses/)
+    uv run tool_design/run_openai_files.py      (from block4_production_harnesses/)
 
 The SDK's own shell tools (ShellTool, LocalShellTool, ApplyPatchTool) are
 built for OpenAI's Responses API. On GLM through our provider they don't
