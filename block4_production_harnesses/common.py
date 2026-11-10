@@ -531,18 +531,25 @@ def _save_trace(harness: str) -> None:
     log = BLOCK4 / "runs" / "logs" / f"{harness}.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     sys.stdout = _Tee(sys.stdout, log)
-    print(f"\033[2m   ┈ this trace is also saved to runs/logs/{harness}.log\033[0m")
 
 
-def _print_endpoint(harness: str) -> None:
-    """Which endpoint and model this run uses (never the key): the first
-    thing to check when two runs disagree. Blocks 2 and 3 print it too. The
-    Claude Agent SDK calls the Anthropic-compatible endpoint derived from
+def _print_header(harness: str) -> None:
+    """The box every run opens with, as in Blocks 2 and 3: the run's name
+    between two rules, then what it runs against (never the key). The Claude
+    Agent SDK calls the Anthropic-compatible endpoint derived from
     PROVIDER_BASE_URL, so its scripts show that one as well."""
-    print(f"   provider: {_os.environ.get('PROVIDER_BASE_URL', '(PROVIDER_BASE_URL not set)')}")
+    rows = [("task", f"{BLOCK4_TASK}: {TASK}"),
+            ("provider", _os.environ.get("PROVIDER_BASE_URL", "(PROVIDER_BASE_URL not set)"))]
     if harness.startswith("claude_agent_sdk"):
-        print(f"   Claude Code calls: {anthropic_compat_base_url()} (the Anthropic-compatible endpoint)")
-    print(f"   model: {_os.environ.get('MODEL', '(MODEL not set)')}")
+        rows.append(("calls", f"{anthropic_compat_base_url()} (Claude Code's Anthropic-compatible endpoint)"))
+    rows += [("model", _os.environ.get("MODEL", "(MODEL not set)")),
+             ("trace", "runs/logs/ (captured by run_all.py)" if _os.environ.get("BLOCK4_LOGGED")
+              else f"also saved to runs/logs/{harness}.log")]
+    rule = "━" * 72
+    print(f"\n\033[1;36m{rule}\n {harness} × {BLOCK4_TASK}\n{rule}\033[0m")
+    for key, value in rows:
+        print(f"   \033[2m{key:<9}\033[0m {value}")
+    print(f"\033[1;36m{rule}\033[0m")
 
 
 def prepare_workspace(harness: str, source: Path = TASK_SOURCE) -> Path:
@@ -570,7 +577,7 @@ def prepare_workspace(harness: str, source: Path = TASK_SOURCE) -> Path:
     run_dir = BLOCK4 / "runs" / harness
     workspace = run_dir / "workspace"
     _save_trace(harness)
-    _print_endpoint(harness)
+    _print_header(harness)
     remove_run_dir(run_dir)
     shutil.copytree(source, workspace, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache"))
     _lock_tests(workspace)

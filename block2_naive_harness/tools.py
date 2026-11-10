@@ -12,9 +12,19 @@ import sys
 from pathlib import Path
 
 
+def print_run_header(title: str, rows: list) -> None:
+    """The box every run opens with, in Blocks 2 and 3: the run's name
+    between two rules, then what it runs against (workspace, task,
+    provider, model). Easy to find as the output scrolls; never the key."""
+    rule = "━" * 72
+    print(f"\n\033[1;36m{rule}\n {title}\n{rule}\033[0m")
+    for key, value in rows:
+        print(f"   \033[2m{key:<9}\033[0m {value}")
+    print(f"\033[1;36m{rule}\033[0m")
+
+
 class Workspace:
     def __init__(self, root):
-        print(f"Workspace root: {Path(root).resolve()}")
         self.root = Path(root).resolve()
 
     def _path(self, rel: str) -> Path:

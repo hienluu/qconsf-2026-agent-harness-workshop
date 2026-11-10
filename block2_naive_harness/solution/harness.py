@@ -16,7 +16,7 @@ from openai import OpenAI
 
 load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tools import TOOL_SCHEMAS, Workspace  # noqa: E402
+from tools import TOOL_SCHEMAS, Workspace, print_run_header  # noqa: E402
 from scoreboard import Scoreboard  # noqa: E402  (observer-side commentary)
 
 SYSTEM_PROMPT = """You are a coding agent operating on a local workspace via tools.
@@ -47,10 +47,14 @@ def run(workspace_dir: str, task: str) -> None:
     )
     model = os.environ["MODEL"]
     ws = Workspace(workspace_dir)
-    # Which endpoint and model this run uses (never the key): the first
-    # thing to check when two runs disagree. Blocks 3 and 4 print it too.
-    print(f"Provider: {os.environ['PROVIDER_BASE_URL']}")
-    print(f"Model: {model}")
+    # What this run works on and calls (never the key): the first thing to
+    # check when two runs disagree. Blocks 3 and 4 open the same way.
+    print_run_header(f"naive harness × {ws.root.parent.name}", [
+        ("workspace", os.path.relpath(ws.root)),
+        ("task", task),
+        ("provider", os.environ["PROVIDER_BASE_URL"]),
+        ("model", model),
+    ])
 
     # The tool dispatcher: the bridge between what the model SAYS and what
     # actually HAPPENS. The model only ever emits a tool name plus JSON

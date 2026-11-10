@@ -53,6 +53,7 @@ sys.path.insert(0, str(BLOCK3 / "harnesses"))
 
 from tasks import TASKS  # noqa: E402
 import base  # noqa: E402  (the harnesses' shared helpers: habits_line)
+from tools import print_run_header  # noqa: E402  (Block 2's, so both blocks open a run alike)
 
 sys.path.insert(0, str(REPO / "scripts"))
 from reference_check import summary_line  # noqa: E402
@@ -141,17 +142,14 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     with log_path.open("w") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):
         # The header goes in the saved trace too: which endpoint and model
         # produced a run is the first thing to know when comparing runs.
-        rule = "━" * 72
         rows = [("harness", (module.__doc__ or "").strip().splitlines()[0])]
         if label != HARNESSES[harness_key]:
             rows.append(("variant", f"running {HARNESSES[harness_key]} with an option changed, recorded as {label}"))
         rows += [("task", task["description"]),
+                 ("workspace", workspace.relative_to(BLOCK3)),
                  ("provider", os.environ.get("PROVIDER_BASE_URL", "(PROVIDER_BASE_URL not set)")),
                  ("model", os.environ.get("MODEL", "(MODEL not set)"))]
-        print(f"\n\033[1;36m{rule}\n {label} × {task_name}\n{rule}\033[0m")
-        for key, value in rows:
-            print(f"   \033[2m{key:<9}\033[0m {value}")
-        print(f"\033[1;36m{rule}\033[0m")
+        print_run_header(f"{label} × {task_name}", rows)
         result = module.run(str(workspace), task["prompt"])
     print(f"    trace saved: {log_path.relative_to(BLOCK3)}")
 
