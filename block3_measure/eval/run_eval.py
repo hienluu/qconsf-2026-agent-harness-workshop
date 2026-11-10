@@ -136,14 +136,22 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     if run_dir.exists():
         shutil.rmtree(run_dir)
     shutil.copytree(source, workspace)
-    print(f"\n=== {label} × {task_name} ===")
-    print(f"    harness: {(module.__doc__ or '').strip().splitlines()[0]}")
-    if label != HARNESSES[harness_key]:
-        print(f"    variant: running {HARNESSES[harness_key]} with an option changed, recorded as {label}")
-    print(f"    task: {task['description']}")
     log_path = run_dir / "console.log"
     base.reset_habits()
     with log_path.open("w") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):
+        # The header goes in the saved trace too: which endpoint and model
+        # produced a run is the first thing to know when comparing runs.
+        rule = "━" * 72
+        rows = [("harness", (module.__doc__ or "").strip().splitlines()[0])]
+        if label != HARNESSES[harness_key]:
+            rows.append(("variant", f"running {HARNESSES[harness_key]} with an option changed, recorded as {label}"))
+        rows += [("task", task["description"]),
+                 ("provider", os.environ.get("PROVIDER_BASE_URL", "(PROVIDER_BASE_URL not set)")),
+                 ("model", os.environ.get("MODEL", "(MODEL not set)"))]
+        print(f"\n\033[1;36m{rule}\n {label} × {task_name}\n{rule}\033[0m")
+        for key, value in rows:
+            print(f"   \033[2m{key:<9}\033[0m {value}")
+        print(f"\033[1;36m{rule}\033[0m")
         result = module.run(str(workspace), task["prompt"])
     print(f"    trace saved: {log_path.relative_to(BLOCK3)}")
 

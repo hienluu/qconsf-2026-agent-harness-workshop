@@ -41,21 +41,16 @@ def run(workspace_dir: str, task: str) -> None:
     file read, tool result, and edit accumulates there, and the full list is
     resent to the model on every turn.
     """
-    provider_base_url = os.environ["PROVIDER_BASE_URL"]
-    provider_api_key = os.environ["PROVIDER_API_KEY"]
-    model = os.environ["MODEL"]
-
-    print(f"====================================")
-    print(f"Using provider: {provider_base_url}")
-    print(f"Using model: {model}")
-    print(f"====================================")
-
     client = OpenAI(
-        base_url=provider_base_url,
-        api_key=provider_api_key,
+        base_url=os.environ["PROVIDER_BASE_URL"],
+        api_key=os.environ["PROVIDER_API_KEY"],
     )
-    model = model
+    model = os.environ["MODEL"]
     ws = Workspace(workspace_dir)
+    # Which endpoint and model this run uses (never the key): the first
+    # thing to check when two runs disagree. Blocks 3 and 4 print it too.
+    print(f"Provider: {os.environ['PROVIDER_BASE_URL']}")
+    print(f"Model: {model}")
 
     # The tool dispatcher: the bridge between what the model SAYS and what
     # actually HAPPENS. The model only ever emits a tool name plus JSON
