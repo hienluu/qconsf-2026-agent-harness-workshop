@@ -9,12 +9,11 @@
 > | Pairs | 10 min | Swap worksheets and challenge each other's answers |
 > | Wrap-up | 5 min | The take-home, and the questions under "Discussion" |
 >
-> **If you're behind:** do Parts 1, 2 and 4 of the worksheet and skip
-> Part 3; it's the part that rules nothing out. The pair discussion starts
-> on time.
+> **If you're behind:** answer questions 1 and 2, then decide; skip 3
+> and 4, which rule nothing out. The pair discussion starts on time.
 
-You've built a harness, measured what its protections buy, and run five
-production harnesses on the same task. Now the question the workshop is
+You've built a harness, measured what its protections buy, and watched
+production harnesses work on the same task. Now the question the workshop is
 named for: **which one should you choose for your agent?**
 
 Not "which is best". The worksheet doesn't score harnesses; it rules them
@@ -49,7 +48,7 @@ something a feature list says.
   120 files unmigrated: the cheapest run on the board (Blocks 3 and 4).
 - **The settings that let an agent run unattended are the ones that let
   it reach further.** Permission prompts off, virtual paths off, a shell
-  on: each was ours to change, and each widened what it could touch
+  on: each was ours to change, and each widened what it could reach
   (Blocks 3 and 4).
 
 ## Exercise
@@ -59,15 +58,16 @@ something a feature list says.
 Open [`WORKSHEET.md`](WORKSHEET.md) and pick an agent you're working on
 or expect to build. Keep your notes from Blocks 2 to 4 in front of you.
 
-| Part | What it does | Time |
+| Part | What it asks | Time |
 |---|---|---|
-| 1. Describe your agent | five short answers everything else refers back to | 3 min |
-| 2. Questions that rule harnesses out (Q1 to Q4) | provider switching, your own steps, an existing codebase, whether its tools fit | 6 min |
-| 3. What's still your job (Q5 to Q7) | conversation size, what it can write and run, what you'll need to see | 3 min |
-| 4. Decide | adopt, extend, drop down a level, or build; one sentence for a design review; how you'd test it | 3 min |
+| Your agent | what it does, how big its runs are, which model it uses | 2 min |
+| Questions 1 and 2 (can rule a harness out) | will it work with your model and your code; what will you need to add or change | 6 min |
+| Questions 3 and 4 (your job, whichever you pick) | what can your agent reach or affect; what will you need to watch | 4 min |
+| Decide | adopt, extend, drop down a level, or build; one sentence for a design review; how you'd test it | 3 min |
 
-Stuck on a question? The worked examples below answer every question for
-two very different agents.
+Stuck on a question? The worked examples below answer each one for two
+very different agents, and [`WHY.md`](WHY.md) explains why each question
+matters, with what we saw this morning.
 
 ### Step 2: Pairs (10 minutes)
 
@@ -91,29 +91,27 @@ The same worksheet, two agents, two different answers.
 across a few hundred files, until the tests pass. Much like the
 workshop's task.*
 
-**Part 1.** Dozens of model calls per run. Big tool results: whole files,
-codebase searches, test logs. Fails today by running out of budget mid-job,
-and by finishing with green tests and a wrong result. One provider now,
-possibly a cheaper model later.
+**The agent.** Dozens of model calls per run. Big tool results: whole
+files, codebase searches, test logs. One provider now, possibly a
+cheaper model later. Fails today by running out of budget mid-job, and
+by finishing with green tests and a wrong result.
 
 | Question | Answer | What it means |
 |---|---|---|
-| Q1. Will you need to switch model providers? | maybe | not a hard rule-out; note that vendor-built harnesses needed workarounds off their home models |
-| Q2. Do you need to add your own steps to how the agent runs? | yes: run the tests after each batch; review the diff after green; never write to `tests/` | all five can plug in; check each lands where you need it. Claude's hooks cover tool calls and stopping, which covers these three |
-| Q3. Does it have to fit into an existing codebase? | no, a standalone tool | nothing ruled out |
-| Q4. Do the harness's own tools fit your work? | **no** | file-at-a-time editing was the bottleneck; you'll design a tool around the unit of work (one rename rule), as in Block 4's step 4. A harness whose value is its built-in tools loses most of its value here |
-| Q5. Will the conversation get big? | large | you need truncation and compaction; find out how your choice does them |
-| Q6. What can it write, and what can it run? | it writes code and runs the tests, so it runs code | sandbox the test runner; with a shell, the guardrail moves to the sandbox |
-| Q7. When something goes wrong, what will you need to see? | test timing, files rewritten unread, every tool call | the "what the trace shows" line, built in from day one |
+| 1. Will it work with your model and your code? | provider: maybe; existing project: no, a standalone tool | nothing ruled out. Note that vendor-built harnesses needed workarounds off their home models |
+| 2. What will you need to add or change? | steps: run the tests after each batch, review the diff after green, never write to `tests/`. Tools: **its own don't fit** | all five can plug those steps in (Claude's hooks cover tool calls and stopping). File-at-a-time editing was the bottleneck, so you'll design a tool around the unit of work, one rename rule, as in Block 4's step 4. A harness whose value is its built-in tools loses most of it here |
+| 3. What can your agent reach or affect? | code it runs (the tests) | sandbox the test runner; with a shell, the guardrail moves to the sandbox |
+| 4. What will you need to watch? | a large conversation; test timing, files rewritten unread, every tool call | find out how your choice keeps the conversation from growing; build the "what the trace shows" line in from day one |
 
 **Decision: extend.** A harness with plug-in points (here, OpenAI Agents
 or Pydantic AI), your own designed tools, a test-after-each-batch rule
 and a review step after green.
 
 *Design review:* "We use OpenAI Agents with our own rename tool and a
-review step after the tests pass, because on our migration the tools,
-not the loop, set the cost, and the review step is what catches green
-runs that are wrong."
+review step after the tests pass. On our migration the tool cut the
+calls from about 280 to about 50 per run, and the review step catches
+green runs that are wrong. We'd look again if another harness matched
+that on the same test."
 
 *Test it:* five runs of a real past migration, same prompt and budget,
 each compared with the migration a person actually did.
@@ -123,28 +121,26 @@ each compared with the migration a person actually did.
 *Reads a customer's request, looks up the order, checks the refund
 policy, issues the refund and emails the customer.*
 
-**Part 1.** Under ten model calls per run. Small tool results: an order
-record, a policy paragraph. Fails by refunding the wrong amount, or a
-refund that needed a person's sign-off. A cheap model now; the team
-expects to switch providers as prices move.
+**The agent.** Under ten model calls per run. Small tool results: an
+order record, a policy paragraph. A cheap model now; the team expects to
+switch providers as prices move. Fails by refunding the wrong amount, or
+a refund that needed a person's sign-off.
 
 | Question | Answer | What it means |
 |---|---|---|
-| Q1. Will you need to switch model providers? | **yes** | rules out the vendor-built harnesses as a first choice: Claude Agent SDK needed two workarounds off its home model, OpenAI Agents one. Pydantic AI and Deep Agents needed none |
-| Q2. Do you need to add your own steps to how the agent runs? | yes: a person approves any refund over $500; never retry a payment; strip card numbers from tool results | approval rules nobody out: OpenAI Agents (`needs_approval`), Pydantic AI (`requires_approval`), Deep Agents (`interrupt_on`), Claude Agent SDK (`can_use_tool`), ADK (`before_tool_callback`). If an approval can wait a day, check how the run is saved meanwhile (Deep Agents takes a LangGraph checkpointer; Pydantic AI returns the pending calls as deferred requests) |
-| Q3. Does it have to fit into an existing codebase? | yes, a Python service | install the candidate into the service first, the way you really would |
-| Q4. Do the harness's own tools fit your work? | **irrelevant** | you write the order, policy and refund tools whatever you pick; a harness's file tools and shell are cost, not value. Claude Code's whole kit re-sent about 15,000 tokens of tool definitions on every call |
-| Q5. Will the conversation get big? | small | compaction will never fire; a lighter harness costs less on every call |
-| Q6. What can it write, and what can it run? | no files, no shell, but it moves money | put the guardrail inside the refund tool (a cap, an idempotency key), where Block 4 showed it's exact |
-| Q7. When something goes wrong, what will you need to see? | every tool call with its arguments, cost per step | Pydantic AI reports cost per run (`RunUsage.cost`) |
+| 1. Will it work with your model and your code? | provider: **yes, it will switch**; existing project: yes, a Python service | rules out the vendor-built harnesses as a first choice: Claude Agent SDK needed two workarounds off its home model, OpenAI Agents one; Pydantic AI and Deep Agents needed none. Install the candidate into the service first |
+| 2. What will you need to add or change? | steps: a person approves any refund over $500, never retry a payment, strip card numbers from results. Tools: **its own are irrelevant** | approval rules nobody out: OpenAI Agents (`needs_approval`), Pydantic AI (`requires_approval`), Deep Agents (`interrupt_on`), Claude Agent SDK (`can_use_tool`), ADK (`before_tool_callback`). If an approval can wait a day, check how the run is saved meanwhile. You write the order and refund tools whatever you pick, so a harness's file tools and shell are cost, not value: Claude Code's whole kit re-sent about 15,000 tokens of tool definitions on every call |
+| 3. What can your agent reach or affect? | money and customers; no files, no shell | put the guardrail inside the refund tool (a cap, an idempotency key), where Block 4 showed it's exact |
+| 4. What will you need to watch? | a small conversation; every tool call with its arguments, cost per step | compaction will never fire, so a lighter harness costs less on every call; Pydantic AI reports cost per run (`RunUsage.cost`) |
 
 **Decision: adopt.** A light, provider-neutral harness, here Pydantic AI,
 used as it is, with the approval on the refund tool.
 
-*Design review:* "We use Pydantic AI because our provider will change and
-it takes the provider as a constructor argument; approval is a flag on
-the refund tool, and the conversation is too small for anything heavier
-to pay off."
+*Design review:* "We use Pydantic AI because our provider will change
+and it takes the provider as a constructor argument, and approval is a
+flag on the refund tool. Our runs are under ten calls, so the
+conversation stays small and a heavier harness would cost more for
+nothing. We'd look again if runs grew past a few dozen calls."
 
 *Test it:* replay 50 past tickets and compare each refund with what the
 support team actually did.
