@@ -4,6 +4,38 @@
 and this page is the reference card: the terms defined here get used for the
 rest of the workshop, so keep it open.
 
+## How this workshop works
+
+You won't build a harness from scratch today. Instead, we work from the
+outside in: you run harnesses on a real task, watch what they do, and
+measure the results. Most of the morning uses one task, updating a
+140-file code library to a new version of its API, so you can compare
+every number with the ones before it.
+
+- **Block 2:** you get a working agent loop with two small gaps to fill,
+  about ten lines in all, so you see what's inside every harness. Then you
+  give it a task bigger than it was built for and watch where it
+  struggles.
+- **Block 3:** you run the same task through harnesses with extra
+  protections built in. You read each run's trace, the step-by-step
+  record of what the agent did, to see what each protection helps with
+  and what it costs.
+- **Block 4:** you run two production harnesses, OpenAI's and
+  Anthropic's, on the same task with the same tools, and watch them work.
+  Then you design a better tool for the job and try it. Finally, you
+  check whether "all tests pass" really means "the job is done".
+- **Block 5:** you turn what you saw into a decision for your own agent.
+
+Each block has its own `README.md` in its folder. It has the steps, the
+commands to copy, what to watch for, and the numbers from our own runs,
+so you can tell a normal result from an unlucky one. Keep it open while
+you work: it answers most questions before you need to ask them.
+
+The skill you take home isn't writing an agent loop. It's running an
+experiment on a harness and reading what it tells you: keep the model and
+the task the same, change one thing, read the trace, and check the result
+yourself.
+
 ## The claim
 
 > An agent is a model plus a harness — and the harness moves outcomes as
@@ -50,17 +82,6 @@ LangGraph   Google   Pydantic AI    Claude Agent SDK ·      Claude Code,
 Further left: more control, more of the work is yours. Further right: more
 decided for you, less that you can change. Neither end is correct — Block 5
 is about choosing your position deliberately.
-
-## What you'll do with this
-
-- **Block 2** — build a harness with none of the components above, then hand
-  it a task sized past its limits and watch precisely how it fails.
-- **Block 3** — add the missing components one configuration at a time and
-  measure what each is worth. A controlled experiment, not a vibe.
-- **Block 4** — read five production harnesses through the same lens and see
-  what each one decided for you.
-- **Block 5** — the rubric: how to choose, extend, or defend a harness, with
-  numbers behind the decision.
 
 ## The evidence, if you want to check it yourself
 
