@@ -8,40 +8,35 @@ fine. Why each question matters, with what we saw this morning:
 ## Your agent
 
 - **What does it do?** ________________________________________________
-- **Model calls per run:** ☐ under ten  ☐ dozens  ☐ a hundred or more
-- **Biggest thing a tool returns:** ☐ a screen of text  ☐ whole files or logs
 - **Model it uses today, and who serves it:** __________________________
-  *For example: Claude from Anthropic, GPT from Azure, an open model from Fireworks.*
+  - *For example: Claude from Anthropic, GPT from Azure, an open model from Fireworks.*
 
 ## Questions 1 and 2 can rule a harness out
 
 **1. Will it work with your model and your code?**
 
 - Will you need to switch model providers? ☐ yes ☐ no ☐ not sure
-  *Vendor-built harnesses were the hardest to move off their own models.*
 - Will it go into an existing project, next to the libraries already there? ☐ yes ☐ no
-  *If yes, install it into your real project before you compare anything.*
+  - *If yes, install it into your real project before you compare anything.*
 
 **2. What will you need to add or change?**
 
-- Steps the agent must take whatever the model decides (an approval, a
-  spending limit, "done means the tests pass"). For each, point to where
-  it goes in your Block 2 loop, then check the harness lets you plug in
-  there.
-
-  | Step | Can I plug in there? |
-  |---|---|
-  | | |
-  | | |
-
-- Do the harness's own tools fit your unit of work (one file? one record?
-  one rule?) ☐ yes ☐ I'd replace or tune them ☐ not sure
-  *The wrong tools cost 2 to 4 times the tokens on the same task.*
+- Steps it must take whatever the model decides (an approval, a spending
+  limit, "done means the tests pass"):
+  1. ____________________________________________
+  2. ____________________________________________
+- Its unit of work (one file? one record? one rule?): ____________________
+  - *Tools that don't match the unit of work cost 2 to 4 times the tokens.*
 
 ## Now rule them out
 
-What we saw this morning, for each harness. Use your answers to 1 and 2:
-cross out any harness that fails one, and tick the ones still standing.
+What we saw this morning, for each harness. Apply your answers to 1 and 2:
+
+- **Switching providers?** Cross out the ones that needed workarounds off
+  their own model, unless you'd pay to leave them later.
+- **A step you need has nowhere to plug in?** Cross it out.
+- **Its own tools don't match your unit of work?** Keep it, but you'll be
+  extending it.
 
 | Harness | Off its own model (question 1) | Its own tools (question 2) | Where you plug in (question 2) | Still standing? |
 |---|---|---|---|---|
@@ -64,10 +59,13 @@ cross out any harness that fails one, and tick the ones still standing.
 
 **4. What will you need to watch?**
 
-- The conversation will be:
-  - ☐ small (a lighter harness costs less)
-  - ☐ large (find out how it keeps the conversation from growing)
-- In the trace, I'll need:
+- **Cost.** Every call re-sends the whole conversation, so its size sets
+  the cost.
+  - Model calls per run: ☐ under ten ☐ dozens ☐ a hundred or more
+  - Biggest thing a tool returns: ☐ a screen of text ☐ whole files or logs
+  - *Ticked dozens or more, or whole files? Find out how the harness keeps
+    the conversation from growing. Otherwise a lighter harness costs less.*
+- **The trace.** In it, I'll need:
   - ☐ what the model is actually sent
   - ☐ every tool call with its arguments
   - ☐ when it ran the tests
@@ -75,18 +73,16 @@ cross out any harness that fails one, and tick the ones still standing.
 
 ## Decide
 
-Questions 1 and 2 decide which of these you land on. Use 3 and 4 to
-choose between harnesses that pass 1 and 2: the lighter one if the
-conversation is small, and the one that already shows what you need to
-watch.
+- ☐ **Adopt:** a harness still standing, with nothing to add or change
+- ☐ **Extend:** a harness still standing, plus the steps or tools from question 2
+- ☐ **Drop down a level or build:** every harness is crossed out (rarely
+  right; Blocks 2 and 3 showed what building costs)
 
-- ☐ **Adopt:** it passes 1 and 2 and does what I need as it is
-- ☐ **Extend:** it passes, and I'll add what's missing (steps, tools, settings)
-- ☐ **Drop down a level:** I need a step no harness lets me plug in
-- ☐ **Build my own:** rarely right
+If more than one is still standing, use 3 and 4 to choose: the lighter
+one for a small conversation, the one that already shows what you need
+to watch.
 
-**The harness I'd adopt or extend:** ______________________ (from the
-harnesses still standing)
+**The harness I'd adopt or extend:** ________________________________
 
 **What's still my job (from 3 and 4):** ________________________________
 
@@ -99,8 +95,5 @@ test."*
 
 ______________________________________________________________________
 
-**I'd test it by:** running a real task of mine through my top two
-choices, several times each, with the same prompt and budget, and
-checking the results myself, not just that the tests pass:
-
-______________________________________________________________________
+- **I'd test it by:** ____________________________________________________
+  - *Several runs, the same prompt and budget, and check the results yourself.*

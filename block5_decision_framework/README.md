@@ -60,7 +60,7 @@ or expect to build. Keep your notes from Blocks 2 to 4 in front of you.
 
 | Part | What it asks | Time |
 |---|---|---|
-| Your agent | what it does, how big its runs are, which model it uses | 2 min |
+| Your agent | what it does, which model it uses | 2 min |
 | Questions 1 and 2 (can rule a harness out) | will it work with your model and your code; what will you need to add or change | 6 min |
 | Questions 3 and 4 (your job, whichever you pick) | what can your agent reach or affect; what will you need to watch | 4 min |
 | Decide | adopt, extend, drop down a level, or build; one sentence for a design review; how you'd test it | 3 min |
