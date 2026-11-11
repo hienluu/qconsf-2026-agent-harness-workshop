@@ -138,6 +138,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
 
     result = RunResult(harness=NAME, task=workspace_dir)
     board = Scoreboard(MAX_TURNS)
+    board.timing = True   # Block 3 shows how long each turn took
     board.budget_told = TURN_NOTICE is not None
     board.legend()
     marker_key(SPEECH_MARKER, CUT_MARKER, RECOVER_MARKER, MILESTONE_MARKER,

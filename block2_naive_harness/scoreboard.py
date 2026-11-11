@@ -18,6 +18,16 @@ fastest way to understand why: it is flying with no fuel gauge, no map,
 and no memory of the ground it already covered.
 """
 
+import time
+
+
+def duration(seconds: float) -> str:
+    """9.4s, or 6m 02s once past a minute."""
+    if round(seconds, 1) < 60:
+        return f"{seconds:.1f}s"
+    m, s = divmod(int(round(seconds)), 60)
+    return f"{m}m {s:02d}s"
+
 
 def transcript_chars(messages: list) -> int:
     """Everything in the conversation that gets re-sent each turn: message
@@ -50,6 +60,13 @@ class Scoreboard:
         self._counts_at_last_report: dict = {}
         self.cache_reported = False
         self.said = set()
+        # How long each turn took, split into waiting for the model and
+        # running the tools. Off unless a harness turns it on (Block 3 does;
+        # Block 2 compares tokens, not time, which mostly measures the provider).
+        self.timing = False
+        self._started = self._turn_started = time.monotonic()
+        self._model_done = None
+        self.model_seconds = 0.0
 
     def legend(self) -> None:
         print(
@@ -66,12 +83,19 @@ class Scoreboard:
             "     re-read — files fetched again that the agent had already read. Appears\n"
             "       only when it happens. Nothing was dropped: the first copy is still in\n"
             "       the conversation, so every re-read pays for the same file twice.\n"
-            "     The agent sees none of these numbers.\033[0m\n"
+            + ("     9.4s (model 9.1s): how long the turn took, and how much of that was\n"
+               "       waiting for the model; the rest ran the tools. Then the time so far.\n"
+               "       It depends on the provider and how busy it is: compare turns within\n"
+               "       a run, not your times with a neighbor's.\n" if self.timing else "")
+            + "     The agent sees none of these numbers.\033[0m\n"
         )
 
     # --- recording (called by the harness as it runs) --------------------
 
     def record_usage(self, response) -> None:
+        # The model call just returned: everything since the turn began was
+        # waiting for it (building the request takes no measurable time).
+        self._model_done = time.monotonic()
         usage = getattr(response, "usage", None)
         if usage:
             self.input_tokens += getattr(usage, "prompt_tokens", 0) or 0
@@ -145,10 +169,18 @@ class Scoreboard:
         )
         if self.rereads:
             tally += f"  \033[35mre-read {self.rereads}\033[0m\033[2m"
+        timing = ""
+        now = time.monotonic()
+        if self.timing:
+            model = (self._model_done or now) - self._turn_started
+            self.model_seconds += model
+            timing = (f" │ {duration(now - self._turn_started)} (model {duration(model)})"
+                      f" · {duration(now - self._started)} in all")
+        self._turn_started, self._model_done = now, None
         print(
             f"\033[2m   ┈ turn {turn}/{self.max_turns} │ {tally} │ "
             f"conversation {chars:,} chars (~{chars // 4:,} tokens) │ "
-            f"sent so far {self.input_tokens:,} in / {self.output_tokens:,} out\033[0m"
+            f"sent so far {self.input_tokens:,} in / {self.output_tokens:,} out{timing}\033[0m"
         )
 
         for key, condition, line in [
@@ -292,6 +324,12 @@ class Scoreboard:
                                      f"was still in the conversation"))
         if not self.counts.get("run_tests"):
             rows.append(("note", "it never ran the tests. It had the tool the whole time"))
+        if self.timing:
+            # The last turn has no turn line, so its model call is added here.
+            last = (self._model_done - self._turn_started) if self._model_done else 0.0
+            total = time.monotonic() - self._started
+            rows.append(("time", f"{duration(total)} in all, {duration(self.model_seconds + last)} of it "
+                                 f"waiting for the model"))
 
         print("\n\033[1m── run summary " + "─" * 40 + "\033[0m")
         for label, text in rows:

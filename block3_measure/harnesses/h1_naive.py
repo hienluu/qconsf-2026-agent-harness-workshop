@@ -57,6 +57,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
 
     result = RunResult(harness=NAME, task=workspace_dir)
     board = Scoreboard(MAX_TURNS)
+    board.timing = True   # Block 3 shows how long each turn took
     board.legend()
     marker_key(SPEECH_MARKER, MILESTONE_MARKER)
     inject_turn = malformed_injection_turn()

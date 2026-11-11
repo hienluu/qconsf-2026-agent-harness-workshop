@@ -109,6 +109,10 @@ uv run eval/run_eval.py h2 --task refactor_v2
 Watch for:
 - **The cap:** a yellow `✂ … truncated search output: 14,056 → 5,540
   chars`. In Block 2 that whole result was re-sent every turn after it.
+  The cap cuts the file listing too (`list_files`, 6,360 characters), and
+  what's cut can matter: in one run the agent missed two whole groups of
+  files until the tests failed on turn 19, then rewrote them on its last
+  turn without reading them.
 - **The conversation growing:** `conversation N chars` on the scoreboard.
   Compared turn for turn with your Block 2 run, it should grow more slowly.
 - **Compaction:** once `conversation` passes about 80,000, `✂ …
@@ -118,6 +122,11 @@ Watch for:
   `agent says` line.
 - **When it first runs the tests:** usually late, as in Block 2. None of
   h2's protections change that.
+- **Where the time goes:** the end of each scoreboard line, e.g. `21.3s
+  (model 21.1s) · 6m 02s in all`. Turns that write many files take longest:
+  the model types every file out in full. Time depends on the provider and
+  how busy it is, so compare turns within your run, not your times with a
+  neighbor's.
 
 #### 1b. h3
 

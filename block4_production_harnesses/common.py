@@ -101,6 +101,19 @@ _pending = {"harness": "", "said": [], "calls": [], "after": []}
 # What each run measures for its receipt: tool calls and tokens sent (all
 # input the model read, cached or not, as Block 2's scoreboard counts it).
 _usage = {"calls": 0, "sent": 0, "out": 0}
+# When the run started and when the last model reply arrived, for the time
+# on each turn's cost line. The harnesses mark turns at different moments
+# (some when a call starts, some when its reply arrives), but every one
+# reports a reply's usage when it arrives, so that's the common clock.
+_clock = {"start": time.monotonic(), "last": None}
+
+
+def _duration(seconds: float) -> str:
+    """9.4s, or 6m 02s once past a minute."""
+    if round(seconds, 1) < 60:
+        return f"{seconds:.1f}s"
+    m, s = divmod(int(round(seconds)), 60)
+    return f"{m}m {s:02d}s"
 # Two habits worth seeing in every run: when it runs the tests, and whether
 # it rewrites files it never read. Filled in by trace_tool().
 _habits = {"test_turns": [], "read": set(), "unread_writes": set()}
@@ -307,6 +320,10 @@ def trace_cost(harness: str, sent: int, out: int, cumulative: int | None = None)
     _usage["sent"] += sent
     _usage["out"] += out or 0
     tail = f" · {cumulative:,} in total" if cumulative is not None else ""
+    now = time.monotonic()
+    took = now - (_clock["last"] or _clock["start"])
+    _clock["last"] = now
+    tail += f" │ {_duration(took)} · {_duration(now - _clock['start'])} in all"
     _pending["after"].append(f"{DIM}     ┈ {sent:,} tokens in / {out:,} out{tail}{OFF}")
 
 
@@ -326,6 +343,8 @@ def trace_key(harness: str, ours: list, theirs: str = "") -> None:
     print(f"     {DIM}one header per turn ({OFF}{SAY}❝{OFF}{DIM} = the model talking), its tool calls"
           f" counted by type, each call indented below{OFF}")
     print(f"     {DIM}tools we wrote: {', '.join(ours) if ours else 'none'}{OFF}")
+    print(f"     {DIM}┈ under a turn: tokens in / out, then the seconds since the previous reply"
+          f" (its tools, then this call) and the time so far{OFF}")
     if _spotlight:
         print(f"     {SPOT}{', '.join(sorted(_spotlight))}{OFF}{DIM}: in bold cyan, and so is the"
               f" header of any turn that calls it{OFF}")
@@ -578,6 +597,7 @@ def prepare_workspace(harness: str, source: Path = TASK_SOURCE) -> Path:
     workspace = run_dir / "workspace"
     _save_trace(harness)
     _print_header(harness)
+    _clock.update(start=time.monotonic(), last=None)
     remove_run_dir(run_dir)
     shutil.copytree(source, workspace, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache"))
     _lock_tests(workspace)

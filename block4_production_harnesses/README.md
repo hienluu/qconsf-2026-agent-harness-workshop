@@ -111,6 +111,10 @@ The OpenAI Agents SDK gets the four file tools you know from Blocks 2 and
   first`. Most runs test only at the end. Some rewrite dozens of files they
   never read, reconstructing them from the pattern of the others, and
   still pass. Keep your numbers for the discussion.
+- **Where the time goes.** The dim `┈` line under each turn ends with how
+  long that turn took (its tools, then the model's reply) and the time so
+  far. The writing turns are the slow ones: the model types out every file
+  it writes.
 
 The whole trace is also saved to `runs/logs/openai_agents.log` (each
 script saves to `runs/logs/<harness>.log`), so you can search it after it
