@@ -92,10 +92,10 @@ uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py
 Expect `ALL FIXTURES OK`. The runner also refuses a task an agent has
 already touched.
 
-### Step 1: Run h2, then h3 (about 6 minutes)
+### Step 1: Run h2, then h3 (about 7 minutes)
 
-One at a time, so you can watch each harness work. Each takes 2 to 3
-minutes and usually solves the task in 17 to 34 turns.
+One at a time, so you can watch each harness work. Each takes about 3
+minutes and usually solves the task in 32 to 40 turns.
 
 #### 1a. h2
 
@@ -181,8 +181,8 @@ Six things to find:
    result, not an error: it happened in two of our five runs. Then compare
    totals. h3's only systematic extra cost is its notes overhead, about 115
    to 240 tokens a turn, under 1% of a run this size. So if your h3 cost
-   40% more or less than h2, that's the run, not the harness. Ours: h3
-   365k to 702k, h2 390k to 778k.
+   40% more or less than h2, that's the run, not the harness. Ours, three
+   runs each: h2 0.84M to 1.19M, h3 1.03M to 1.18M.
 5. **When the agent ran the tests.** The line after the verdict:
    `what the trace shows: tests run 2 times, first at turn 24 of 28 · 0
    files rewritten without being read first`. Note when your h2 and h3
@@ -228,20 +228,24 @@ MAX_TURNS=20 BUDGET_SIGNAL=progress uv run eval/run_eval.py h3 --task refactor_v
 ```
 
 In the second, watch the dim `⏱ told the model: …` lines, and when it
-first runs the tests. Then compare how each ended. Our runs, six of each
-(plus five of a third signal, `pacing`, which tells it to start editing at half
-the budget and to test and finish with 5 turns left):
+first runs the tests. Then compare how each ended. Our runs, nine of
+each across two providers (plus five of a third signal, `pacing`, which
+tells it to start editing at half the budget and to test and finish with
+5 turns left):
 
-| h3 with 20 turns | Tests pass | Said it was done | Never ran the tests | Tokens (median) |
-|---|---|---|---|---|
-| No signal | 2 of 6 | 0 of 6 | 5 of 6 | 384k |
-| `BUDGET_SIGNAL=progress` | 6 of 6 | 6 of 6 | 0 of 6 | 336k |
-| `BUDGET_SIGNAL=pacing` | 4 of 5 | 2 of 5 | 1 of 5 | 348k |
+| h3 with 20 turns | Tests pass | Said it was done | Never ran the tests |
+|---|---|---|---|
+| No signal | 2 of 9 | 0 of 9 | 8 of 9 |
+| `BUDGET_SIGNAL=progress` | 9 of 9 | 8 of 9 | 0 of 9 |
+| `BUDGET_SIGNAL=pacing` | 4 of 5 | 2 of 5 | 1 of 5 |
+
+With or without `progress`, runs cost about the same: 0.24M to 0.48M tokens.
 
 What made the difference was the agent checking its work. Without a
-signal, five of six runs never ran the tests, so none could say it was
-done. With `progress`, every run tested (three on turn 3, to see the
-starting state) and finished inside the budget. The agent never once
+signal, eight of nine runs never ran the tests, so none could say it was
+done. With `progress`, every run tested, and all but one said it was
+done inside the budget. (That one first tested on turn 19, found work it
+had missed, and ran out of turns fixing it.) The agent never once
 mentioned the signal: you only see the effect by measuring.
 
 Two more findings, at the normal 40 turns, where the budget never got
