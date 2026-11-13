@@ -97,6 +97,9 @@ def run(workspace_dir: str, task: str) -> None:
         #       model=model, messages=messages,
         #       tools=TOOL_SCHEMAS, temperature=0.1)
         #
+        # On api.anthropic.com, leave out temperature=0.1: Anthropic's newer
+        # models reject it with a 400 error.
+        #
         # Notice: `messages` — the whole conversation — goes over the wire on
         # EVERY turn. That fact will matter later today.
         # ------------------------------------------------------------------

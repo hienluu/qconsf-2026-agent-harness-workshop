@@ -71,6 +71,45 @@ def make_client() -> OpenAI:
     )
 
 
+def sampling() -> dict:
+    """Settings sent with every model call. Anthropic's newer models reject
+    temperature, so it's left out for api.anthropic.com; every other
+    provider gets 0.1, the setting all the Fireworks numbers were run at."""
+    if "api.anthropic.com" in os.environ.get("PROVIDER_BASE_URL", ""):
+        return {}
+    return {"temperature": 0.1}
+
+
+def explain_crash(error: str, turns: int) -> list[str]:
+    """Turn a crash into lines a person can act on: the provider's own
+    message, then what usually causes it. A crash on the first call is a
+    setup problem, not a result, and the next run will fail the same way."""
+    import re
+    found = re.search(r"""['"]message['"]:\s*['"](.+?)['"][,}]""", error)
+    lines = [f"the provider said: {found.group(1)}" if found else error]
+    code = re.search(r"Error code: (\d{3})", error)
+    code = code.group(1) if code else ""
+    if "temperature" in error:
+        lines.append("this model doesn't accept the temperature setting the harnesses send. "
+                     "sampling() in harnesses/base.py leaves it out only for api.anthropic.com: "
+                     "add your provider there")
+    elif code in ("401", "403"):
+        lines.append("the provider rejected the key: check PROVIDER_API_KEY in .env")
+    elif code == "404":
+        lines.append("the provider doesn't know that model or URL: check MODEL and "
+                     "PROVIDER_BASE_URL in .env")
+    elif code == "429":
+        lines.append("rate limited: wait a minute and run it again")
+    elif code == "400":
+        lines.append("the provider rejected the request itself; its message above says which part")
+    elif "Connection" in error or "Timeout" in error:
+        lines.append("couldn't reach the provider: check PROVIDER_BASE_URL in .env and your network")
+    if turns == 0:
+        lines.append("it failed on the first call to the model, before the agent did anything, "
+                     "so this is a setup problem, not a harness result")
+    return lines
+
+
 def model_name() -> str:
     return os.environ["MODEL"]
 

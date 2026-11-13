@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e   # stop at the first failure, e.g. a setup problem that crashes every run
 
 echo "======= Block 3 rehearsal ======="
 

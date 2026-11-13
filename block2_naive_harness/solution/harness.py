@@ -81,12 +81,19 @@ def run(workspace_dir: str, task: str) -> None:
     board = Scoreboard(MAX_TURNS)
     board.legend()
 
+    # A low temperature keeps runs alike. Anthropic's newer models reject
+    # the setting, so it's left out there.
+    if "api.anthropic.com" in os.environ["PROVIDER_BASE_URL"]:
+        settings = {}
+    else:
+        settings = {"temperature": 0.1}
+
     for turn in range(1, MAX_TURNS + 1):
         response = client.chat.completions.create(
             model=model,
             messages=messages,
             tools=TOOL_SCHEMAS,
-            temperature=0.1,
+            **settings,
         )
         board.record_usage(response)
         msg = response.choices[0].message

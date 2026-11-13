@@ -77,6 +77,7 @@ def run_context() -> dict:
     return {
         "model": os.environ.get("MODEL", ""),
         "provider": urlparse(base_url).netloc or base_url,
+        "temperature": base.sampling().get("temperature", "provider default"),
         "repo_commit": commit,
     }
 
@@ -178,13 +179,21 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
         timestamp=time.time(),
         **run_context(),
     )
-    verdict = "SOLVED" if tests_green else f"NOT SOLVED ({result.status})"
-    ending = (f"--- {verdict} | turns={result.turns} "
-              f"tokens={result.input_tokens}+{result.output_tokens} "
-              f"wall={result.wall_seconds}s | {pytest_summary}\n{base.habits_line(result.turns)}")
-    if task_name == "refactor_v2":   # a rename has one right answer: compare it
-        ending += "\n" + summary_line(workspace)
-    print(ending)
+    if result.status == "crashed":
+        # Say why, plainly. The usual ending (habits, the reference check)
+        # describes work the agent never got to do.
+        ending = (f"--- CRASHED on turn {result.turns} | tokens={result.input_tokens}+"
+                  f"{result.output_tokens} wall={result.wall_seconds}s\n"
+                  + "\n".join(f"    {line}" for line in base.explain_crash(result.error, result.turns)))
+        print(f"\033[31m{ending}\033[0m")
+    else:
+        verdict = "SOLVED" if tests_green else f"NOT SOLVED ({result.status})"
+        ending = (f"--- {verdict} | turns={result.turns} "
+                  f"tokens={result.input_tokens}+{result.output_tokens} "
+                  f"wall={result.wall_seconds}s | {pytest_summary}\n{base.habits_line(result.turns)}")
+        if task_name == "refactor_v2":   # a rename has one right answer: compare it
+            ending += "\n" + summary_line(workspace)
+        print(ending)
     with log_path.open("a") as log:   # the saved trace ends the way the screen does
         log.write(ending + "\n")
     return row
@@ -216,6 +225,11 @@ def main() -> int:
             if not demo:
                 with results_file.open("a") as fh:
                     fh.write(json.dumps(row) + "\n")
+            if row["status"] == "crashed" and row["turns"] == 0:
+                # The first model call failed: every run left would fail the
+                # same way, so stop here instead of crashing the rest.
+                print("\033[31mstopping: fix the setup above, then run it again\033[0m")
+                return 1
 
     if demo:
         print(f"\ndemo run ({', '.join(demo)} set): not recorded, so it can't replace a "

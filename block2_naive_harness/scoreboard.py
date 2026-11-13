@@ -322,7 +322,7 @@ class Scoreboard:
         if self.rereads:
             rows.append(("re-reads", f"{self.rereads} file(s) read again, though the first copy "
                                      f"was still in the conversation"))
-        if not self.counts.get("run_tests"):
+        if not self.counts.get("run_tests") and not error:
             rows.append(("note", "it never ran the tests. It had the tool the whole time"))
         if self.timing:
             # The last turn has no turn line, so its model call is added here.

@@ -10,10 +10,12 @@ work (h2 adds three at once).
 """
 
 import json
+import sys
 import time
 from pathlib import Path
 
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 
@@ -101,6 +103,21 @@ def main() -> int:
         table.add_section()
 
     console.print(table)
+    # A CRASH cell alone doesn't say why; the reason is in the row.
+    crashed = [(h, t, r) for (h, t), r in latest.items() if r["status"] == "crashed"]
+    if crashed:
+        sys.path.insert(0, str(RESULTS.parents[1] / "harnesses"))
+        import base
+        # Runs that crashed the same way share one explanation.
+        reasons = {}
+        for harness, task, row in crashed:
+            reason = tuple(base.explain_crash(row.get("error") or "no error recorded", row["turns"]))
+            reasons.setdefault(reason, []).append(f"{harness}/{task} (turn {row['turns']})")
+        console.print("[red]Why the crashed runs crashed:[/red]")
+        for reason, runs in reasons.items():
+            console.print(f"[red]  {', '.join(runs)}:[/red]", highlight=False)
+            for line in reason:
+                console.print(f"    {escape(line)}", highlight=False)
     # Rows only compare if they came from the same model and provider; say so
     # when they didn't.
     setups = {}

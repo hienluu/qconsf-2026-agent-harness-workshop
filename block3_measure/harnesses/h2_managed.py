@@ -39,6 +39,7 @@ from base import (
     make_client,
     malformed_injection_turn,
     model_name,
+    sampling,
     transcript_chars,
 )
 # base puts block2 on sys.path (for tools); reuse its scoreboard too.
@@ -159,7 +160,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
                 model=model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
-                temperature=0.1,
+                **sampling(),
             )
             result.turns = turn
             add_usage(result, response)
