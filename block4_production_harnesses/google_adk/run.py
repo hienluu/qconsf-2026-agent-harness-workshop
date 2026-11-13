@@ -121,7 +121,7 @@ async def main() -> int:
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
         origin="construction kit (typed state, sessions, graph runtime)",
-        loop_owner="theirs — Runner + session services (most ceremony)",
+        loop_owner="theirs: Runner + session services (most ceremony)",
         tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="none for this task (rich ecosystem exists: executors, computer-use)",
         provider_friction="LiteLLM env contract; LiteLLM held at 1.83.0 to share an env with openai-agents; transient 500s -> num_retries")

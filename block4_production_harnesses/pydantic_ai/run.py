@@ -120,10 +120,10 @@ def main() -> int:
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
         origin="composable (typed core, capabilities you add one at a time)",
-        loop_owner="theirs — lean typed loop",
+        loop_owner="theirs: lean typed loop",
         tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="none by default (capabilities opt-in); cost accounting free",
-        provider_friction="none — provider is a constructor argument")
+        provider_friction="none: the provider is a constructor argument")
     return 0 if solved else 1
 
 

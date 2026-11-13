@@ -110,7 +110,8 @@ def _turn_cost(event: dict) -> None:
     sent = sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
     if sent:
         _sent["total"] += sent
-        trace_cost(NAME, sent, u.get("output_tokens") or 0, _sent["total"])
+        trace_cost(NAME, sent, u.get("output_tokens") or 0, _sent["total"],
+                   cached=u.get("cache_read_input_tokens") or 0)
 
 
 async def _stream(options) -> None:
@@ -145,10 +146,11 @@ async def _stream(options) -> None:
             u = message.usage or {}
             sent = sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens",
                                                 "cache_creation_input_tokens"))
-            set_tokens_sent(sent, u.get("output_tokens"))
+            cached = u.get("cache_read_input_tokens") or 0
+            set_tokens_sent(sent, u.get("output_tokens"), cached)
             end_turn()
-            print(f"[{NAME}] tokens sent this run: {sent:,} "
-                  f"({u.get('output_tokens') or 0:,} written by the model)")
+            print(f"[{NAME}] tokens sent this run: {sent:,}, {cached:,} of them from the "
+                  f"provider's cache ({u.get('output_tokens') or 0:,} written by the model)")
 
 
 async def main() -> int:
@@ -198,7 +200,7 @@ async def main() -> int:
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
         origin="product-extracted (Claude Code as a library)",
-        loop_owner="theirs — closed; we only configure",
+        loop_owner="theirs: closed; we only configure",
         tools_we_wrote=[t.name for t in OUR_TOOLS],
         tools_harness_shipped=("Claude Code's file tools (Read, Write, Edit, Glob, Grep); Bash withheld" if OWN_TOOLS
                                else "Read, Edit, Bash and more, all switched off for this run"),

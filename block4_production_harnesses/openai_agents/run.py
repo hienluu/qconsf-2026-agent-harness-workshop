@@ -131,7 +131,7 @@ async def main() -> int:
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
         origin="model-native (guardrails/handoffs as loop primitives)",
-        loop_owner="theirs — Runner owns it",
+        loop_owner="theirs: Runner owns it",
         tools_we_wrote=["list_files", "read_file", "write_file", "run_tests"],
         tools_harness_shipped="none for this task (sandbox tools exist on OpenAI infra)",
         provider_friction="1 workaround: explicit model object (org/model parses as provider prefix); tracing to OpenAI off by hand")

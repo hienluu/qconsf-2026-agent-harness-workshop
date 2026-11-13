@@ -115,12 +115,13 @@ async def main() -> int:
                                                     "cache_creation_input_tokens"))
                 if sent:
                     total += sent
-                    trace_cost(NAME, sent, u.get("output_tokens") or 0, total)
+                    trace_cost(NAME, sent, u.get("output_tokens") or 0, total,
+                               cached=u.get("cache_read_input_tokens") or 0)
             elif isinstance(message, ResultMessage):
                 u = message.usage or {}
                 set_tokens_sent(sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens",
                                                              "cache_creation_input_tokens")),
-                                u.get("output_tokens"))
+                                u.get("output_tokens"), u.get("cache_read_input_tokens") or 0)
     except Exception as exc:  # the turn cap is an outcome, not a crash
         end_turn()
         print(f"[{NAME}] run ended without finishing: {str(exc).splitlines()[0][:120]}")

@@ -100,7 +100,9 @@ _turn = {"n": 0}
 _pending = {"harness": "", "said": [], "calls": [], "after": []}
 # What each run measures for its receipt: tool calls and tokens sent (all
 # input the model read, cached or not, as Block 2's scoreboard counts it).
-_usage = {"calls": 0, "sent": 0, "out": 0}
+# `cached` is the part of `sent` read from the provider's prompt cache, for
+# the harnesses that report it: billed at a fraction of the price.
+_usage = {"calls": 0, "sent": 0, "out": 0, "cached": 0}
 # When the run started and when the last model reply arrived, for the time
 # on each turn's cost line. The harnesses mark turns at different moments
 # (some when a call starts, some when its reply arrives), but every one
@@ -119,11 +121,13 @@ def _duration(seconds: float) -> str:
 _habits = {"test_turns": [], "read": set(), "unread_writes": set()}
 
 
-def set_tokens_sent(total: int, out: int | None = None) -> None:
+def set_tokens_sent(total: int, out: int | None = None, cached: int | None = None) -> None:
     """For an SDK that reports usage as a run total: replaces the per-turn sum."""
     _usage["sent"] = int(total or 0)
     if out is not None:
         _usage["out"] = int(out or 0)
+    if cached is not None:
+        _usage["cached"] = int(cached or 0)
 
 
 def run_context() -> dict:
@@ -313,18 +317,22 @@ def tool_detail(payload, virtual: bool = False) -> str:
     return ", ".join(parts) or (str(payload)[:70] if payload else "")
 
 
-def trace_cost(harness: str, sent: int, out: int, cumulative: int | None = None) -> None:
+def trace_cost(harness: str, sent: int, out: int, cumulative: int | None = None,
+               cached: int = 0) -> None:
     """What this turn put on the wire. Block 3's whole cost argument was
     that the transcript is re-sent every turn; here you can watch the
-    `sent` number climb while the task stays the same size."""
+    `sent` number climb while the task stays the same size. `cached` is the
+    part of `sent` the provider read from its prompt cache, if it says."""
     _usage["sent"] += sent
     _usage["out"] += out or 0
+    _usage["cached"] += cached or 0
+    from_cache = f" ({cached:,} from cache)" if cached else ""
     tail = f" · {cumulative:,} in total" if cumulative is not None else ""
     now = time.monotonic()
     took = now - (_clock["last"] or _clock["start"])
     _clock["last"] = now
     tail += f" │ {_duration(took)} · {_duration(now - _clock['start'])} in all"
-    _pending["after"].append(f"{DIM}     ┈ {sent:,} tokens in / {out:,} out{tail}{OFF}")
+    _pending["after"].append(f"{DIM}     ┈ {sent:,} tokens in{from_cache} / {out:,} out{tail}{OFF}")
 
 
 def trace_say(harness: str, text: str) -> None:
@@ -682,9 +690,10 @@ def receipt(
         # Written by the model: what makes a run slow. Input mostly comes
         # from cache; output is generated a token at a time.
         "tokens_out": _usage["out"] or None,
+        "tokens_cached": _usage["cached"] or None,
         "origin": origin,
         "loop_owner": loop_owner,
-        "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or '—'})",
+        "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or 'none'})",
         "tools_harness_shipped": tools_harness_shipped,
         "provider_friction": provider_friction,
         "code_lines": len(Path(script).read_text().splitlines()),
@@ -724,31 +733,43 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
     def thousands(n):
         return f"{n / 1e3:,.1f}k" if n else "?"
 
+    rows = [r for r in latest.values() if r.get("task", "?") == task_name]
+    # Only some harnesses report cached input; the column appears once one does.
+    show_cached = any(r.get("tokens_cached") for r in rows)
     results = Table(title="Results: what each harness did with the same task, model and turn cap",
                     title_style="bold")
-    for col in ("harness", "solved", "turns", "tool calls", "tokens sent", "tokens out", "wall s"):
+    columns = ["harness", "solved", "turns", "tool calls", "tokens sent"]
+    columns += ["cached"] if show_cached else []
+    columns += ["tokens out", "wall s"]
+    for col in columns:
         results.add_column(col, justify="left" if col == "harness" else "right",
                            no_wrap=col == "harness")
-    for r in latest.values():
-        if r.get("task", "?") != task_name:
-            continue
-        results.add_row(r.get("harness") or r["specimen"],
-                        "yes" if r["solved"] else "NO", str(r.get("turns", "?")),
-                        str(r.get("tool_calls", "?")), k(r.get("tokens_sent")),
-                        thousands(r.get("tokens_out")), str(r["wall_s"]))
-    if task_name == "migration":
-        results.add_row("[dim]our h2 / h3 (Block 3)[/dim]", "", "[dim]17–34[/dim]",
-                        "[dim]181–299[/dim]", "[dim]0.37–0.78M[/dim]", "", "")
+    for r in rows:
+        cells = [r.get("harness") or r["specimen"],
+                 "yes" if r["solved"] else "NO", str(r.get("turns", "?")),
+                 str(r.get("tool_calls", "?")), k(r.get("tokens_sent"))]
+        if show_cached:
+            cells.append(k(r.get("tokens_cached")) if r.get("tokens_cached") else "[dim]?[/dim]")
+        cells += [thousands(r.get("tokens_out")), str(r["wall_s"])]
+        results.add_row(*cells)
+    # Block 3's h2/h3 range was measured on GLM-5.3-Flash. Next to runs of
+    # another model it would read as a like-for-like comparison, so it only
+    # shows when these runs used that model too.
+    same_model = rows and all("glm" in (r.get("model") or "").lower()
+                              and "flash" in (r.get("model") or "").lower() for r in rows)
+    if task_name == "migration" and same_model:
+        results.add_row("[dim]our h2 / h3 (Block 3, GLM-5.3-Flash)[/dim]", "", "[dim]17–34[/dim]",
+                        "[dim]181–299[/dim]", "[dim]0.37–0.78M[/dim]",
+                        *([""] if show_cached else []), "", "")
 
     table = Table(
         title="Receipts: what each harness decided for you, and what it left to you",
         title_style="bold",
     )
-    for col in ("harness", "loop", "tools we wrote", "harness's own tools", "provider friction", "lines"):
+    for col in ("harness", "loop", "tools we wrote", "harness's own tools",
+                "provider friction (as built)", "lines"):
         table.add_column(col, overflow="fold")
-    for r in latest.values():
-        if r.get("task", "?") != task_name:
-            continue
+    for r in rows:
         table.add_row(
             r.get("harness") or r["specimen"],
             r["loop_owner"],
@@ -759,12 +780,21 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
         )
     print(f"\nthis run's task: {task_name}")
     Console().print(results)
+    if task_name == "migration" and rows and not same_model:
+        print("(Block 3's h2/h3 range isn't shown: it was measured on GLM-5.3-Flash, "
+              "and these runs used another model)")
+    if show_cached:
+        print("cached: the part of tokens sent read from the provider's prompt cache, billed "
+              "at a fraction of the price. ? means it wasn't recorded for that run (its harness "
+              "doesn't report it, or the run predates the column), not that nothing was cached.")
     Console().print(table)
     print(
         "where these cells come from: the results table is measured this run; the "
         "receipt cells are authored facts from the build record (hardcoded in each "
-        "script's receipt() call; check them against its run.py)"
+        "script's receipt() call; check them against its run.py). Provider friction "
+        "is what we hit building these on GLM-5.3-Flash through a third-party "
+        "provider; on the harness's own provider, some of it won't apply."
     )
     remaining = 0 if quiet_progress else 5 - sum(1 for (_, t) in latest if t == task_name)
     if remaining > 0:
-        print(f"({remaining} harness(es) left on {task_name} — each adds a row)")
+        print(f"({remaining} harness(es) left on {task_name}: each adds a row)")

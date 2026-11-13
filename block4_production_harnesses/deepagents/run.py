@@ -131,7 +131,7 @@ def main() -> int:
     solved = verify(NAME, workspace, started) == 0
     receipt(NAME, script=__file__, started=started, solved=solved,
         origin="harness on a runtime (LangGraph underneath)",
-        loop_owner="theirs — ReAct + middleware onion",
+        loop_owner="theirs: ReAct + middleware onion",
         tools_we_wrote=["run_tests"],
         tools_harness_shipped="filesystem suite on the real workspace, write_todos, subagents",
         provider_friction="none for the model; retries added for provider 500s")
