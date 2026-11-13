@@ -82,7 +82,7 @@ def run(workspace_dir: str, task: str) -> None:
         {"role": "user", "content": task},
     ]
 
-    # Commentary for you, not for the agent — see trace.py. Nothing below
+    # Commentary for you, not for the agent — see scoreboard.py. Nothing below
     # changes what the model sees or what the loop does.
     board = Scoreboard(MAX_TURNS)
     board.legend()
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run the naive agent harness on a task.",
         epilog='Example: uv run harness_skeleton.py tasks/short/01_fix_bug/workspace '
-        '"One test fails. Find the bug and fix it."',
+        '"Two tests fail. Find the bug and fix it."',
     )
     parser.add_argument(
         "workspace",

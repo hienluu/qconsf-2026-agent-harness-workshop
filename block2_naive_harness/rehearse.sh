@@ -10,7 +10,7 @@ echo "see the bug..."
 uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 
 echo "Running the harness (the solution)..."
-uv run ./solution/harness.py tasks/short/01_fix_bug/workspace "One test fails. Find the bug and fix it. Do not modify the tests."
+uv run ./solution/harness.py tasks/short/01_fix_bug/workspace "Two tests fail. Find the bug and fix it. Do not modify the tests."
 
 echo "Checking the fix..."
 uv run python -m pytest tasks/short/01_fix_bug/workspace -q

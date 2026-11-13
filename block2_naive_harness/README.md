@@ -14,7 +14,7 @@
 > whether or not everyone has finished.
 
 You'll finish a minimal agent harness, check it on a one-line bug, then
-hand it a 149-file migration. Block 1 listed seven parts of a harness;
+hand it a migration across 149 Python files. Block 1 listed seven parts of a harness;
 this one has two, the loop and tool dispatch. The point is to see what the
 other five would have done for you, so that Block 3 can measure it.
 
@@ -68,7 +68,10 @@ Expect `ALL GREEN`. If not, fix what it tells you, or flag a helper.
 - **TODO 2, run the tool and feed the result back** (~5 lines): look up
   the tool, call it, append the result to the conversation.
 
-The comments show what to write. Stuck? `solution/harness.py` is the
+The comments show what to write. TODO 2 runs once per tool call, so keep
+it indented inside the `for call in msg.tool_calls:` loop. If the append
+lands outside it, only the last call gets a result and the next model
+call fails. Stuck? `solution/harness.py` is the
 finished version and takes the same arguments, so it works in place of
 yours in every command below.
 
@@ -82,7 +85,10 @@ uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 
 `2 failed, 2 passed`. `moving_average([1, 2, 3, 4], 2)` returns
 `[1.5, 2.5]`: the loop on line 6 of `stats.py` stops one window short.
-Keep `stats.py` open in your editor and you'll see the fix land.
+Keep `stats.py` open in your editor and you'll see the fix land. You may
+also see it wiped first: `write_file` replaces the whole file, so if the
+agent writes only a fragment, that's all the file holds until it writes
+it again. Nothing in this harness checks an edit before it lands.
 
 Now run your agent. It takes two arguments: the workspace (the only files
 its tools can see) and the task in quotes, which becomes its first
@@ -90,10 +96,10 @@ message.
 
 ```bash
 uv run harness_skeleton.py tasks/short/01_fix_bug/workspace \
-  "One test fails. Find the bug and fix it. Do not modify the tests."
+  "Two tests fail. Find the bug and fix it. Do not modify the tests."
 ```
 
-About 5 turns, under a minute. It does what you just did: runs the tests,
+5 to 8 turns, under a minute. It does what you just did: runs the tests,
 reads the failure, reads the loop, edits. Then check it yourself. The
 agent's summary isn't evidence; the tests are:
 
@@ -110,7 +116,7 @@ first (see "Starting over").
 Same harness, model and tools. Only the size of the job changes.
 
 `tasks/long_horizon/refactor_v2/workspace/` is *pyledger*, a bookkeeping
-library: 149 files, 35 tests. The tests use a new v2 API, but the code is
+library: 149 Python files, 35 tests. The tests use a new v2 API, but the code is
 still on v1, so nothing imports. The agent has to rename every v1
 identifier until the tests pass. It's harder than find-and-replace:
 
@@ -152,9 +158,10 @@ the tool calls it made, and then a scoreboard line like this one:
 | `conversation … chars (~… tokens)` | Everything so far: your task, everything the model said, the full text of every file it wrote, and every tool result. The token figure is a rough estimate (characters ÷ 4) | It only grows. Nothing is ever dropped |
 | `sent so far … in / … out` | Tokens the provider billed, as it reports them. `in` is everything sent to the model, added up over every turn; `out` is what the model wrote | `in` grows by about the whole conversation every turn |
 
-Two yellow call-outs appear once each: the turn of the first edit
-(usually after a long stretch of reading), and the moment 4 turns are left
-with nothing tracking the remaining work.
+Up to three yellow call-outs, once each: the turn of the first edit
+(usually after a long stretch of reading), the turn the conversation
+passes 150k characters, and the moment 4 turns are left with nothing
+tracking the remaining work.
 
 Note the turn where you'd first have guessed it was in trouble.
 

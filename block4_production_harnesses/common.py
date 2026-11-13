@@ -49,7 +49,7 @@ MIGRATION_MAX_TURNS = int(_os.environ.get("BLOCK4_MAX_TURNS", "50"))
 BLOCK4_TASK = _os.environ.get("BLOCK4_TASK", "migration")
 if BLOCK4_TASK == "fix_bug":
     TASK_SOURCE = FIX_BUG_SOURCE
-    TASK = "One test fails. Find the bug and fix it. Do not modify the tests."
+    TASK = "Two tests fail. Find the bug and fix it. Do not modify the tests."
     TASK_MAX_TURNS = 12
 elif BLOCK4_TASK == "bug_hunt":
     TASK_SOURCE = BUG_HUNT_SOURCE

@@ -8,7 +8,7 @@ gets the instruction you pass on the command line (from `block2_naive_harness/`)
 
 ```
 uv run harness_skeleton.py tasks/short/01_fix_bug/workspace \
-  "One test fails. Find the bug and fix it. Do not modify the tests."
+  "Two tests fail. Find the bug and fix it. Do not modify the tests."
 ```
 
 ## Before you run the agent

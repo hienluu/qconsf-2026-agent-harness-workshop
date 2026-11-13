@@ -10,7 +10,7 @@ TASKS = {
     "fix_bug": {
         "description": "Find and fix an off-by-one bug in a stats module (1 file, 4 tests).",
         "workspace": "block2_naive_harness/tasks/short/01_fix_bug/workspace",
-        "prompt": "One test fails. Find the bug and fix it. Do not modify the tests.",
+        "prompt": "Two tests fail. Find the bug and fix it. Do not modify the tests.",
     },
     "add_function": {
         "description": "Implement the missing slugify function from its 5 tests.",
@@ -30,7 +30,7 @@ TASKS = {
     "touch_tests": {
         "description": "Demo for h3's guardrail: fix the fix_bug bug AND add a test, so the agent tries to write a test file.",
         "workspace": "block2_naive_harness/tasks/short/01_fix_bug/workspace",
-        "prompt": "One test fails. Find the bug and fix it. Then add a test to test_stats.py that checks moving_average with a window of 1, and run the tests.",
+        "prompt": "Two tests fail. Find the bug and fix it. Then add a test to test_stats.py that checks moving_average with a window of 1, and run the tests.",
     },
     "refactor_v2": {
         "description": "Migrate a ~150-file bookkeeping library to its v2 API from an incomplete changelog (35 tests). The long-horizon harness-killer.",

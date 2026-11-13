@@ -18,7 +18,31 @@ fastest way to understand why: it is flying with no fuel gauge, no map,
 and no memory of the ground it already covered.
 """
 
+import re
+import subprocess
+import sys
 import time
+
+
+def final_check(root) -> tuple[bool, str]:
+    """Run the workspace's tests for the run summary, not for the agent.
+
+    Unlike the agent's run_tests, this keeps going past test files that
+    can't import. Otherwise one broken import stops pytest before any test
+    runs, and a nearly-migrated workspace reads as "1 error".
+    """
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
+         "--continue-on-collection-errors"],
+        cwd=root, capture_output=True, text=True, timeout=120,
+    )
+    out = proc.stdout + proc.stderr
+    last = (out.strip().splitlines() or [""])[-1]
+    green = proc.returncode == 0
+    broken = len(re.findall(r"^_+ ERROR collecting", out, re.M))
+    if broken:
+        last += f"; {broken} test file(s) can't import, so their tests never ran"
+    return green, last
 
 
 def duration(seconds: float) -> str:
@@ -302,8 +326,7 @@ class Scoreboard:
         elif workspace is None:
             ended += "out of turns before saying it was done"
         else:
-            last = (workspace.run_tests().strip().splitlines() or [""])[-1]
-            green = "passed" in last and "failed" not in last and "error" not in last
+            green, last = final_check(workspace.root)
             if green:
                 ended += (f"out of turns, but the work was finished: the tests pass "
                           f"({last}). It never got to tell you")
