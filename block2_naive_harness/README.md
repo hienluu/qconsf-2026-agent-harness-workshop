@@ -166,7 +166,7 @@ tracking the remaining work.
 Note the turn where you'd first have guessed it was in trouble.
 
 **How it ends.** It nearly always uses most or all of its 20 turns. We've
-seen four endings:
+seen five endings:
 
 - **Finished, and said so.** Tests pass and the agent sums up. Nothing
   looks wrong.
@@ -174,10 +174,12 @@ seen four endings:
   had no turn left to read the result. The scoreboard runs the tests
   itself and tells you.
 - **Ran out mid-job.** Partly migrated, tests still failing.
+- **Never started.** It spent its turns reading, a file or two at a time,
+  and ran out before the first edit. The scoreboard shows `write 0`, and
+  the tests fail exactly as they did before it began.
 - **Crashed.** The model hit its output limit partway through a big batch
   of writes and sent a truncated tool call. Nothing in your harness
-  catches the `json.loads` error, so the process dies. The rarest of the
-  four.
+  catches the `json.loads` error, so the process dies. Rare.
 
 **When it stops**, it prints a **turn-by-turn table** and then a two-line
 **run summary**: how the run ended (checked by running the tests when the
