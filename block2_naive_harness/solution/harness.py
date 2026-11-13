@@ -8,6 +8,7 @@ Usage: uv run solution/harness.py <workspace_dir> "<task instructions>"
 """
 
 import json
+from collections import Counter
 import os
 import sys
 
@@ -110,15 +111,18 @@ def run(workspace_dir: str, task: str) -> None:
         # lives only in the tool calls themselves. Show both: narration when
         # present, plus which tools this turn reaches for. Makes the agent
         # watchable — and lets you see the moment its plan starts to drift.
-        tool_names = ", ".join(c.function.name for c in msg.tool_calls)
+        # The turn number goes on this line once, with a count of each tool
+        # it calls; the calls themselves are listed below it.
+        counts = Counter(c.function.name for c in msg.tool_calls)
+        tally = ", ".join(f"{n} × {name}" for name, n in counts.items())
         narration = msg.content.strip() if msg.content else "(no commentary)"
-        print(f"\033[32m❝  [turn {turn}] agent says: {narration}\033[0m  [tools: {tool_names}]")
+        print(f"\033[32m❝  [turn {turn}] agent says: {narration}\033[0m  [{tally}]")
 
         for call in msg.tool_calls:
             name = call.function.name
             args = json.loads(call.function.arguments or "{}")
             board.record_tool(name, turn, args)
-            print(f"[turn {turn}] {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
+            print(f"     {name}({', '.join((f'{k}={v!r}' if k == 'path' else f'{k}={str(v)[:40]!r}') for k, v in args.items())})")
             try:
                 result = dispatch[name](args)
             except Exception as exc:  # naive: report and hope the model copes
