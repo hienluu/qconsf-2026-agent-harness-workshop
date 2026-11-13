@@ -163,7 +163,7 @@ async def main() -> int:
 
     options = ClaudeAgentOptions(
         cwd=str(workspace),
-        model=os.environ["MODEL"],
+        model=os.environ["LLM_MODEL"],
         max_turns=TASK_MAX_TURNS,
         include_partial_messages=True,   # for per-turn token counts; see _turn_cost
         # Without this the SDK sends an EMPTY system prompt (not Claude
@@ -183,9 +183,9 @@ async def main() -> int:
             # Baseten's Anthropic-compatible endpoint wants Authorization:
             # Bearer, not the protocol's x-api-key — AUTH_TOKEN (not API_KEY)
             # makes Claude Code send Bearer. Found the hard way; see README.
-            "ANTHROPIC_AUTH_TOKEN": os.environ["PROVIDER_API_KEY"],
-            "ANTHROPIC_MODEL": os.environ["MODEL"],
-            "ANTHROPIC_SMALL_FAST_MODEL": os.environ["MODEL"],
+            "ANTHROPIC_AUTH_TOKEN": os.environ["LLM_API_KEY"],
+            "ANTHROPIC_MODEL": os.environ["LLM_MODEL"],
+            "ANTHROPIC_SMALL_FAST_MODEL": os.environ["LLM_MODEL"],
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
         },
     )

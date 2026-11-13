@@ -4,7 +4,7 @@
     uv run scripts/test_llm.py --prompt "Say hi" --max-tokens 50
     uv run scripts/test_llm.py --input-price 0.60 --output-price 2.20
 
-Sends one chat completion to PROVIDER_BASE_URL with MODEL and prints the
+Sends one chat completion to LLM_BASE_URL with LLM_MODEL and prints the
 provider, model, latency, token usage, and cost. Cost comes from the
 provider's response when it reports one (e.g. usage.cost); otherwise it is
 estimated from --input-price/--output-price (USD per million tokens), or
@@ -65,14 +65,20 @@ def main() -> int:
     args = parser.parse_args()
 
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-    base_url = os.getenv("PROVIDER_BASE_URL")
-    api_key = os.getenv("PROVIDER_API_KEY")
-    model = os.getenv("MODEL")
-    missing = [k for k, v in (("PROVIDER_BASE_URL", base_url),
-                              ("PROVIDER_API_KEY", api_key),
-                              ("MODEL", model)) if not v]
+    base_url = os.getenv("LLM_BASE_URL")
+    api_key = os.getenv("LLM_API_KEY")
+    model = os.getenv("LLM_MODEL")
+    missing = [k for k, v in (("LLM_BASE_URL", base_url),
+                              ("LLM_API_KEY", api_key),
+                              ("LLM_MODEL", model)) if not v]
     if missing:
         print(f"Missing in .env: {', '.join(missing)}", file=sys.stderr)
+        # A .env made before Nov 13, 2026 uses the old names.
+        old = {"LLM_BASE_URL": "PROVIDER_BASE_URL", "LLM_API_KEY": "PROVIDER_API_KEY",
+               "LLM_MODEL": "MODEL"}
+        stale = [f"{old[k]} -> {k}" for k in missing if os.getenv(old[k])]
+        if stale:
+            print(f"Your .env uses the old names. Rename: {', '.join(stale)}", file=sys.stderr)
         return 2
 
     input_price = args.input_price if args.input_price is not None else env_price("INPUT_PRICE_PER_M")

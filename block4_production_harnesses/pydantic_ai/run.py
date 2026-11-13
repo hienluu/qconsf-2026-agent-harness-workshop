@@ -32,10 +32,10 @@ workspace: Path
 # Provider-portable by construction: any OpenAI-compatible endpoint is a
 # constructor argument, not an environment contract.
 model = OpenAIChatModel(
-    os.environ["MODEL"],
+    os.environ["LLM_MODEL"],
     provider=OpenAIProvider(
-        base_url=os.environ["PROVIDER_BASE_URL"],
-        api_key=os.environ["PROVIDER_API_KEY"],
+        base_url=os.environ["LLM_BASE_URL"],
+        api_key=os.environ["LLM_API_KEY"],
     ),
 )
 

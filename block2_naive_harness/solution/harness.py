@@ -43,17 +43,17 @@ def run(workspace_dir: str, task: str) -> None:
     resent to the model on every turn.
     """
     client = OpenAI(
-        base_url=os.environ["PROVIDER_BASE_URL"],
-        api_key=os.environ["PROVIDER_API_KEY"],
+        base_url=os.environ["LLM_BASE_URL"],
+        api_key=os.environ["LLM_API_KEY"],
     )
-    model = os.environ["MODEL"]
+    model = os.environ["LLM_MODEL"]
     ws = Workspace(workspace_dir)
     # What this run works on and calls (never the key): the first thing to
     # check when two runs disagree. Blocks 3 and 4 open the same way.
     print_run_header(f"naive harness × {ws.root.parent.name}", [
         ("workspace", os.path.relpath(ws.root)),
         ("task", task),
-        ("provider", os.environ["PROVIDER_BASE_URL"]),
+        ("provider", os.environ["LLM_BASE_URL"]),
         ("model", model),
     ])
 
@@ -84,7 +84,7 @@ def run(workspace_dir: str, task: str) -> None:
 
     # A low temperature keeps runs alike. Anthropic's newer models reject
     # the setting, so it's left out there.
-    if "api.anthropic.com" in os.environ["PROVIDER_BASE_URL"]:
+    if "api.anthropic.com" in os.environ["LLM_BASE_URL"]:
         settings = {}
     else:
         settings = {"temperature": 0.1}

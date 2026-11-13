@@ -84,9 +84,9 @@ def main() -> int:
 
     agent = create_deep_agent(
         model=ChatOpenAI(
-            model=os.environ["MODEL"],
-            base_url=os.environ["PROVIDER_BASE_URL"],
-            api_key=os.environ["PROVIDER_API_KEY"],
+            model=os.environ["LLM_MODEL"],
+            base_url=os.environ["LLM_BASE_URL"],
+            api_key=os.environ["LLM_API_KEY"],
             max_retries=5,  # the workshop provider throws occasional 500s
         ),
         backend=LocalShellBackend(

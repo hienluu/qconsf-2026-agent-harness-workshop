@@ -135,7 +135,7 @@ def run_context() -> dict:
     mixed up: the provider's host (never the key) and the repo commit."""
     from urllib.parse import urlparse
     import os
-    base_url = os.environ.get("PROVIDER_BASE_URL", "")
+    base_url = os.environ.get("LLM_BASE_URL", "")
     try:
         commit = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -144,7 +144,7 @@ def run_context() -> dict:
     except Exception:
         commit = ""
     return {
-        "model": os.environ.get("MODEL", ""),
+        "model": os.environ.get("LLM_MODEL", ""),
         "provider": urlparse(base_url).netloc or base_url,
         "repo_commit": commit,
     }
@@ -466,7 +466,7 @@ def anthropic_compat_base_url() -> str:
     override = _os.environ.get("ANTHROPIC_COMPAT_BASE_URL")
     if override:
         return override
-    return _os.environ["PROVIDER_BASE_URL"].removesuffix("/v1")
+    return _os.environ["LLM_BASE_URL"].removesuffix("/v1")
 
 
 def changed_files(path: Path):
@@ -564,12 +564,12 @@ def _print_header(harness: str) -> None:
     """The box every run opens with, as in Blocks 2 and 3: the run's name
     between two rules, then what it runs against (never the key). The Claude
     Agent SDK calls the Anthropic-compatible endpoint derived from
-    PROVIDER_BASE_URL, so its scripts show that one as well."""
+    LLM_BASE_URL, so its scripts show that one as well."""
     rows = [("task", f"{BLOCK4_TASK}: {TASK}"),
-            ("provider", _os.environ.get("PROVIDER_BASE_URL", "(PROVIDER_BASE_URL not set)"))]
+            ("provider", _os.environ.get("LLM_BASE_URL", "(LLM_BASE_URL not set)"))]
     if harness.startswith("claude_agent_sdk"):
         rows.append(("calls", f"{anthropic_compat_base_url()} (Claude Code's Anthropic-compatible endpoint)"))
-    rows += [("model", _os.environ.get("MODEL", "(MODEL not set)")),
+    rows += [("model", _os.environ.get("LLM_MODEL", "(LLM_MODEL not set)")),
              ("trace", "runs/logs/ (captured by run_all.py)" if _os.environ.get("BLOCK4_LOGGED")
               else f"also saved to runs/logs/{harness}.log")]
     rule = "━" * 72

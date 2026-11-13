@@ -29,8 +29,8 @@ from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, trace_cos
 
 load_dotenv()
 # LiteLLM's OpenAI adapter reads these; set before ADK imports settle.
-os.environ["OPENAI_API_KEY"] = os.environ["PROVIDER_API_KEY"]
-os.environ["OPENAI_API_BASE"] = os.environ["PROVIDER_BASE_URL"]
+os.environ["OPENAI_API_KEY"] = os.environ["LLM_API_KEY"]
+os.environ["OPENAI_API_BASE"] = os.environ["LLM_BASE_URL"]
 
 from google.adk import Agent  # noqa: E402
 from google.adk.agents.run_config import RunConfig  # noqa: E402
@@ -71,7 +71,7 @@ async def main() -> int:
 
     agent = Agent(
         name="bug_fixer",
-        model=LiteLlm(model=f"openai/{os.environ['MODEL']}", num_retries=3),
+        model=LiteLlm(model=f"openai/{os.environ['LLM_MODEL']}", num_retries=3),
         instruction=SYSTEM_PROMPT,
         tools=[list_files, read_file, write_file, run_tests],
     )

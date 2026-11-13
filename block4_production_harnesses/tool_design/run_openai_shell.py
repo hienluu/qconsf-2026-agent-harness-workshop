@@ -53,9 +53,9 @@ async def main() -> int:
 
     set_tracing_disabled(True)  # tracing ships to OpenAI's platform by default
     model = OpenAIChatCompletionsModel(
-        model=os.environ["MODEL"],
-        openai_client=AsyncOpenAI(base_url=os.environ["PROVIDER_BASE_URL"],
-                                  api_key=os.environ["PROVIDER_API_KEY"]),
+        model=os.environ["LLM_MODEL"],
+        openai_client=AsyncOpenAI(base_url=os.environ["LLM_BASE_URL"],
+                                  api_key=os.environ["LLM_API_KEY"]),
     )
     agent = Agent(name="migrator", model=model, instructions=SYSTEM_PROMPT, tools=[shell])
 

@@ -71,16 +71,16 @@ async def main() -> int:
 
     options = ClaudeAgentOptions(
         cwd=str(workspace),
-        model=os.environ["MODEL"],
+        model=os.environ["LLM_MODEL"],
         max_turns=TASK_MAX_TURNS,
         include_partial_messages=True,   # per-turn token counts arrive as stream events
         system_prompt=SYSTEM_PROMPT,  # unset, the SDK sends an empty one
         permission_mode="bypassPermissions",
         env={
             "ANTHROPIC_BASE_URL": anthropic_compat_base_url(),
-            "ANTHROPIC_AUTH_TOKEN": os.environ["PROVIDER_API_KEY"],
-            "ANTHROPIC_MODEL": os.environ["MODEL"],
-            "ANTHROPIC_SMALL_FAST_MODEL": os.environ["MODEL"],
+            "ANTHROPIC_AUTH_TOKEN": os.environ["LLM_API_KEY"],
+            "ANTHROPIC_MODEL": os.environ["LLM_MODEL"],
+            "ANTHROPIC_SMALL_FAST_MODEL": os.environ["LLM_MODEL"],
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
         },
         hooks={

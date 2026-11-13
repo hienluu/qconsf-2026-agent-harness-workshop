@@ -66,7 +66,7 @@ def run_context() -> dict:
     mixed up: the provider's host (never the key) and the repo commit."""
     from urllib.parse import urlparse
     import os
-    base_url = os.environ.get("PROVIDER_BASE_URL", "")
+    base_url = os.environ.get("LLM_BASE_URL", "")
     try:
         commit = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -75,7 +75,7 @@ def run_context() -> dict:
     except Exception:
         commit = ""
     return {
-        "model": os.environ.get("MODEL", ""),
+        "model": os.environ.get("LLM_MODEL", ""),
         "provider": urlparse(base_url).netloc or base_url,
         "temperature": base.sampling().get("temperature", "provider default"),
         "repo_commit": commit,
@@ -148,8 +148,8 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
             rows.append(("variant", f"running {HARNESSES[harness_key]} with an option changed, recorded as {label}"))
         rows += [("task", task["description"]),
                  ("workspace", workspace.relative_to(BLOCK3)),
-                 ("provider", os.environ.get("PROVIDER_BASE_URL", "(PROVIDER_BASE_URL not set)")),
-                 ("model", os.environ.get("MODEL", "(MODEL not set)"))]
+                 ("provider", os.environ.get("LLM_BASE_URL", "(LLM_BASE_URL not set)")),
+                 ("model", os.environ.get("LLM_MODEL", "(LLM_MODEL not set)"))]
         print_run_header(f"{label} × {task_name}", rows)
         result = module.run(str(workspace), task["prompt"])
     print(f"    trace saved: {log_path.relative_to(BLOCK3)}")
