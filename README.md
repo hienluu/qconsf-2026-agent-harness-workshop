@@ -23,6 +23,20 @@ cp .env.example .env           # fill in your provider API key + model
 uv run setup/check_setup.py    # expect: ALL GREEN
 ```
 
+## Schedule (9:00 to noon)
+
+| Time | Block | Minutes |
+|---|---|---|
+| 9:00 | 1. Why the Harness Matters (slides) | 20 |
+| 9:20 | 2. Build the Naive Harness | 35 |
+| 9:55 | 3. Measure It | 33 |
+| 10:28 | Break | 15 |
+| 10:43 | 4. The Production Harnesses | 35 |
+| 11:18 | 5. The Decision Framework | 35 |
+
+Each block's README opens with its own breakdown: intro, hands-on and
+discussion.
+
 ## Layout
 
 | Path | Workshop block |

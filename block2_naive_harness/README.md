@@ -1,14 +1,14 @@
 # Block 2: Build the Naive Harness
 
-> **In this block (45 min)**
+> **In this block (35 min)**
 >
 > | Part | Time | What happens |
 > |---|---|---|
-> | Intro | 5 min | The presenter sets up the block and the exercise |
-> | Hands-on | 30 min | Steps 0 to 4 below |
-> | Discussion | 10 min | The questions under "Discussion" at the end of this page |
+> | Intro | 3 min | The presenter sets up the block and the exercise |
+> | Hands-on | 26 min | Steps 1 to 4 below |
+> | Discussion | 6 min | The questions under "Discussion" at the end of this page |
 >
-> **If you're behind:** if you haven't reached Step 4 twenty minutes into
+> **If you're behind:** if you haven't reached Step 4 fifteen minutes into
 > the hands-on, stop typing, switch to `solution/harness.py` (same two
 > arguments) and go straight to Step 4. The discussion starts on time,
 > whether or not everyone has finished.
@@ -42,7 +42,10 @@ Run every command from `block2_naive_harness/`. From the repo root:
 cd block2_naive_harness
 ```
 
-### Step 0: Check your setup (2 min)
+### Step 0: Check your setup (at home)
+
+You did this at home, as the last line of Setup in the repo README. If you
+didn't, run it during Block 1, not now:
 
 ```bash
 uv run ../setup/check_setup.py
@@ -50,7 +53,7 @@ uv run ../setup/check_setup.py
 
 Expect `ALL GREEN`. If not, fix what it tells you, or flag a helper.
 
-### Step 1: Read what you were given (3 min)
+### Step 1: Read what you were given (2 min)
 
 - `tools.py`: five tools, `list_files`, `read_file`, `write_file`, `search`
   and `run_tests`. A path check keeps them inside the workspace. Nothing
@@ -58,7 +61,7 @@ Expect `ALL GREEN`. If not, fix what it tells you, or flag a helper.
 - `harness_skeleton.py`: the client, system prompt and tool schemas are
   done. The two things that make it an agent aren't.
 
-### Step 2: Fill in the two TODOs (10 min)
+### Step 2: Fill in the two TODOs (8 min)
 
 - **TODO 1, ask the model what to do next** (~4 lines): send the whole
   conversation plus the tool schemas.
@@ -69,7 +72,7 @@ The comments show what to write. Stuck? `solution/harness.py` is the
 finished version and takes the same arguments, so it works in place of
 yours in every command below.
 
-### Step 3: A short task (5 min)
+### Step 3: A short task (3 min)
 
 See the bug first:
 
@@ -102,7 +105,7 @@ uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 same way, and each `TASK.md` has the command. To rerun a task, reset it
 first (see "Starting over").
 
-### Step 4: A long task (10 min)
+### Step 4: A long task (13 min)
 
 Same harness, model and tools. Only the size of the job changes.
 
@@ -238,7 +241,7 @@ you. Block 5's worksheet then takes your own agent to a harness decision.
 `added` with what it cost. You'll compare them with Block 3's harnesses on
 the same task. (Not wall time: that mostly measures the provider.)
 
-## Discussion (10 min)
+## Discussion (6 min)
 
 **For the group:**
 

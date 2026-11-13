@@ -1,11 +1,11 @@
 # Block 3: Measure It
 
-> **In this block (30 min)**
+> **In this block (33 min)**
 >
 > | Part | Time | What happens |
 > |---|---|---|
 > | Intro | 5 min | The presenter sets up the block and the exercise |
-> | Hands-on | 15 min | Steps 0 to 3 under "Exercise" |
+> | Hands-on | 18 min | Steps 0 to 3 under "Exercise" |
 > | Discussion | 10 min | The questions under "Discussion" near the end of this page |
 >
 > **If you're behind:** if h3 hasn't finished ten minutes into the
