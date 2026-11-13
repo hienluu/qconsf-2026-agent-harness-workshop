@@ -26,7 +26,8 @@ The task is complete only when run_tests reports that every test passed.
 When the tests are green, reply with a short summary instead of calling tools."""
 
 # The only guardrail in this harness, and it protects the wallet, not the
-# task: 20 turns covers the short tasks; long-task completions need 25+.
+# task. 20 turns is plenty for the short tasks and about what the long one
+# needs, with no margin. The model is never told how many it has.
 MAX_TURNS = 20
 
 

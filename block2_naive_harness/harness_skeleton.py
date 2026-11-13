@@ -29,9 +29,9 @@ Work step by step: inspect files, make edits, and run the tests to check yoursel
 The task is complete only when run_tests reports that every test passed.
 When the tests are green, reply with a short summary instead of calling tools."""
 
-# The loop budget — a real harness decision. 20 turns is plenty for the
-# short tasks and deliberately tight for the long one, which usually uses
-# all 20.
+# The loop budget, a real harness decision. 20 turns is plenty for the
+# short tasks and about what the long one needs, with no margin. The
+# model is never told how many it has.
 MAX_TURNS = 20
 
 

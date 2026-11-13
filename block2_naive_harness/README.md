@@ -165,8 +165,10 @@ tracking the remaining work.
 
 Note the turn where you'd first have guessed it was in trouble.
 
-**How it ends.** It nearly always uses most or all of its 20 turns. We've
-seen five endings:
+**How it ends.** Twenty turns is about what this job needs, with no
+margin, and the model is never told how many it has. So it nearly always
+uses most or all of them, and runs end differently. We've seen five
+endings:
 
 - **Finished, and said so.** Tests pass and the agent sums up. Nothing
   looks wrong.
