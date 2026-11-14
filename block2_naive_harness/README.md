@@ -188,15 +188,19 @@ endings:
 agent didn't say it was done), and how much it sent against the
 conversation's final size. Each row of the table is one turn:
 
-- **sent to model:** what that turn's call cost to send, as billed. It's
-  the whole conversation so far, plus the tool definitions, which go out
-  with every call. The bar draws this number.
+- **sent this turn:** what that turn's call cost to send, in tokens, as
+  billed. Not a running total: each row is one call, and it grows because
+  each call carries the whole conversation so far, plus the tool
+  definitions. The `total` row adds them up. The bar draws this number.
+- **cached:** how much of that the provider had already seen on an
+  earlier call, and charges less for. Providers match from the start of
+  the conversation up to the first change, so it stays high as long as the
+  harness only adds to the end. Shown only if your provider reports it.
 - **tool calls:** what the model asked for in reply.
 - **added:** how much the turn added to the conversation (an estimate):
   the model's reply, including its tool calls and any file it wrote, plus
   the tool results. On the last turn it's just the closing message. Every
   later turn pays to send it again.
-
 - **agent says:** its words that turn, in green, cut to fit your window.
   The full text is in the trace above the table. (In a narrow window they
   move to a line under the row.)
@@ -204,8 +208,8 @@ conversation's final size. Each row of the table is one turn:
 A row from a long run:
 
 ```text
-   turn  sent to model  cached                        tool calls           added
-      7         10,917     85%  ████                  search 5           +11,535
+   turn  sent this turn                        cached  tool calls           added
+      7          10,917  ████                     85%  search 5           +11,535
 ```
 
 Turn 7 cost 10,917 tokens to send. Its five searches then added 11,535

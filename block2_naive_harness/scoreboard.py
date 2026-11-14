@@ -248,12 +248,14 @@ class Scoreboard:
                 row["did"] = "malformed call"
         top = max(r["sent"] for r in self.turns) or 1
         show_cache = self.cache_reported
-        # Columns run in the order things happen: what the call sent, what
-        # the model did with it, and what the conversation grew to.
-        head = f"   {'turn':>4}  {'sent to model':>13}"
+        # Columns run in the order things happen: what the call sent (the bar
+        # draws it, so it sits right next to it) and how much of that the
+        # provider had cached, what the model did with it, and what the
+        # conversation grew to.
+        head = f"   {'turn':>4}  {'sent this turn':>14}  {'':<20}"
         if show_cache:
             head += f"{'cached':>8}"
-        head += f"  {'':<20}  {'tool calls':<17}{'added':>9}"
+        head += f"  {'tool calls':<17}{'added':>9}"
         show_fired = any(r.get("fired") for r in self.turns)
         if show_fired:
             head += f"  {'fired':<11}"
@@ -269,12 +271,12 @@ class Scoreboard:
         print(head)
         print("   " + "─" * (width - 3))
         for r in self.turns:
-            line = f"   {r['turn']:>4}  {r['sent']:>13,}"
+            bar = "█" * max(1, round(20 * r["sent"] / top))
+            line = f"   {r['turn']:>4}  {r['sent']:>14,}  {bar:<20}"
             if show_cache:
                 pct = f"{round(100 * r['cached'] / r['sent'])}%" if r["cached"] and r["sent"] else "–"
                 line += f"{pct:>8}"
-            bar = "█" * max(1, round(20 * r["sent"] / top))
-            line += f"  {bar:<20}  {r['did']:<17}{r['added']:>+9,}"
+            line += f"  {r['did']:<17}{r['added']:>+9,}"
             if show_fired:
                 fired = " ".join(f"{k}{v}" for k, v in (r.get("fired") or {}).items())
                 line += f"  \033[33m{fired:<11}\033[0m"
@@ -287,15 +289,15 @@ class Scoreboard:
                 said = said if len(said) <= 100 else said[:99] + "…"
                 print(f"\033[32m         ❝ {said}\033[0m")
         total = sum(r["sent"] for r in self.turns)
-        line = f"   {'total':>4}  {total:>13,}"
+        line = f"   total {total:>14,}  {'':<20}"  # "total" is one wider than "turn"
         if show_cache:
             cached = sum(r["cached"] for r in self.turns)
             line += f"{(str(round(100 * cached / total)) + '%') if cached and total else '–':>8}"
         calls = sum(self.counts.values())
-        line += f"  {'':<20}  {str(calls) + (' call' if calls == 1 else ' calls'):<17}"
+        line += f"  {str(calls) + (' call' if calls == 1 else ' calls'):<17}"
         print("   " + "─" * (width - 3))
         print(line)
-        print("\033[2m   sent to model: what the call cost to send, as billed: the whole conversation so far,\n"
+        print("\033[2m   sent this turn: what this turn's call cost to send, as billed: the whole conversation so far,\n"
               "     plus the tool definitions that go out with every call.\n"
               "   added: what the turn added to the conversation: the model's reply (its words and tool\n"
               "     calls) plus the tool results (≈, characters ÷ 4). On the last turn that's just its\n"
