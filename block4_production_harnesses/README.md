@@ -323,6 +323,12 @@ the finding, not your setup: its summary shows how many calls went to the
 subagent. With two documented settings it solves the task; see
 `COMPARISON.md`.
 
+**Take-home: Deep Agents' summarization, forced on** (4 to 16 minutes a
+run). Its context compaction never fires on this task at the defaults.
+`deepagents/compaction_experiment.py` makes it fire, and marks every
+summary and every re-read it causes. The commands, our results and what
+they mean are in `COMPARISON.md`, under "Take-home experiment".
+
 **All five side by side** (4 to 6 minutes, traces in `runs/logs/`):
 
 ```bash

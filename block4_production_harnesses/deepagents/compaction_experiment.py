@@ -1,4 +1,4 @@
-"""Deep Agents' compaction, measured. Presenter research, not an attendee step.
+"""Deep Agents' compaction, measured. A take-home experiment, not a workshop step.
 
     DEEPAGENTS_SUBAGENTS=off DEEPAGENTS_COMPACTION=early DEEPAGENTS_SUMMARY_AT=12000 \\
       BLOCK4_MAX_TURNS=40 uv run deepagents/compaction_experiment.py
@@ -31,8 +31,8 @@ The markers (✂ lines under a turn): argument clipping, each summary, the
 summary's own model call (billed, but not counted as a turn), a result
 saved to a file, and a re-read of a file a summary had dropped.
 
-Results and analysis (Nov 14, Fireworks): framework-research/
-deepagents-compaction-experiment.md in the presenter's notes.
+Our results and what they mean: COMPARISON.md, "Take-home experiment:
+does Deep Agents' summarization help?".
 """
 
 import os

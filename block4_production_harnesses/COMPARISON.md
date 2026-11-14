@@ -132,6 +132,95 @@ Source for the `Read` behaviour: [Claude Code tools
 reference](https://code.claude.com/docs/en/tools-reference) (checked
 Sep 2026).
 
+## Take-home experiment: does Deep Agents' summarization help?
+
+Optional, for your own time. Block 3's h2 compacts by dropping old tool
+outputs a little every turn. Deep Agents ships something more
+sophisticated: past a token threshold, its summarization middleware
+replaces older history with a summary the model writes, and saves the
+originals to a file the agent can read back. Does that do better?
+
+**First, it probably never fires.** For a model LangChain has no profile
+for (ours), the threshold is 170,000 tokens. Our migration runs peaked at
+23k to 38k per call, so with the defaults the feature is on and does
+nothing. Its other two mechanisms (clipping old `write_file`/`edit_file`
+arguments, saving one huge tool result to a file) didn't fire either.
+
+**So force it.** `deepagents/compaction_experiment.py` is the same agent
+with switches, and it marks under each turn (`✂`) what compaction did: each
+summary, the summary's own model call (billed, but not a turn), and every
+re-read of a file a summary had dropped. Run from
+`block4_production_harnesses/`, one run at a time:
+
+```bash
+# no compaction at all
+DEEPAGENTS_SUBAGENTS=off DEEPAGENTS_COMPACTION=off BLOCK4_MAX_TURNS=40 \
+  uv run deepagents/compaction_experiment.py
+
+# summarize at 12,000 tokens
+DEEPAGENTS_SUBAGENTS=off DEEPAGENTS_COMPACTION=early DEEPAGENTS_SUMMARY_AT=12000 \
+  BLOCK4_MAX_TURNS=40 uv run deepagents/compaction_experiment.py
+```
+
+`DEEPAGENTS_SUBAGENTS=off` matters: with subagents on, the agent hands the
+work to subagents that start with a fresh context, the main conversation
+stays small, and compaction has nothing to do. Each run takes 4 to 16
+minutes and sends 0.4 to 1.3M tokens.
+
+**What we got** (GLM-5.3-Flash, three runs each):
+
+| | No compaction | Summarize at 12k |
+|---|---|---|
+| Solved | 3/3 | 0/3 (all hit the 40-call cap) |
+| Summaries | 0 | 9, 14, 17 |
+| Re-reads of a file a summary had dropped | 0 | 32, 19, 129 |
+| Tokens sent | 0.96–1.29M | 0.40–0.54M |
+| Cached | 93–95% | 33–52% |
+| Uncached input | 54k–74k | 191k–361k |
+| Wall time | 4.5–7 min | 10–16 min |
+
+After each summary the agent no longer had the exact file contents, so it
+read them again, which refilled the context and triggered the next
+summary. One run said "Now reading the 64 integration files not yet read
+this session" and re-read 54 files in one turn. It sent fewer tokens, but
+almost none came from the cache: 3 to 5 times the uncached input, and
+twice the wall time.
+
+12k is deliberately aggressive, about a third to half of the observed
+peaks. The result is about summarizing below what the task needs in view
+at once, not about summarization in general.
+
+**Why it fails here, and where it would fit.** Three questions decide
+whether summarizing old context suits a task:
+
+1. **Does the task need the gist, or the exact text?** A summary keeps
+   decisions and intent and loses verbatim detail. A migration needs to
+   know which file has `amt` on which line.
+2. **Can the lost information be fetched again?** If it lives in a file
+   or a database, dropping the raw output and letting the agent re-read
+   it (h2's way) is cheaper and exact. If it lives only in the
+   conversation (something a user said once, a decision made in
+   discussion), dropping it loses it, and that's where a summary earns
+   its place.
+3. **Does it fire at a phase boundary or at a token count?** A token
+   count fires mid-step; ours fired halfway through rewriting a family of
+   14 files. At a phase boundary (exploration done, subtask finished) the
+   past really is history.
+
+By that reasoning, summarization suits support, planning and long-running
+assistant conversations better than code. Only the code half is
+measured here; the rest is for you to test.
+
+**Things to try:**
+
+- A middle threshold (`DEEPAGENTS_SUMMARY_AT=25000` or `50000`): is there
+  a setting where summarizing pays on this task?
+- The library's defaults with subagents on (no switches at all) and
+  `DEEPAGENTS_COMPACTION=off` side by side: does turning compaction off
+  change anything when it never fires?
+- Your own task. Where does the information your agent needs live, and
+  what would summarizing it lose?
+
 ## On the wall-clock column: mostly noise, and that's the lesson
 
 Do not rank harnesses by the `wall s` column. On a short task (the
