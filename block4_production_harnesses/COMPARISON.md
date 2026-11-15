@@ -34,8 +34,8 @@ never magnitude. What the harnesses did on the migration is in the next section.
 
 ## What the migration showed
 
-Three or more runs each, GLM-5.3-Flash, same prompt, file tools only,
-50-call cap:
+Three or more runs each, GLM-5.3-Flash through the hosted endpoint in
+`.env.example`, same prompt, file tools only, 50-call cap:
 
 | Harness | Solved | Turns | Tool calls | Tokens sent |
 |---|---|---|---|---|
@@ -45,7 +45,7 @@ Three or more runs each, GLM-5.3-Flash, same prompt, file tools only,
 | Claude Agent SDK, our tools | 3/3 | 29–30 | 276–281 | 0.71–0.79M |
 | Claude Agent SDK, its own file tools | 4 of 5 | 31–50 | 293–555 | 1.40–3.49M |
 | Deep Agents, its own tools | 0/3 | 50 | 146–250 | 0.71–0.86M |
-| *our h2 / h3 (Block 3)* | | *17–34* | *181–299* | *0.37–0.78M* |
+| *our h2 / h3 (Block 3, same endpoint)* | | *19–34* | *181–299* | *0.39–0.78M* |
 
 **Same tools, same results.** Pydantic AI, ADK, OpenAI Agents and the
 Claude Agent SDK, given the file tools from `common.py` (the same ones as

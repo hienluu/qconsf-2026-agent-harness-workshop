@@ -28,8 +28,8 @@ something a feature list says.
 
 - **On the same tools, the loop barely matters.** OpenAI Agents and the
   Claude Agent SDK, given the same four file tools, ran the same
-  algorithm with nearly the same numbers, in the range of the h2 you
-  built (Blocks 3 and 4).
+  algorithm as the h2 you built, with turn and token ranges that overlap
+  our h2's on the same endpoint (Block 4's table).
 - **The tools decide the strategy and the cost.** One tool designed for
   the job cut the calls three to eight times. A shell cut them tenfold.
   A harness's own tools encode a style of work: Claude Code's `Edit`

@@ -91,7 +91,8 @@ hand work to. Those tools encode a style of work, and on the wrong task
 you pay for it. On the migration (same model, prompt and turn cap):
 
 - The four harnesses on **our** file tools, Claude's included, ran the
-  same algorithm and landed in your h2's range.
+  same algorithm as your h2, with ranges that overlap our h2's on the
+  same endpoint.
 - **The same Claude harness on its own tools** used Claude Code's `Edit`,
   which replaces one exact string at a time: right for most coding, wrong
   for a rename across 130 files. It made 200 to 380 edits and sent 2 to 4

@@ -303,14 +303,15 @@ home. Each run replaces that harness's last one (`runs/<harness>/` and
 on the runs you care about first, or `mv` their folders to keep them.
 
 **Compare with all five.** Each run printed two tables. **Results**
-(measured): solved, turns, tool calls, tokens sent, wall time, with your
-h2 and h3 from Block 3 as the last row (on a terminal narrower than 100
+(measured): solved, turns, tool calls, tokens sent, wall time, with our
+h2 and h3 from Block 3 on the same endpoint as the last row (on a terminal narrower than 100
 columns, as a line under the table). **Receipts** (facts about each
 harness): who owns the loop, the tools you wrote versus the harness's
 own, what it took to run on our provider, and how long the script is.
 
-Here's all five over several runs each on GLM-5.3-Flash, so you can tell
-a typical run from an unlucky one:
+Here's all five over several runs each on GLM-5.3-Flash through the
+hosted endpoint in `.env.example`, so you can tell a typical run from an
+unlucky one:
 
 | Harness | Solved | Turns | Tool calls | Tokens sent |
 |---|---|---|---|---|
@@ -320,10 +321,13 @@ a typical run from an unlucky one:
 | Claude Agent SDK | 3/3 | 29–30 | 276–281 | 0.71–0.79M |
 | Deep Agents *(its own tools)* | 0/3 | 50 (the cap) | 146–250 | 0.71–0.86M |
 | Claude Agent SDK *(its own file tools, `CLAUDE_TOOLS=own`)* | 4 of 5 | 31–50 | 293–555 | 1.40–3.49M |
-| *your h2 / h3* | | *17–34* | *181–299* | *0.37–0.78M* |
+| *our h2 / h3 (Block 3, same endpoint)* | | *19–34* | *181–299* | *0.39–0.78M* |
 
-The four harnesses on **our** file tools land where your h2 and h3 did:
-their loops add nothing you can measure on this task. The runs on a
+The four harnesses on **our** file tools land where our h2 and h3 did on
+the same endpoint: their loops add nothing you can measure on this task.
+Compare on one provider: on Fireworks, the same model took h2 and h3 26
+to 39 turns and 0.84M to 1.19M tokens (Block 3's numbers), so a Block 3
+run there sits above this table. The runs on a
 harness's **own** file tools are the expensive ones. Claude Code's `Edit`
 replaces one exact string per call, so it made 200 to 380 edits where our
 tools rewrote about 130 files, and sent 2 to 4 times the tokens. Deep

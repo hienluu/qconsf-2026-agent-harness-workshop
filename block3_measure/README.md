@@ -197,7 +197,11 @@ Six things to find:
    hundred tokens a turn once the notes exist, around 1% of a run this
    size. So if your h3 cost
    40% more or less than h2, that's the run, not the harness. Ours, three
-   runs each: h2 0.84M to 1.19M, h3 1.03M to 1.18M.
+   runs each: h2 0.84M to 1.19M, h3 1.03M to 1.18M. That's on Fireworks.
+   On the hosted endpoint in `.env.example` the same model took fewer
+   turns and tokens (19 to 34 turns, 0.39M to 0.78M), and those are the
+   runs Block 4 compares its harnesses with. Compare runs from one
+   provider.
 5. **When the agent ran the tests.** The line after the verdict:
    `what the trace shows: tests run 2 times, first at turn 24 of 28 · 0
    files rewritten without being read first`. Note when your h2 and h3

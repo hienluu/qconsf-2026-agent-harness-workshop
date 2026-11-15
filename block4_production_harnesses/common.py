@@ -772,9 +772,11 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
             cells.append(k(r.get("tokens_cached")) if r.get("tokens_cached") else "[dim]?[/dim]")
         cells += [thousands(r.get("tokens_out")), str(r["wall_s"])]
         results.add_row(*cells)
-    # Block 3's h2/h3 range was measured on GLM-5.3-Flash. Next to runs of
-    # another model it would read as a like-for-like comparison, so it only
-    # shows when these runs used that model too.
+    # Block 3's h2/h3 range was measured on GLM-5.3-Flash through the hosted
+    # endpoint in .env.example, the same one as Block 4's README numbers (on
+    # Fireworks the same model ran longer). Next to runs of another model it
+    # would read as a like-for-like comparison, so it only shows when these
+    # runs used that model too.
     same_model = rows and all("glm" in (r.get("model") or "").lower()
                               and "flash" in (r.get("model") or "").lower() for r in rows)
     # Its ranges are the widest cells, so on a narrow terminal the row
@@ -782,8 +784,8 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
     show_h2h3 = task_name == "migration" and same_model
     h2h3_as_row = show_h2h3 and Console().width >= 100
     if h2h3_as_row:
-        results.add_row("[dim]your h2 / h3 (Block 3)[/dim]", "", "[dim]17–34[/dim]",
-                        "[dim]181–299[/dim]", "[dim]0.37–0.78M[/dim]",
+        results.add_row("[dim]our h2 / h3 (Block 3, hosted endpoint)[/dim]", "", "[dim]19–34[/dim]",
+                        "[dim]181–299[/dim]", "[dim]0.39–0.78M[/dim]",
                         *([""] if show_cached else []), "", "")
 
     table = Table(
@@ -805,7 +807,7 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
     print(f"\nthis run's task: {task_name}")
     Console().print(results)
     if show_h2h3 and not h2h3_as_row:
-        print("your h2 / h3 in Block 3: 17–34 turns, 181–299 tool calls, 0.37–0.78M tokens sent")
+        print("our h2 / h3 in Block 3, hosted endpoint: 19–34 turns, 181–299 tool calls, 0.39–0.78M tokens sent")
     if task_name == "migration" and rows and not same_model:
         print("(Block 3's h2/h3 range isn't shown: it was measured on GLM-5.3-Flash, "
               "and these runs used another model)")
