@@ -106,7 +106,9 @@ rule.
 - **Task knowledge stays outside the tool.** It doesn't know `webhook.py`
   is special; it takes an `exclude` list, and spotting the trap is the
   agent's job. (It excluded `webhook.py` on every rename in our runs.)
-  A tool that hardcoded it would only work for this task.
+  A tool that hardcoded it would only work for this task. An `exclude`
+  entry that matches no file fails the whole call: a bare `webhook.py`
+  would otherwise protect nothing, with no sign anything went wrong.
 - **A dry run before a real run.** `dry_run=true` lists the files and
   counts it would change. It doubles as a search: where does this name
   still appear?

@@ -99,16 +99,17 @@ by finishing with green tests and a wrong result.
 | Question | Answer | What it means |
 |---|---|---|
 | 1. Will it work with your model and your code? | provider: maybe; existing project: no, a standalone tool | nothing ruled out. Note that vendor-built harnesses needed workarounds off their home models |
-| 2. What will you need to add or change? | steps: run the tests after each batch, review the diff after green, never write to `tests/`. Tools: **its own don't fit** | all five can plug those steps in (Claude's hooks cover tool calls and stopping). File-at-a-time editing was the bottleneck, so you'll design a tool around the unit of work, one rename rule, as in Block 4's step 4. A harness whose value is its built-in tools loses most of it here |
+| 2. What will you need to add or change? | steps: run the tests after each batch, review the diff after green, never write to `tests/`. Tools: **its own don't fit** | all five can plug those steps in (Claude's hooks cover tool calls and stopping). File-at-a-time editing was the bottleneck, so you'll design a tool around the unit of work, one rename rule, as in Block 4's step 4. Check how the harness calls it: OpenAI Agents runs a turn's tool calls at once, so a tool that writes files needs a lock, or parallel calls turned off. A harness whose value is its built-in tools loses most of it here |
 | 3. What can your agent reach or affect? | code it runs (the tests) | sandbox the test runner; with a shell, the guardrail moves to the sandbox |
-| 4. What will you need to watch? | a large conversation; test timing, files rewritten unread, every tool call | find out how your choice keeps the conversation from growing; build the "what the trace shows" line in from day one |
+| 4. What will you need to watch? | a large conversation; test timing, files rewritten unread, every tool call, two calls changing the same file in one turn | find out how your choice keeps the conversation from growing; build the "what the trace shows" line in from day one |
 
 **Decision: extend.** A harness with plug-in points (here, OpenAI Agents
 or Pydantic AI), your own designed tools, a test-after-each-batch rule
 and a review step after green.
 
-*Design review:* "We use OpenAI Agents with our own rename tool and a
-review step after the tests pass. On our migration the tool cut the
+*Design review:* "We use OpenAI Agents with our own rename tool, which
+takes a lock because the SDK runs a turn's calls at once, and a review
+step after the tests pass. On our migration the tool cut the
 calls from about 280 to about 50 per run, and the review step catches
 green runs that are wrong. We'd look again if another harness matched
 that on the same test."

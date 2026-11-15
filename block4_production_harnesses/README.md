@@ -189,7 +189,7 @@ rule.
 |---|---|
 | **One call per rename** | replaces `old` with `new` in every `.py` file, as a whole word (`post`, not the `post` in `posted`), in code, strings and comments (the field names also appear as dict keys) |
 | **Never touches a test file** | test files are skipped and counted in the result, whatever the model asks |
-| **`exclude`** | files to leave alone, e.g. `webhook.py`, whose `post()` is the HTTP verb. The tool doesn't know that; the agent has to |
+| **`exclude`** | files to leave alone, e.g. `pyledger/integrations/webhook.py`, whose `post()` is the HTTP verb. The tool doesn't know that; the agent has to. A path that matches no file is an error, so a typo can't quietly let the rename through |
 | **`dry_run`** | lists the files and counts it *would* change, without changing anything: a search and a preview |
 | **Returns** | the files it changed, with counts: proof the model can read |
 

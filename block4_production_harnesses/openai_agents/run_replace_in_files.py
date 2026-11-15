@@ -81,7 +81,8 @@ def replace_in_files(old: str, new: str, exclude: list[str] | None = None, dry_r
     """Rename an identifier across every .py file in the workspace: replaces
     `old` with `new` wherever it appears as a whole word (in code, strings
     and comments). Test files are never changed. `exclude` lists files to
-    leave alone (paths relative to the workspace). With dry_run=true, only
+    leave alone (paths relative to the workspace; one that matches no file
+    is an error, and nothing changes). With dry_run=true, only
     reports where it would change, without changing anything."""
     args = f"old={old!r}, new={new!r}" + (f", exclude={exclude}" if exclude else "") + (", dry_run=True" if dry_run else "")
     call = trace_tool(NAME, "replace_in_files", args)
@@ -96,6 +97,13 @@ def rename_everywhere(workspace: Path, old: str, new: str, exclude=None, dry_run
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", old or "") or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", new or ""):
         return "error: old and new must each be a single identifier, like make_ledger"
     skip = {str(Path(e)).lstrip("./") for e in (exclude or [])}
+    # An exclude entry that names no file would protect nothing, silently:
+    # `webhook.py` instead of `pyledger/integrations/webhook.py` would let
+    # the rename through. Refuse the whole call instead.
+    unknown = sorted(e for e in skip if not (workspace / e).is_file())
+    if unknown:
+        return (f"error: exclude entries that match no file: {unknown}. Nothing was changed. "
+                "Give paths relative to the workspace, like pyledger/integrations/webhook.py")
     word = re.compile(rf"\b{re.escape(old)}\b")
     changed, skipped_tests, total = [], 0, 0
     for f in sorted(workspace.rglob("*.py")):
