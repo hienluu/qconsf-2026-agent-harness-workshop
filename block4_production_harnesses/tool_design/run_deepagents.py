@@ -12,7 +12,8 @@ The tools decided, not the harness.
 We define no tools. Its own docs say the shell runs "directly on the host
 system without any sandboxing"; virtual_mode=True keeps only the file
 tools inside the run's copy. The shell gets PATH and HOME from our
-environment, nothing else (no API keys).
+environment, nothing else (no API keys), and git can't see the workshop
+repo around the copy (shell_env in common.py).
 """
 
 import os
@@ -24,7 +25,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from langchain_core.callbacks import BaseCallbackHandler  # noqa: E402
-from common import TurnCapReached, end_turn, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_result, trace_say, trace_tool, verify  # noqa: E402
+from common import TurnCapReached, end_turn, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, shell_env, trace_key, trace_result, trace_say, trace_tool, verify  # noqa: E402
 
 from deepagents import create_deep_agent  # noqa: E402
 from deepagents.backends import LocalShellBackend  # noqa: E402
@@ -91,7 +92,7 @@ def main() -> int:
         ),
         backend=LocalShellBackend(
             root_dir=workspace, virtual_mode=True, timeout=120,
-            env={"PATH": os.environ.get("PATH", ""), "HOME": os.environ.get("HOME", "")},
+            env=shell_env(workspace),
         ),
         system_prompt=SYSTEM_PROMPT,
     )

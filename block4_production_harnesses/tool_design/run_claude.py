@@ -12,8 +12,21 @@ response) and its hooks: PostToolUse for each call's result,
 PostToolUseFailure for a failed one (✗), PreCompact when Claude Code
 compacts its conversation (✂).
 
-The shell runs as you, with bypassPermissions: Claude Code's permission
-rules and sandboxing are exactly what we've switched off. Not a sandbox.
+The shell runs as you, with every tool approved up front: Claude Code's
+permission prompts and sandboxing are exactly what we've switched off.
+Not a sandbox.
+
+Keeping keys out of its Bash takes two steps, because the SDK starts
+Claude Code with ALL of our environment plus `env` below. First we drop
+every variable named like a secret (LLM_API_KEY included, which
+load_dotenv put there). Then CLAUDE_CODE_SUBPROCESS_ENV_SCRUB tells Claude
+Code to remove its own credentials (ANTHROPIC_AUTH_TOKEN) from the
+commands it runs: it needs the key to call the model, its Bash doesn't.
+With the scrub on, Claude Code refuses bypassPermissions (it warns and
+falls back to asking before each Bash call), so we ask for the default
+mode and ALLOWED_TOOLS approves its whole kit up front instead.
+GIT_CEILING_DIRECTORIES keeps its git inside the run's copy (see
+shell_env in common.py).
 """
 
 import asyncio
@@ -25,7 +38,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import _turn, TurnCapReached, end_turn, set_tokens_sent, trace_cost, tool_detail, SYSTEM_PROMPT, TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, trace_key, trace_note, trace_result, trace_say, trace_tool, verify  # noqa: E402
+from common import _turn, TurnCapReached, end_turn, set_tokens_sent, trace_cost, tool_detail, SYSTEM_PROMPT, TASK, TASK_MAX_TURNS, anthropic_compat_base_url, new_turn, prepare_workspace, receipt, shell_env, trace_key, trace_note, trace_result, trace_say, trace_tool, verify  # noqa: E402
 
 from claude_agent_sdk import (  # noqa: E402
     AssistantMessage,
@@ -40,6 +53,15 @@ from claude_agent_sdk import (  # noqa: E402
 
 load_dotenv()
 NAME = "claude_agent_sdk+bash"
+
+# Every tool the bundled Claude Code offers (its init message lists
+# them), so the agent gets the same kit bypassPermissions gave it.
+ALLOWED_TOOLS = [
+    "Bash", "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep", "WebFetch", "WebSearch",
+    "Task", "TaskCreate", "TaskGet", "TaskList", "TaskOutput", "TaskStop", "TaskUpdate",
+    "Skill", "Workflow", "ListAgents", "SendMessage", "ReportFindings",
+    "CronCreate", "CronDelete", "CronList", "ScheduleWakeup", "EnterWorktree", "ExitWorktree",
+]
 
 
 async def on_result(inp, tool_use_id, context):
@@ -75,13 +97,16 @@ async def main() -> int:
         max_turns=TASK_MAX_TURNS,
         include_partial_messages=True,   # per-turn token counts arrive as stream events
         system_prompt=SYSTEM_PROMPT,  # unset, the SDK sends an empty one
-        permission_mode="bypassPermissions",
+        permission_mode="default",       # the scrub refuses bypassPermissions (see the docstring)
+        allowed_tools=ALLOWED_TOOLS,
         env={
             "ANTHROPIC_BASE_URL": anthropic_compat_base_url(),
             "ANTHROPIC_AUTH_TOKEN": os.environ["LLM_API_KEY"],
             "ANTHROPIC_MODEL": os.environ["LLM_MODEL"],
             "ANTHROPIC_SMALL_FAST_MODEL": os.environ["LLM_MODEL"],
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+            "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+            "GIT_CEILING_DIRECTORIES": shell_env(workspace)["GIT_CEILING_DIRECTORIES"],
         },
         hooks={
             "PostToolUse": [HookMatcher(hooks=[on_result])],
@@ -89,6 +114,10 @@ async def main() -> int:
             "PreCompact": [HookMatcher(hooks=[on_compact])],
         },
     )
+
+    # From here on the key lives only in options.env (see the docstring).
+    for name in [n for n in os.environ if any(w in n.upper() for w in ("KEY", "TOKEN", "SECRET", "PASSWORD"))]:
+        del os.environ[name]
 
     started = time.monotonic()
     current, total = None, 0

@@ -10,8 +10,10 @@ trace, and every run adds a row to the same results table.
 
 **These scripts run shell commands on your machine with no sandbox.**
 Each works on a fresh copy of the task under `runs/`, the shells get only
-`PATH` and `HOME` from your environment (no API keys), and the test files
-are read-only. None of that is isolation: a command can reach anything you
+`PATH` and `HOME` from your environment (no API keys), git can't see the
+workshop repo the copy sits in, and the test files are read-only. For
+Claude Code that takes more than for our shell tool, because the SDK hands
+it your whole environment: `run_claude.py`'s docstring says how. None of that is isolation: a command can reach anything you
 can. That's why they're a demo and a take-home, not the exercise. Read a
 script before you run it.
 

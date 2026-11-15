@@ -439,14 +439,27 @@ def ws_run_tests(workspace: Path) -> str:
     return proc.stdout + proc.stderr
 
 
+def shell_env(workspace: Path) -> dict:
+    """The environment a shell demo's commands get: PATH and HOME, so no API
+    keys. GIT_CEILING_DIRECTORIES stops git from looking above the run's
+    copy: the copy sits inside the workshop repo, so without it a
+    `git checkout -- .` from the agent would throw away the repo's
+    uncommitted changes."""
+    return {
+        "PATH": _os.environ.get("PATH", ""),
+        "HOME": _os.environ.get("HOME", ""),
+        "GIT_CEILING_DIRECTORIES": str(Path(workspace).resolve().parent),
+    }
+
+
 def ws_shell(workspace: Path, command: str, max_output: int = 30_000) -> str:
-    """Run a shell command in the workspace: output plus exit code. Only PATH
-    and HOME come from our environment, so no API keys. Not a sandbox: a
-    command can reach anything you can."""
+    """Run a shell command in the workspace: output plus exit code. See
+    shell_env() for what the command gets. Not a sandbox: a command can
+    reach anything you can."""
     try:
         proc = subprocess.run(
             command, shell=True, cwd=workspace, capture_output=True, text=True, timeout=120,
-            env={"PATH": _os.environ.get("PATH", ""), "HOME": _os.environ.get("HOME", "")},
+            env=shell_env(workspace),
         )
         out, code = proc.stdout + proc.stderr, proc.returncode
     except subprocess.TimeoutExpired:

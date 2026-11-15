@@ -22,6 +22,7 @@ import asyncio
 import os
 import re
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -36,6 +37,12 @@ from openai import AsyncOpenAI  # noqa: E402
 load_dotenv()
 NAME = "openai_agents+replace_in_files"
 workspace: Path
+
+# The SDK runs all of a turn's tool calls at once, each sync tool in its own
+# thread. Two renames that touch the same file would both read the old
+# text, and the second write would undo the first. One rename (or write) at
+# a time; reads don't need it.
+_one_writer = threading.Lock()
 
 
 @function_tool
@@ -56,7 +63,8 @@ def read_file(path: str) -> str:
 def write_file(path: str, content: str) -> str:
     """Overwrite one file, path relative to the workspace."""
     trace_tool(NAME, "write_file", tool_detail({"path": path, "content": content}))
-    return ws_write(workspace, path, content)
+    with _one_writer:
+        return ws_write(workspace, path, content)
 
 
 @function_tool
@@ -77,7 +85,8 @@ def replace_in_files(old: str, new: str, exclude: list[str] | None = None, dry_r
     reports where it would change, without changing anything."""
     args = f"old={old!r}, new={new!r}" + (f", exclude={exclude}" if exclude else "") + (", dry_run=True" if dry_run else "")
     call = trace_tool(NAME, "replace_in_files", args)
-    out = rename_everywhere(workspace, old, new, exclude, dry_run)
+    with _one_writer:
+        out = rename_everywhere(workspace, old, new, exclude, dry_run)
     trace_result(NAME, "replace_in_files", out, call=call)
     return out
 

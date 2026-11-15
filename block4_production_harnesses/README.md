@@ -185,7 +185,11 @@ rule.
 
 It sits alongside the four file tools, which are still there for anything
 that isn't a rename. It runs no shell commands, so it's as safe on your
-laptop as step 1. (About 50 lines, in `openai_agents/run_replace_in_files.py`;
+laptop as step 1. One thing it has to handle that `write_file` didn't: the
+model can ask for several renames in one turn, and the SDK runs a turn's
+calls at the same time, each in its own thread. Two renames of the same
+file would each read the old text, and the second write would undo the
+first, so the tool takes a lock and runs one rename at a time. (About 50 lines, in `openai_agents/run_replace_in_files.py`;
 design notes in `tool_design/README.md`.)
 
 ```bash
@@ -233,8 +237,9 @@ uv run tool_design/run_claude.py
 
 **Watch first. If you run them yourself, it's at your own risk:** both
 run shell commands the model writes, on your machine, with no sandbox.
-They work on a copy of the task and get no API keys, but a command can
-reach anything you can. Read the script before you run it.
+They work on a copy of the task, their commands get no API keys, and git
+stops at the copy instead of finding the workshop repo around it. But a
+command can reach anything you can. Read the script before you run it.
 
 | Tools | Turns | Tool calls | Tokens sent |
 |---|---|---|---|
