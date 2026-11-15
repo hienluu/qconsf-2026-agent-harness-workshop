@@ -77,9 +77,13 @@ cd block4_production_harnesses
 uv run ../scripts/check_fixtures.py
 ```
 
-Expect `ALL FIXTURES OK`. If not, run `uv run ../scripts/reset.py` (it
-also archives your Block 3 score table). Then empty the receipts table so
-it ends up yours:
+Expect `ALL FIXTURES OK`. If not, run `uv run ../scripts/reset.py`. It
+restores the tasks, clears Block 3's and Block 4's run copies and this
+block's receipts table, and keeps your Block 3 score table by renaming it
+to `block3_measure/results/results.<date-time>.jsonl`.
+
+If you've run Block 4 before and didn't reset, empty its receipts table so
+the one you end up with is yours:
 
 ```bash
 rm -f runs/receipts.jsonl
@@ -126,7 +130,7 @@ the four tools are yours. Notice what it took to point it at a non-OpenAI
 model: an explicit model object, and tracing to OpenAI's platform turned
 off by hand.
 
-### Step 2: Watch a second harness with the same tools (3.5 to 7 minutes)
+### Step 2: Watch a second harness with the same tools (3 to 7 minutes)
 
 ```bash
 uv run claude_agent_sdk/run.py
@@ -141,10 +145,13 @@ step 3 while it runs. Watch:
   15 turns of reading, up to 20 files a turn, then `write_file × 14` a
   turn. Three runs: 29 to 30 turns, 276 to 281 calls, 0.71 to 0.79M
   tokens, all solved. Step 1's range: 25 to 50 turns, 176 to 287 calls.)
-- **What the harness adds.** The two warnings at the top are provider
-  friction: Claude Code doesn't recognize our model and reads its
-  credentials from Anthropic's variable names. It's also the slowest to
-  start and to run: it drives the Claude Code program underneath.
+- **What the harness adds.** Provider friction, at the top of the run:
+  `[claude-code:unrecognized_model]` means Claude Code doesn't recognize
+  our model, and it reads its credentials from Anthropic's variable
+  names. (If you're logged into Claude Code with a claude.ai account,
+  you'll also see a line saying its claude.ai connectors are disabled.
+  That's about your login, not this run.) Underneath, the SDK starts the
+  Claude Code program as a separate process and drives it.
 
 While it runs, open `claude_agent_sdk/run.py`: our tools served through
 `create_sdk_mcp_server`, and `tools=[]` switching off Claude Code's own.
@@ -164,6 +171,9 @@ one file per call, for what is really 14 renames. Before reading on:
 Step 4 runs one answer.
 
 ### Step 4: Run one answer (about 2 minutes)
+
+<details>
+<summary><b>The answer we ran.</b> Open it once you've written yours down (step 3).</summary>
 
 **The insight, from the traces you just watched.** By the time the agent
 starts writing, it already knows what to do: about 14 rename rules, from
@@ -189,16 +199,20 @@ laptop as step 1. One thing it has to handle that `write_file` didn't: the
 model can ask for several renames in one turn, and the SDK runs a turn's
 calls at the same time, each in its own thread. Two renames of the same
 file would each read the old text, and the second write would undo the
-first, so the tool takes a lock and runs one rename at a time. (About 50 lines, in `openai_agents/run_replace_in_files.py`;
-design notes in `tool_design/README.md`.)
+first, so the tool takes a lock and runs one rename at a time. (About 50
+lines, in `openai_agents/run_replace_in_files.py`; design notes in
+`tool_design/README.md`.)
+
+</details>
 
 ```bash
 uv run openai_agents/run_replace_in_files.py
 ```
 
-Watch for the renames, in bold cyan (`replace_in_files × 1` per turn, 14
-to 27 in all),
-and whether the agent excludes `webhook.py` when it renames `post`. At the
+Watch for the renames, in bold cyan: `replace_in_files`, 14 to 27 calls
+in all on our runs, often one a turn but sometimes several at once (what
+the lock is for). And watch whether the agent excludes `webhook.py` when
+it renames `post`. At the
 end, the results table shows it as `openai_agents+replace_in_files`, right under
 step 1's `openai_agents`. Compare the two:
 
@@ -206,6 +220,9 @@ step 1's `openai_agents`. Compare the two:
 |---|---|---|---|---|
 | step 1, file tools | 26–46 | 278–315 | 0.62–1.29M | ~22–28k |
 | step 4, plus `replace_in_files` | 23–35 | 35–88 | 0.22–0.69M | ~3k |
+
+(The step 1 row here is three runs made back to back with step 4's, so it
+isn't the same as step 1's six-run range in step 2 and under "Optional".)
 
 Tool calls always drop, three to eight times. Tokens sent usually drop
 too, but not always: they follow **turns**, since every turn re-sends the
@@ -248,7 +265,12 @@ command can reach anything you can. Read the script before you run it.
 | one shell tool | 20–25 | 19–24 | 0.16–0.43M |
 | Claude Agent SDK with its Bash | 16–23 | 17–23 | 0.41–0.61M |
 
-(GLM-5.3-Flash, three to six runs each, all solved.)
+(GLM-5.3-Flash, three to six runs each, all solved. The step 1 row is the
+same back-to-back set as in step 4's table.)
+
+On a Mac, expect the shell runs to take a few extra turns sometimes: BSD
+`sed` has no `\b`, so a `sed` rename changes nothing until the agent
+notices and switches to `perl` or Python.
 
 The designed tool and the shell both get leverage: one call changes every
 file. The difference is **where the guardrail can go**:
@@ -276,7 +298,9 @@ shell to try at home: [`tool_design/README.md`](tool_design/README.md).
 ## Optional: more to run and read
 
 None of this is part of the hands-on. Try it if you finish early, or at
-home.
+home. Each run replaces that harness's last one (`runs/<harness>/` and
+`runs/logs/<harness>.log`, whatever the task), so run `compare_reference.py`
+on the runs you care about first, or `mv` their folders to keep them.
 
 **Compare with all five.** Each run printed two tables. **Results**
 (measured): solved, turns, tool calls, tokens sent, wall time, with your
@@ -314,31 +338,36 @@ it changes it back. And a reminder that "run the tests" means "run code".
 Then read `COMPARISON.md`, the full comparison row by row, and argue with
 it against what you watched.
 
-**A harness with its own tools** (2 to 3 minutes):
+**A harness with its own tools** (2 to 4 minutes):
 
 ```bash
 uv run deepagents/run.py
 ```
 
 Deep Agents ships its own file tools, a planning tool and subagents
-(marked `· harness tool`). Watch it hand the work to a subagent
-(`task(...)`) that starts from an empty context, edit one exact string
-per call (`edit_file`), and usually hit the 50-call cap. `NOT SOLVED` is
-the finding, not your setup: its summary shows how many calls went to the
-subagent. With two documented settings it solves the task; see
-`COMPARISON.md`.
+(marked `· harness tool`). It edits one exact string per call
+(`edit_file`); watch whether it hands the work to a subagent (`task(...)`)
+that starts from an empty context. In our three runs above it hit the
+50-call cap every time, so `NOT SOLVED` is a normal result, not your
+setup. It can also solve it: its summary line shows how many calls went to
+subagents either way. With two documented settings it solves the task
+reliably; see `COMPARISON.md`.
 
 **Take-home: Deep Agents' summarization, forced on** (4 to 16 minutes a
 run). Its context compaction never fires on this task at the defaults.
 `deepagents/compaction_experiment.py` makes it fire, and marks every
-summary and every re-read it causes. The commands, our results and what
-they mean are in `COMPARISON.md`, under "Take-home experiment".
+summary and every re-read it causes. A `TurnCapReached` error line in its
+output is the turn cap firing, not a crash. The commands, our results and
+what they mean are in `COMPARISON.md`, under "Take-home experiment".
 
 **All five side by side** (4 to 6 minutes, traces in `runs/logs/`):
 
 ```bash
 uv run run_all.py
 ```
+
+Google ADK's run starts with a `UserWarning: [EXPERIMENTAL] ...
+JSON_SCHEMA_FOR_FUNC_DECL` line from ADK itself. It's harmless.
 
 **A quicker task**, if the migration is too slow for your provider or
 your time:
@@ -361,7 +390,8 @@ about. `BLOCK4_MAX_TURNS` changes the turn cap for any of these.
 
 ## Starting over
 
-Two things accumulate: the receipts table and the task fixtures.
+Two things accumulate: the receipts table and the task fixtures. (Run
+copies and logs don't: each run replaces its harness's last one.)
 
 ```bash
 rm -f runs/receipts.jsonl
@@ -406,7 +436,7 @@ code, the isolation is your job, whichever harness you pick.
 
 **For the group:**
 
-1. **Every run you did passed all 35 tests. Which would you merge?** Decide
+1. **Of your runs that passed all 35 tests, which would you merge?** Decide
    first, then check each one against the reference solution (a careful
    hand migration):
 
@@ -414,7 +444,8 @@ code, the isolation is your job, whichever harness you pick.
    uv run compare_reference.py
    ```
 
-   In our runs, two of five that passed every test still changed something
+   Most of what it prints is docstrings and blank lines; skip those and
+   look for strings the program prints or checks. In our runs, two of five that passed every test still changed something
    they shouldn't have, and the tests couldn't tell. What would have caught
    it: a stronger test, a review step, or a tool that couldn't make that
    change?

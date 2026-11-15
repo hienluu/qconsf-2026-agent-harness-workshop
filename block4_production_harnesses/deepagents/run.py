@@ -1,4 +1,4 @@
-"""fix_bug through LangChain Deep Agents.
+"""The Block 4 task through LangChain Deep Agents.
 
     uv run deepagents/run.py          (from block4_production_harnesses/)
 

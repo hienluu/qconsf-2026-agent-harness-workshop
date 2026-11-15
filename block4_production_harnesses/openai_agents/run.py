@@ -1,4 +1,4 @@
-"""fix_bug through the OpenAI Agents SDK.
+"""The Block 4 task through the OpenAI Agents SDK.
 
     uv run openai_agents/run.py       (from block4_production_harnesses/)
 
@@ -6,7 +6,7 @@ Where it came from: model-native — a harness co-designed with the vendor's mod
 organized around a trusted control plane (loop, handoffs, guardrails,
 sessions) over untrusted compute. Notice what's built into the loop here that the
 others leave to you (guardrails, handoffs as primitives) and what we must
-still write ourselves for this task: the three workspace tools.
+still write ourselves for this task: the four workspace tools.
 
 Provider note: the SDK defaults to OpenAI's Responses API; pointing it at
 an OpenAI-compatible provider means swapping in a chat-completions client —

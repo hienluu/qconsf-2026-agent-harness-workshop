@@ -1,4 +1,4 @@
-"""fix_bug through Pydantic AI.
+"""The Block 4 task through Pydantic AI.
 
     uv run pydantic_ai/run.py         (from block4_production_harnesses/)
 

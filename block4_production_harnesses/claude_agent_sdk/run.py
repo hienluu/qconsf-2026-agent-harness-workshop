@@ -180,9 +180,10 @@ async def main() -> int:
             # The harness's home is Anthropic's API; we redirect it to the
             # workshop provider's Anthropic-compatible endpoint.
             "ANTHROPIC_BASE_URL": anthropic_compat_base_url(),
-            # Baseten's Anthropic-compatible endpoint wants Authorization:
-            # Bearer, not the protocol's x-api-key — AUTH_TOKEN (not API_KEY)
-            # makes Claude Code send Bearer. Found the hard way; see README.
+            # Some providers' Anthropic-compatible endpoints want
+            # Authorization: Bearer, not the protocol's x-api-key. AUTH_TOKEN
+            # (not API_KEY) makes Claude Code send Bearer. Found the hard way;
+            # see "Provider coupling" in COMPARISON.md.
             "ANTHROPIC_AUTH_TOKEN": os.environ["LLM_API_KEY"],
             "ANTHROPIC_MODEL": os.environ["LLM_MODEL"],
             "ANTHROPIC_SMALL_FAST_MODEL": os.environ["LLM_MODEL"],

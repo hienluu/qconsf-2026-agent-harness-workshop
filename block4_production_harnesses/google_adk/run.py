@@ -1,4 +1,4 @@
-"""fix_bug through Google ADK.
+"""The Block 4 task through Google ADK.
 
     uv run google_adk/run.py      (from block4_production_harnesses/)
 
