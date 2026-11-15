@@ -197,10 +197,12 @@ hard to get before you choose, not during your first incident.
 
 ## Deciding
 
-1. **Adopt:** a harness passes questions 1 and 2 and does what you need
-   as it is.
-2. **Extend:** it passes, but you need steps it doesn't have, or its
-   defaults don't fit your work, and you can change that. Deep Agents on
+1. **Adopt:** a harness passes questions 1 and 2, and your steps fit
+   inside the tools you write anyway and its built-in settings. An
+   approval flag on your refund tool, or a no-retry rule inside it, is
+   still adopting: the harness itself is unchanged.
+2. **Extend:** it passes, but you'll write code into its hooks, or
+   change or replace its defaults and tools, and you can. Deep Agents on
    the migration is the example: 0 of 3 with its defaults, 3 of 3 with
    its subagent turned off and one line of prompt added (each alone
    solved 1 of 3):
@@ -226,8 +228,9 @@ three ways:
   conversation favors the lighter one, which costs less on every call; a
   large one favors the one that best keeps the conversation from growing.
 - **They can turn adopt into extend.** If you need to see something your
-  candidate doesn't show, or need a guard it doesn't have, you'll add it
-  through its hooks or inside a tool. That's extending it.
+  candidate doesn't show, or need a guard it doesn't have, and it can't
+  live inside a tool you write, you'll add it through its hooks. That's
+  extending it.
 - **They raise the stakes on a harness's own shell.** If your agent can
   reach money, customers or production, a harness that ships a shell
   (Claude Code's Bash, Deep Agents' `execute`) needs a sandbox you trust,

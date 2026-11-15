@@ -73,8 +73,10 @@ What we saw this morning, for each harness. Apply your answers to 1 and 2:
 
 ## Decide
 
-- ☐ **Adopt:** a harness still standing, with nothing to add or change
-- ☐ **Extend:** a harness still standing, plus the steps or tools from question 2
+- ☐ **Adopt:** a harness still standing, whose built-in settings plus the
+  tools you write anyway cover your steps from question 2
+- ☐ **Extend:** a harness still standing, but you'll write code into its
+  hooks, or change or replace its defaults and tools
 - ☐ **Drop down a level or build:** every harness is crossed out (rarely
   right; Blocks 2 and 3 showed what building costs)
 

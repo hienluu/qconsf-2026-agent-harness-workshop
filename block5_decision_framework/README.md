@@ -138,7 +138,10 @@ a refund that needed a person's sign-off.
 | 4. What will you need to watch? | a small conversation; every tool call with its arguments, cost per step | compaction will never fire, so a lighter harness costs less on every call; Pydantic AI reports cost per run (`RunUsage.cost`) |
 
 **Decision: adopt.** A light, provider-neutral harness, here Pydantic AI,
-used as it is, with the approval on the refund tool.
+used as it is. All three steps fit without touching it: the approval is
+a built-in flag on the refund tool, and the no-retry rule and the
+card-number stripping go inside the refund and order tools you write
+anyway.
 
 *Design review:* "We use Pydantic AI because our provider will change
 and it takes the provider as a constructor argument, and approval is a
