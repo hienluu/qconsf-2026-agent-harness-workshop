@@ -354,8 +354,9 @@ this workload doesn't produce the failure it prevents. Raw rows:
 ### Compaction
 
 It triggers on a threshold, and once crossed, keeps firing every later
-turn: none, or a lot. It fired in three of our five long h2 runs (9, 13
-and 40 results dropped).
+turn: none, or a lot. It fired in three of our five long h2 runs on the
+hosted endpoint (9, 13 and 40 results dropped), and in every h2 and h3
+run on Fireworks, where runs went longer.
 
 It can also cost turns. In one run it started on turn 14, while the agent
 was still reading. The agent re-read 18 dropped files, made its first edit

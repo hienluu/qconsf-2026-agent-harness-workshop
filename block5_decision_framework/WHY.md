@@ -27,8 +27,10 @@ it against your own versions and provider.
 ### Your model provider
 
 The harnesses built by model vendors were the hardest to point at a
-different provider. Claude Agent SDK needed two workarounds and OpenAI
-Agents one; Google ADK needed a separate library (LiteLLM) to reach our
+different provider. Claude Agent SDK needed Bearer auth through
+`ANTHROPIC_AUTH_TOKEN`, and warned about an unrecognized model. OpenAI
+Agents needed an explicit model object, and its tracing to OpenAI turned
+off by hand. Google ADK needed a separate library (LiteLLM) to reach our
 provider at all. Pydantic AI and Deep Agents needed nothing. And off its
 home model, OpenAI Agents lost its own shell tools: our provider rejected
 one and never showed the other to the model.
@@ -99,9 +101,10 @@ you pay for it. On the migration (same model, prompt and turn cap):
   times the tokens.
 - **Deep Agents** handed the work to a subagent that started from an
   empty context, and ran out of budget in all three runs. Not broken,
-  just untuned: two documented settings fixed it (see "Deciding" below).
+  just untuned: turning off its subagent and adding one line of prompt
+  fixed it, and neither alone did (see "Deciding" below).
 - **Given a shell,** every harness stopped editing files and wrote a
-  rename script: tool calls fell tenfold. A tool designed for renames cut
+  rename script: tool calls fell more than ten times. A tool designed for renames cut
   them three to eight times, and unlike the shell could still refuse to
   touch the tests.
 
@@ -115,9 +118,6 @@ you'd adopt it for is gone.
 - **Deep Agents** edited the original task files instead of its own copy,
   after we'd set `virtual_mode=False` (the default keeps paths inside the
   folder; "virtual" doesn't mean pretend files).
-- **Claude Agent SDK** created a folder outside its workspace from a
-  one-character path typo. With `bypassPermissions` on, nothing stopped
-  it.
 - **Running the tests means running code.** With its shell taken away,
   Claude wrote a rename script into an empty `conftest.py` and ran the
   tests to execute it. Any tool that runs code the agent can edit is a
@@ -150,12 +150,16 @@ and h3), stop being optional. And a crash at call 150 is expensive, so
 saving progress and resuming from it becomes one of your own steps
 (question 2).
 
-On the small tasks (5 or 6 calls) the features for managing a big
-conversation never fired, and our fuller harness cost 11–13% more for
-nothing. On the migration (25 to 36 calls, tool results up to 22,000
-characters) they fired every run. And it's model calls, not tool calls,
-that drive cost: the shell cut tool calls tenfold but tokens only 2 to 4
-times, tracking the drop in model calls. If the conversation is small, a
+On the small tasks (under ten calls) the features for managing a big
+conversation never fired, so whatever they add bought nothing. On the
+migration (19 to 39 calls in our h2 and h3 runs, tool results up to
+22,000 characters), h2's cap on tool output fired in every run. Its
+compaction fired in every Fireworks run, and in three of five on the
+hosted endpoint, where runs were shorter. Deep Agents' summarization,
+at its defaults, never fired (Block 4's `COMPARISON.md`). And it's model
+calls, not tool calls, that drive cost: the shell cut tool calls more
+than ten times but tokens by less, because every model call still
+re-sends the conversation. If the conversation is small, a
 lighter harness costs less on every call. If it's large, find out *how*
 your candidate keeps it in check, not just whether it does.
 
@@ -168,19 +172,22 @@ things easy or hard to see. What we had to work for in Block 4:
   system prompt until we set one: not ours, not Claude Code's.
 - **Every tool call, with its arguments.** Deep Agents' own file tools
   didn't appear until we hooked into its callbacks: the plain trace
-  showed 2 calls where the agent had made 15. And cutting arguments to 70
+  showed 2 tool calls where the other harnesses showed 12. And cutting arguments to 70
   characters hid the one field that explained a failure.
 - **Which step it's on.** Every SDK counts "turns" its own way. Claude's
-  streams one model response as several messages, so the obvious count
-  said 500 for a run of 45. To cap runs fairly we counted model calls
+  streams one model response as several messages, and its own count
+  reached 457 "turns" in runs with `max_turns=60`. To cap runs fairly we counted model calls
   ourselves.
 - **What the model said between steps,** where a plan going wrong shows
-  up first. In three of the five, the simple way to run it returns only
-  the final answer.
+  up first. In three of the five (OpenAI Agents, Pydantic AI, Deep
+  Agents), the simple way to run it returns only the final answer.
 - **When it ran the tests.** Most runs tested once or twice, near the
   end. You only see that if the trace shows it.
 - **Cost per step.** OpenAI Agents and ADK reported tokens for each model
-  call. On our provider, Claude's SDK reported only the total.
+  call. On our provider, Claude's SDK messages reported zero tokens; the
+  per-call numbers came only from its raw stream events
+  (`include_partial_messages=True`). Our Pydantic AI script reads only
+  the run's total.
 - **What the harness did on its own:** cutting a long result, dropping old
   history, refusing a malformed call, handing work to a subagent. These
   change what the model sees.
@@ -194,8 +201,9 @@ hard to get before you choose, not during your first incident.
    as it is.
 2. **Extend:** it passes, but you need steps it doesn't have, or its
    defaults don't fit your work, and you can change that. Deep Agents on
-   the migration is the example: 0 of 3 with its defaults, 3 of 3 after
-   two documented settings, no subagent and one line of prompt:
+   the migration is the example: 0 of 3 with its defaults, 3 of 3 with
+   its subagent turned off and one line of prompt added (each alone
+   solved 1 of 3):
 
    ```python
    register_harness_profile("openai", HarnessProfile(
@@ -239,6 +247,6 @@ candidates, the way Block 4 did:
   same task);
 - judge by your own check, never the agent's word, and check the checker:
   in our runs, passing tests let through a changed CLI message and a
-  migration that left 120 files undone;
+  migration that left 70 files on the old API;
 - read the traces, not just the verdicts: every finding on this page came
   from a trace.

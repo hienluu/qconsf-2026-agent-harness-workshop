@@ -31,21 +31,24 @@ something a feature list says.
   algorithm as the h2 you built, with turn and token ranges that overlap
   our h2's on the same endpoint (Block 4's table).
 - **The tools decide the strategy and the cost.** One tool designed for
-  the job cut the calls three to eight times. A shell cut them tenfold.
-  A harness's own tools encode a style of work: Claude Code's `Edit`
-  cost 2 to 4 times the tokens on a bulk rename, and Deep Agents' defaults
-  ran out of budget every time until two settings fixed them (Block 4).
+  the job cut the calls three to eight times. A shell cut them more than
+  ten times. A harness's own tools encode a style of work: Claude Code's
+  `Edit` cost 2 to 4 times the tokens on a bulk rename, and Deep Agents'
+  defaults ran out of budget in all three of our runs, until turning off
+  its subagent and adding one line of prompt fixed them; neither alone
+  did (Block 4).
 - **Cost follows turns; latency follows what the model writes.** Every
   turn re-sends the conversation, so tokens sent track turns. Wall time
   tracks tokens written, which is why re-typing whole files is slow
   (Blocks 2 to 4).
 - **Agents test at the end unless something pulls testing earlier.**
-  Most runs ran the tests once or twice, near the end. Cheap actions, a
-  budget signal or a shell changed that (Blocks 3 and 4).
+  Most runs ran the tests once or twice, near the end. A budget signal
+  that showed the test status changed that (Block 3).
 - **Passing the tests isn't doing the job.** Two Block 4 runs changed a
   message the CLI prints, and the tests couldn't tell. A Block 3 run
   "solved" the migration by adding aliases for the old names and left
-  120 files unmigrated: the cheapest run on the board (Blocks 3 and 4).
+  70 files still calling the old API: the cheapest of our 20-turn runs
+  (Blocks 3 and 4).
 - **The settings that let an agent run unattended are the ones that let
   it reach further.** Permission prompts off, virtual paths off, a shell
   on: each was ours to change, and each widened what it could reach
@@ -109,9 +112,9 @@ and a review step after green.
 
 *Design review:* "We use OpenAI Agents with our own rename tool, which
 takes a lock because the SDK runs a turn's calls at once, and a review
-step after the tests pass. On our migration the tool cut the
-calls from about 280 to about 50 per run, and the review step catches
-green runs that are wrong. We'd look again if another harness matched
+step after the tests pass, because passing tests once let a wrong
+migration through. On our migration the tool cut the calls from 278–315
+to 35–88 per run. We'd look again if another harness matched
 that on the same test."
 
 *Test it:* five runs of a real past migration, same prompt and budget,
@@ -129,8 +132,8 @@ a refund that needed a person's sign-off.
 
 | Question | Answer | What it means |
 |---|---|---|
-| 1. Will it work with your model and your code? | provider: **yes, it will switch**; existing project: yes, a Python service | rules out the vendor-built harnesses as a first choice: Claude Agent SDK needed two workarounds off its home model, OpenAI Agents one; Pydantic AI and Deep Agents needed none. Install the candidate into the service first |
-| 2. What will you need to add or change? | steps: a person approves any refund over $500, never retry a payment, strip card numbers from results. Tools: **its own are irrelevant** | approval rules nobody out: OpenAI Agents (`needs_approval`), Pydantic AI (`requires_approval`), Deep Agents (`interrupt_on`), Claude Agent SDK (`can_use_tool`), ADK (`before_tool_callback`). If an approval can wait a day, check how the run is saved meanwhile. You write the order and refund tools whatever you pick, so a harness's file tools and shell are cost, not value: Claude Code's whole kit re-sent about 15,000 tokens of tool definitions on every call |
+| 1. Will it work with your model and your code? | provider: **yes, it will switch**; existing project: yes, a Python service | rules out the vendor-built harnesses as a first choice. Off its home model, Claude Agent SDK needed Bearer auth through `ANTHROPIC_AUTH_TOKEN` and warned about an unrecognized model; OpenAI Agents needed an explicit model object and its tracing to OpenAI turned off; Google ADK needed LiteLLM to reach our provider at all. Pydantic AI and Deep Agents needed none. Install the candidate into the service first |
+| 2. What will you need to add or change? | steps: a person approves any refund over $500, never retry a payment, strip card numbers from results. Tools: **its own are irrelevant** | approval rules nobody out: OpenAI Agents (`needs_approval`), Pydantic AI (`requires_approval`), Deep Agents (`interrupt_on`), Claude Agent SDK (`can_use_tool`), ADK (`before_tool_callback`). If an approval can wait a day, check how the run is saved meanwhile. You write the order and refund tools whatever you pick, so a harness's file tools and shell are cost, not value: Claude Code's whole kit re-sends its tool definitions on every call |
 | 3. What can your agent reach or affect? | money and customers; no files, no shell | put the guardrail inside the refund tool (a cap, an idempotency key), where Block 4 showed it's exact |
 | 4. What will you need to watch? | a small conversation; every tool call with its arguments, cost per step | compaction will never fire, so a lighter harness costs less on every call; Pydantic AI reports cost per run (`RunUsage.cost`) |
 

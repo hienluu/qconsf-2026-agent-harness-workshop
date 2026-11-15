@@ -26,7 +26,7 @@ fine. Why each question matters, with what we saw this morning:
   1. ____________________________________________
   2. ____________________________________________
 - Its unit of work (one file? one record? one rule?): ____________________
-  - *Tools that don't match the unit of work cost 2 to 4 times the tokens.*
+  - *On the migration, tools that didn't match the unit of work cost 2 to 4 times the tokens.*
 
 ## Now rule them out
 
@@ -40,9 +40,9 @@ What we saw this morning, for each harness. Apply your answers to 1 and 2:
 
 | Harness | Off its own model (question 1) | Its own tools (question 2) | Where you plug in (question 2) | Still standing? |
 |---|---|---|---|---|
-| Claude Agent SDK | 2 workarounds; built for Anthropic's API | Claude Code's whole kit, Bash included (you can switch them off) | hooks (`PreToolUse`, `PostToolUse`, `Stop`, …), `can_use_tool` | ☐ |
-| OpenAI Agents | 1 workaround; its own shell tools don't work off OpenAI | none that work off OpenAI: you write them | `RunHooks`, guardrails, `needs_approval` | ☐ |
-| Google ADK | needs LiteLLM to reach other providers, which clashes with OpenAI Agents' libraries | none for this kind of task: you write them | `before_tool_callback` (and the other callbacks), plugins | ☐ |
+| Claude Agent SDK | Bearer auth through `ANTHROPIC_AUTH_TOKEN`, plus an unrecognized-model warning; built for Anthropic's API | Claude Code's whole kit, Bash included (you can switch them off) | hooks (`PreToolUse`, `PostToolUse`, `Stop`, …), `can_use_tool` | ☐ |
+| OpenAI Agents | an explicit model object, and tracing to OpenAI turned off; its own shell tools don't work off OpenAI | none that work off OpenAI: you write them | `RunHooks`, guardrails, `needs_approval` | ☐ |
+| Google ADK | needs LiteLLM to reach other providers; shares an environment with OpenAI Agents only with LiteLLM held at 1.83 | none for this kind of task: you write them | `before_tool_callback` (and the other callbacks), plugins | ☐ |
 | Deep Agents | none: any LangChain model | its own file tools, subagents, and a shell if you add one | LangChain callbacks, `interrupt_on`, `HarnessProfile` | ☐ |
 | Pydantic AI | none: the provider is a setting | none for this kind of task: you write them | `event_stream_handler`, `requires_approval` | ☐ |
 
@@ -89,8 +89,8 @@ to watch.
 **In a design review, I'd say (with a number):**
 
 *For example: "We'll extend OpenAI Agents with our own rename tool,
-because on our migration it cut the tool calls from about 280 to about
-50 per run. We'd look again if another harness matched that on the same
+because on our migration it cut the tool calls from 278–315 to 35–88
+per run. We'd look again if another harness matched that on the same
 test."*
 
 ______________________________________________________________________
