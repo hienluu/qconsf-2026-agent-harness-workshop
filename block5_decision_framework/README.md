@@ -83,7 +83,6 @@ these, in this order:
 2. **The design-review sentence.** What number would change your mind?
    If they don't have one yet, what will they measure, and what value
    would make them look again?
-   ("Choose, extend or defend, with numbers": the promise from Block 1.)
 3. **The eliminations,** if they crossed a harness out. Is that
    constraint real, or a preference?
 
@@ -138,7 +137,7 @@ a refund that needed a person's sign-off.
 | 1. Will it work with your model and your code? | provider: **yes, it will switch**; existing project: yes, a Python service | rules out the vendor-built harnesses as a first choice. Off its home model, Claude Agent SDK needed Bearer auth through `ANTHROPIC_AUTH_TOKEN` and warned about an unrecognized model; OpenAI Agents needed an explicit model object and its tracing to OpenAI turned off; Google ADK needed LiteLLM to reach our provider at all. Pydantic AI and Deep Agents needed none. Install the candidate into the service first |
 | 2. What will you need to add or change? | steps: a person approves any refund over $500, never retry a payment, strip card numbers from results. Tools: **its own are irrelevant** | approval rules nobody out: OpenAI Agents (`needs_approval`), Pydantic AI (`requires_approval`), Deep Agents (`interrupt_on`), Claude Agent SDK (`can_use_tool`), ADK (`before_tool_callback`). If an approval can wait a day, check how the run is saved meanwhile. You write the order and refund tools whatever you pick, so a harness's file tools and shell are cost, not value: Claude Code's whole kit re-sends its tool definitions on every call |
 | 3. What can your agent reach or affect? | money and customers; no files, no shell | put the guardrail inside the refund tool (a cap, an idempotency key), where Block 4 showed it's exact |
-| 4. What will you need to watch? | a small conversation; every tool call with its arguments, cost per step | compaction will never fire, so a lighter harness costs less on every call; Pydantic AI reports cost per run (`RunUsage.cost`) |
+| 4. What will you need to watch? | a small conversation; every tool call with its arguments, cost per step | compaction will never fire, so a lighter harness costs less on every call; Pydantic AI estimates cost per run (`RunUsage.cost`) for models its pricing data knows, and `UsageLimits(cost_limit=...)` stops a run on it; through our provider the estimate was empty, so check yours |
 
 **Decision: adopt.** A light, provider-neutral harness, here Pydantic AI,
 used as it is. All three steps fit without touching it: the approval is

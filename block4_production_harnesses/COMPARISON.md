@@ -24,7 +24,7 @@ runtime (LangGraph) → **kit** (Google ADK) → **composable** (Pydantic AI) �
 | **Durable memory** | CLAUDE.md conventions | sessions/state | session state; you design it | filesystem + AGENTS.md conventions | opt-in capability (notebooks) |
 | **Guardrails/permissions** | permission modes (we ran bypassPermissions on a disposable copy, which is not isolation) | guardrails built into the loop | callbacks/plugins: mechanisms, not policies | filesystem permissions, interrupt_on | opt-in capability (limits, masking) |
 | **Provider coupling** | Anthropic env contract (`ANTHROPIC_*`); worked on the compat endpoint but announced `unrecognized_model`, and auth needed Bearer via `AUTH_TOKEN` | OpenAI-shaped; `org/model` strings parse as provider prefixes, so an explicit model object is required | agnostic via LiteLLM (env-var contract) | any LangChain model, as a constructor argument | none: provider is a constructor argument |
-| **Cost visibility** | `total_cost_usd` on every result (an estimate; on a model it doesn't recognize, not to be trusted) | you | you | you | built-in (`RunUsage.cost`) |
+| **Cost visibility** | `total_cost_usd` on every result (an estimate; on a model it doesn't recognize, not to be trusted) | you | you | you | an estimate (`RunUsage.cost`) for models its pricing data knows; empty through our provider |
 | **Install weight** | pip pkg bundles a compiled Claude Code CLI per platform (~90MB wheel, ~190MB installed) | light | 75 packages with LiteLLM (OpenTelemetry, tokenizers, Hugging Face Hub); its `[extensions]` bundle would be 161 and **can't share an environment with openai-agents** | LangChain ecosystem | light |
 
 Wall times are deliberately NOT a matrix row: single-run wall clock on
@@ -62,8 +62,9 @@ the tokens: the tools changed, the harness didn't.
 
 **Deep Agents ran out of budget, and it's not misconfigured.** Each run
 handed the rename to a subagent, which started with an empty context and
-spent 20 to 35 of the 50 calls finding its way around before editing. Two
-documented settings change that:
+spent 20 to 35 of the 50 calls finding its way around before editing. A
+documented setting that turns its subagent off, plus one line of prompt,
+changes that (neither alone does):
 
 ```python
 from deepagents import GeneralPurposeSubagentProfile, HarnessProfile, register_harness_profile

@@ -331,8 +331,9 @@ run there sits above this table. The runs on a
 harness's **own** file tools are the expensive ones. Claude Code's `Edit`
 replaces one exact string per call, so it made 200 to 380 edits where our
 tools rewrote about 130 files, and sent 2 to 4 times the tokens. Deep
-Agents ran out of budget every time; with two documented settings it
-solves it (see `COMPARISON.md`).
+Agents ran out of budget in all three of these runs; with its subagent
+turned off and one line of prompt added it solves it (neither alone
+did; see `COMPARISON.md`).
 
 One Claude run on its own file tools is left out of the table: with no
 shell, it wrote a rename script into the empty `conftest.py`, ran the
@@ -355,8 +356,9 @@ Deep Agents ships its own file tools, a planning tool and subagents
 that starts from an empty context. In our three runs above it hit the
 50-call cap every time, so `NOT SOLVED` is a normal result, not your
 setup. It can also solve it: its summary line shows how many calls went to
-subagents either way. With two documented settings it solves the task
-reliably; see `COMPARISON.md`.
+subagents either way. With its subagent turned off and one line of
+prompt added, it solved 3 of 3 (each alone solved 1 of 3); see
+`COMPARISON.md`.
 
 **Take-home: Deep Agents' summarization, forced on** (4 to 16 minutes a
 run). Its context compaction never fires on this task at the defaults.
