@@ -547,7 +547,9 @@ class _Tee:
 
     def __init__(self, stream, path: Path):
         import re
-        self._stream, self._file, self._ansi = stream, path.open("w"), re.compile(r"\x1b\[[0-9;]*m")
+        # Line-buffered, so the log keeps up with the screen: the README
+        # suggests grepping it while a run is still going.
+        self._stream, self._file, self._ansi = stream, path.open("w", buffering=1), re.compile(r"\x1b\[[0-9;]*m")
 
     def write(self, s):
         self._stream.write(s)
@@ -749,14 +751,19 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
     rows = [r for r in latest.values() if r.get("task", "?") == task_name]
     # Only some harnesses report cached input; the column appears once one does.
     show_cached = any(r.get("tokens_cached") for r in rows)
+    from rich import box
     results = Table(title="Results: what each harness did with the same task, model and turn cap",
-                    title_style="bold")
-    columns = ["harness", "solved", "turns", "tool calls", "tokens sent"]
+                    title_style="bold", box=box.SIMPLE_HEAD)
+    # Two-line headers and unwrapped numbers, so the table still reads at 80
+    # columns: when space runs out, the harness name wraps, never a number.
+    columns = ["harness", "solved", "turns", "tool\ncalls", "tokens\nsent"]
     columns += ["cached"] if show_cached else []
-    columns += ["tokens out", "wall s"]
+    columns += ["tokens\nout", "wall\ns"]
     for col in columns:
-        results.add_column(col, justify="left" if col == "harness" else "right",
-                           no_wrap=col == "harness")
+        if col == "harness":
+            results.add_column(col, overflow="fold", ratio=1)
+        else:
+            results.add_column(col, justify="right", no_wrap=True)
     for r in rows:
         cells = [r.get("harness") or r["specimen"],
                  "yes" if r["solved"] else "NO", str(r.get("turns", "?")),
@@ -770,8 +777,12 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
     # shows when these runs used that model too.
     same_model = rows and all("glm" in (r.get("model") or "").lower()
                               and "flash" in (r.get("model") or "").lower() for r in rows)
-    if task_name == "migration" and same_model:
-        results.add_row("[dim]our h2 / h3 (Block 3, GLM-5.3-Flash)[/dim]", "", "[dim]17–34[/dim]",
+    # Its ranges are the widest cells, so on a narrow terminal the row
+    # becomes a line under the table instead.
+    show_h2h3 = task_name == "migration" and same_model
+    h2h3_as_row = show_h2h3 and Console().width >= 100
+    if h2h3_as_row:
+        results.add_row("[dim]your h2 / h3 (Block 3)[/dim]", "", "[dim]17–34[/dim]",
                         "[dim]181–299[/dim]", "[dim]0.37–0.78M[/dim]",
                         *([""] if show_cached else []), "", "")
 
@@ -793,6 +804,8 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
         )
     print(f"\nthis run's task: {task_name}")
     Console().print(results)
+    if show_h2h3 and not h2h3_as_row:
+        print("your h2 / h3 in Block 3: 17–34 turns, 181–299 tool calls, 0.37–0.78M tokens sent")
     if task_name == "migration" and rows and not same_model:
         print("(Block 3's h2/h3 range isn't shown: it was measured on GLM-5.3-Flash, "
               "and these runs used another model)")

@@ -304,7 +304,8 @@ on the runs you care about first, or `mv` their folders to keep them.
 
 **Compare with all five.** Each run printed two tables. **Results**
 (measured): solved, turns, tool calls, tokens sent, wall time, with your
-h2 and h3 from Block 3 as the last row. **Receipts** (facts about each
+h2 and h3 from Block 3 as the last row (on a terminal narrower than 100
+columns, as a line under the table). **Receipts** (facts about each
 harness): who owns the loop, the tools you wrote versus the harness's
 own, what it took to run on our provider, and how long the script is.
 
