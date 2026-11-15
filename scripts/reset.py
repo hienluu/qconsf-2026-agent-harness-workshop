@@ -7,7 +7,9 @@ says what it did:
 
   1. Task workspaces  — agents edit them in place (Block 2) so they're
      restored to the committed pristine state, including deleting any new
-     files an agent created (git restore + git clean).
+     files an agent created (git restore + git clean). Only task folders
+     with committed files are cleaned: a task folder you added and haven't
+     committed yet is left alone and named, so a take-home task survives.
   2. Eval run copies  — results/runs/ workspace copies and wreckage.
   3. The score table  — results.jsonl is archived with a timestamp, never
      deleted; compare.py starts fresh.
@@ -32,14 +34,27 @@ def git(*args) -> str:
     return proc.stdout.strip()
 
 
+def task_dirs() -> list[str]:
+    """Task folders (tasks/<tier>/<name>) that have committed files."""
+    files = git("ls-files", "--", TASKS).splitlines()
+    return sorted({"/".join(f.split("/")[:4]) for f in files if f.count("/") >= 4})
+
+
 def main() -> None:
-    dirty = git("status", "--porcelain", "--", TASKS)
+    shipped = task_dirs()
+    dirty = git("status", "--porcelain", "--", *shipped)
     if dirty:
-        git("restore", "--", TASKS)
-        git("clean", "-fdq", "--", TASKS)
+        git("restore", "--", *shipped)
+        git("clean", "-fdq", "--", *shipped)
         print(f"[reset] task workspaces restored ({len(dirty.splitlines())} path(s) were modified)")
     else:
         print("[reset] task workspaces already pristine")
+
+    inside = lambda path: any(path == d or path.startswith(d + "/") for d in shipped)
+    kept = [line[3:] for line in git("status", "--porcelain", "--", TASKS).splitlines()
+            if line.startswith("??") and not inside(line[3:].rstrip("/"))]
+    for path in kept:
+        print(f"[reset] left alone, not committed: {path} (commit it to make it a task)")
 
     for runs, label in [
         (RESULTS / "runs", "block 3 eval run copies"),

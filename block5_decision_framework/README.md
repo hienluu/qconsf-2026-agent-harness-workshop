@@ -160,7 +160,9 @@ The worksheet ends with "how to test it". The repo is a testbed for that:
   `block2_naive_harness/tasks/` (a workspace whose tests fail, committed
   to git, so the runner can tell it's clean) and an entry in
   `block3_measure/eval/tasks.py`, then run it through h2 and h3 the way
-  you did in Block 3.
+  you did in Block 3. `scripts/reset.py` leaves a task folder you haven't
+  committed alone, but once it's committed, reset restores it like the
+  others, so commit each change to your task before you reset.
 - **Your task through a production harness.** Block 4's scripts are each
   about 150 lines; copy the one closest to your candidate and point it at
   your task.
