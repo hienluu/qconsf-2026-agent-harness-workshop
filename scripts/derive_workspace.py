@@ -67,7 +67,7 @@ def main(target: Path = WORKSPACE) -> None:
         if in_tests or exempt or src.suffix != ".py":
             shutil.copy2(src, dst)
         else:
-            dst.write_text(to_v1(src.read_text(encoding="utf-8")), encoding="utf-8")
+            dst.write_text(to_v1(src.read_text(encoding="utf-8")), encoding="utf-8", newline="\n")
 
     rows = "\n".join(f"| `{v1}` | `{v2}` |" for v1, v2, doc in RENAMES if doc)
     (target / "MIGRATION.md").write_text(
@@ -85,6 +85,7 @@ def main(target: Path = WORKSPACE) -> None:
         "is the HTTP verb, not the ledger API. Do not rename anything there.\n\n"
         "Done means: `pytest` exits green.\n",
         encoding="utf-8",
+        newline="\n",   # LF on every OS, to match the checkout (.gitattributes)
     )
     print(f"workspace derived at {target}")
 
