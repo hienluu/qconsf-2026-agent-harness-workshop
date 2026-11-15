@@ -166,7 +166,9 @@ async def main() -> int:
             u = getattr(response, "usage", None)
             if u:
                 Watch.total += u.input_tokens
-                trace_cost(NAME, u.input_tokens, u.output_tokens, Watch.total)
+                details = getattr(u, "input_tokens_details", None)
+                trace_cost(NAME, u.input_tokens, u.output_tokens, Watch.total,
+                           cached=getattr(details, "cached_tokens", 0) or 0)
 
     started = time.monotonic()
     try:
