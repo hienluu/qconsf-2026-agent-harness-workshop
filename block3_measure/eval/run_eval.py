@@ -152,7 +152,8 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
         rows += [("task", task["description"]),
                  ("workspace", workspace.relative_to(BLOCK3)),
                  ("provider", os.environ.get("LLM_BASE_URL", "(LLM_BASE_URL not set)")),
-                 ("model", os.environ.get("LLM_MODEL", "(LLM_MODEL not set)"))]
+                 ("model", os.environ.get("LLM_MODEL", "(LLM_MODEL not set)")),
+                 ("temperature", base.sampling_label())]
         print_run_header(f"{label} × {task_name}", rows)
         result = module.run(str(workspace), task["prompt"])
     print(f"    trace saved: {log_path.relative_to(BLOCK3)}")

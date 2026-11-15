@@ -27,9 +27,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import end_turn, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_result, trace_say, trace_tool, verify, ws_shell  # noqa: E402
+from common import end_turn, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_result, trace_say, trace_tool, verify, ws_shell, sampling  # noqa: E402
 
-from agents import Agent, OpenAIChatCompletionsModel, RunHooks, Runner, function_tool, set_tracing_disabled  # noqa: E402
+from agents import Agent, ModelSettings, OpenAIChatCompletionsModel, RunHooks, Runner, function_tool, set_tracing_disabled  # noqa: E402
 from openai import AsyncOpenAI  # noqa: E402
 
 load_dotenv()
@@ -57,7 +57,8 @@ async def main() -> int:
         openai_client=AsyncOpenAI(base_url=os.environ["LLM_BASE_URL"],
                                   api_key=os.environ["LLM_API_KEY"]),
     )
-    agent = Agent(name="migrator", model=model, instructions=SYSTEM_PROMPT, tools=[shell])
+    agent = Agent(name="migrator", model=model, instructions=SYSTEM_PROMPT, tools=[shell],
+                  model_settings=ModelSettings(**sampling()))   # temperature: see common.temperature_setting
 
     class Watch(RunHooks):
         """Same hooks as step 1: one model request is one turn."""

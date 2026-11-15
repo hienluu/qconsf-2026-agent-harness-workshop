@@ -7,6 +7,7 @@ no permissions. Those omissions are the point — Block 3 adds them and
 measures the difference.
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -19,8 +20,31 @@ def print_run_header(title: str, rows: list) -> None:
     rule = "━" * 72
     print(f"\n\033[1;36m{rule}\n {title}\n{rule}\033[0m")
     for key, value in rows:
-        print(f"   \033[2m{key:<9}\033[0m {value}")
+        print(f"   \033[2m{key:<11}\033[0m {value}")
     print(f"\033[1;36m{rule}\033[0m")
+
+
+def temperature_setting(default: float | None = 0.1) -> tuple[dict, str]:
+    """The temperature to send with every model call, and a label for the
+    run header. LLM_TEMPERATURE overrides the default: a number sends that
+    value, `default` sends none (the provider picks). Never sent to
+    api.anthropic.com, whose newer models reject it. Shared by Block 2's
+    solution and Block 3's harnesses; Block 4's common.py has a copy."""
+    if "api.anthropic.com" in os.environ.get("LLM_BASE_URL", ""):
+        return {}, "not sent (api.anthropic.com rejects it)"
+    raw = os.environ.get("LLM_TEMPERATURE", "").strip()
+    if not raw:
+        if default is None:
+            return {}, "not sent: provider default (set LLM_TEMPERATURE to change)"
+        return {"temperature": default}, f"{default} (default; set LLM_TEMPERATURE to change)"
+    if raw.lower() == "default":
+        return {}, "not sent: provider default (LLM_TEMPERATURE=default)"
+    try:
+        value = float(raw)
+    except ValueError:
+        raise SystemExit(f"LLM_TEMPERATURE={raw!r} isn't a number. Use a number such as 0.1 or 1.0, "
+                         "or `default` to send none.")
+    return {"temperature": value}, f"{value} (LLM_TEMPERATURE)"
 
 
 class Workspace:

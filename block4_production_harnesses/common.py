@@ -470,6 +470,35 @@ def ws_shell(workspace: Path, command: str, max_output: int = 30_000) -> str:
     return f"{out}\n[exit code {code}]"
 
 
+def temperature_setting(harness: str = "") -> tuple[dict, str]:
+    """The temperature every Block 4 harness sends, and a label for the run
+    header. By default none is sent, so the provider picks (the setting
+    Block 4's published numbers were run at). LLM_TEMPERATURE overrides it:
+    a number sends that value, `default` sends none. Never sent to
+    api.anthropic.com, whose newer models reject it. A copy of Block 2's
+    tools.temperature_setting, with Block 4's default."""
+    if harness.startswith("claude_agent_sdk"):
+        return {}, "not settable: Claude Code picks its own (LLM_TEMPERATURE is ignored)"
+    if "api.anthropic.com" in _os.environ.get("LLM_BASE_URL", ""):
+        return {}, "not sent (api.anthropic.com rejects it)"
+    raw = _os.environ.get("LLM_TEMPERATURE", "").strip()
+    if not raw:
+        return {}, "not sent: provider default (set LLM_TEMPERATURE to change)"
+    if raw.lower() == "default":
+        return {}, "not sent: provider default (LLM_TEMPERATURE=default)"
+    try:
+        value = float(raw)
+    except ValueError:
+        raise SystemExit(f"LLM_TEMPERATURE={raw!r} isn't a number. Use a number such as 0.1 or 1.0, "
+                         "or `default` to send none.")
+    return {"temperature": value}, f"{value} (LLM_TEMPERATURE)"
+
+
+def sampling() -> dict:
+    """What to pass to a harness's model settings: {} or {"temperature": x}."""
+    return temperature_setting()[0]
+
+
 def anthropic_compat_base_url() -> str:
     """The provider's Anthropic-dialect endpoint, derived from the one
     already-configured URL: the OpenAI dialect mounts at {host}/v1, the
@@ -585,12 +614,13 @@ def _print_header(harness: str) -> None:
     if harness.startswith("claude_agent_sdk"):
         rows.append(("calls", f"{anthropic_compat_base_url()} (Claude Code's Anthropic-compatible endpoint)"))
     rows += [("model", _os.environ.get("LLM_MODEL", "(LLM_MODEL not set)")),
+             ("temperature", temperature_setting(harness)[1]),
              ("trace", "runs/logs/ (captured by run_all.py)" if _os.environ.get("BLOCK4_LOGGED")
               else f"also saved to runs/logs/{harness}.log")]
     rule = "━" * 72
     print(f"\n\033[1;36m{rule}\n {harness} × {BLOCK4_TASK}\n{rule}\033[0m")
     for key, value in rows:
-        print(f"   \033[2m{key:<9}\033[0m {value}")
+        print(f"   \033[2m{key:<11}\033[0m {value}")
     print(f"\033[1;36m{rule}\033[0m")
 
 
@@ -713,6 +743,7 @@ def receipt(
         "provider_friction": provider_friction,
         "code_lines": len(Path(script).read_text(encoding="utf-8").splitlines()),
         "timestamp": time.time(),
+        "temperature": temperature_setting(harness)[0].get("temperature", "not sent"),
         **run_context(),
     }
 

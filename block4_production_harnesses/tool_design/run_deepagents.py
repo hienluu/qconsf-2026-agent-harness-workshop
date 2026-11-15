@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from langchain_core.callbacks import BaseCallbackHandler  # noqa: E402
-from common import TurnCapReached, end_turn, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, shell_env, trace_key, trace_result, trace_say, trace_tool, verify  # noqa: E402
+from common import TurnCapReached, end_turn, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, shell_env, trace_key, trace_result, trace_say, trace_tool, verify, sampling  # noqa: E402
 
 from deepagents import create_deep_agent  # noqa: E402
 from deepagents.backends import LocalShellBackend  # noqa: E402
@@ -89,6 +89,7 @@ def main() -> int:
             base_url=os.environ["LLM_BASE_URL"],
             api_key=os.environ["LLM_API_KEY"],
             max_retries=5,  # the workshop provider throws occasional 500s
+            **sampling(),   # temperature: see common.temperature_setting
         ),
         backend=LocalShellBackend(
             root_dir=workspace, virtual_mode=True, timeout=120,

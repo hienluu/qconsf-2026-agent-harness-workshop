@@ -25,7 +25,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, trace_cost, trace_note, trace_state, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, trace_cost, trace_note, trace_state, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write, sampling  # noqa: E402
 
 load_dotenv()
 # LiteLLM's OpenAI adapter reads these; set before ADK imports settle.
@@ -71,7 +71,8 @@ async def main() -> int:
 
     agent = Agent(
         name="bug_fixer",
-        model=LiteLlm(model=f"openai/{os.environ['LLM_MODEL']}", num_retries=3),
+        model=LiteLlm(model=f"openai/{os.environ['LLM_MODEL']}", num_retries=3,
+                      **sampling()),   # temperature: see common.temperature_setting
         instruction=SYSTEM_PROMPT,
         tools=[list_files, read_file, write_file, run_tests],
     )

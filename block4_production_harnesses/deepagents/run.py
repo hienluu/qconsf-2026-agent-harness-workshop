@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from langchain_core.callbacks import BaseCallbackHandler  # noqa: E402
-from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, TurnCapReached, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_run_tests  # noqa: E402
+from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, TurnCapReached, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_run_tests, sampling  # noqa: E402
 
 from deepagents import create_deep_agent  # noqa: E402
 from deepagents.backends import FilesystemBackend  # noqa: E402
@@ -97,6 +97,7 @@ def main() -> int:
             base_url=os.environ["LLM_BASE_URL"],
             api_key=os.environ["LLM_API_KEY"],
             max_retries=5,  # the workshop provider throws occasional 500s
+            **sampling(),   # temperature: see common.temperature_setting
         ),
         # The harness's own file tools, aimed at the run's private copy.
         # virtual_mode=True is the confined mode: paths are kept inside

@@ -23,10 +23,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write, sampling  # noqa: E402
 
 from agents import (  # noqa: E402
     Agent,
+    ModelSettings,
     RunHooks,
     OpenAIChatCompletionsModel,
     Runner,
@@ -92,6 +93,7 @@ async def main() -> int:
         name="bug-fixer",
         model=model,
         instructions=SYSTEM_PROMPT,
+        model_settings=ModelSettings(**sampling()),   # temperature: see common.temperature_setting
         tools=[list_files, read_file, write_file, run_tests],
     )
 

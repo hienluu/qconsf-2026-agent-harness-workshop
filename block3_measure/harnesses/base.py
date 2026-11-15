@@ -23,7 +23,7 @@ load_dotenv()
 # The harnesses wrap the exact tools attendees used in Block 2.
 _BLOCK2 = Path(__file__).resolve().parents[2] / "block2_naive_harness"
 sys.path.insert(0, str(_BLOCK2))
-from tools import TOOL_SCHEMAS, Workspace  # noqa: E402
+from tools import TOOL_SCHEMAS, Workspace, temperature_setting  # noqa: E402
 
 SYSTEM_PROMPT = """You are a coding agent operating on a local workspace via tools.
 Work step by step: inspect files, make edits, and run the tests to check yourself.
@@ -106,12 +106,16 @@ def call_model(client: OpenAI, **kwargs):
 
 
 def sampling() -> dict:
-    """Settings sent with every model call. Anthropic's newer models reject
-    temperature, so it's left out for api.anthropic.com; every other
-    provider gets 0.1, the setting all the Fireworks numbers were run at."""
-    if "api.anthropic.com" in os.environ.get("LLM_BASE_URL", ""):
-        return {}
-    return {"temperature": 0.1}
+    """Settings sent with every model call: temperature 0.1 by default, the
+    setting all the Fireworks numbers were run at. LLM_TEMPERATURE changes
+    it (a number, or `default` to send none); never sent to
+    api.anthropic.com, whose newer models reject it."""
+    return temperature_setting(0.1)[0]
+
+
+def sampling_label() -> str:
+    """What sampling() sends, for the run header."""
+    return temperature_setting(0.1)[1]
 
 
 def explain_crash(error: str, turns: int) -> list[str]:

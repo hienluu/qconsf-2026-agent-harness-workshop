@@ -29,9 +29,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import end_turn, spotlight, is_test_path, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_result, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import end_turn, spotlight, is_test_path, tool_detail, SYSTEM_PROMPT, trace_cost, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_result, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write, sampling  # noqa: E402
 
-from agents import Agent, OpenAIChatCompletionsModel, RunHooks, Runner, function_tool, set_tracing_disabled  # noqa: E402
+from agents import Agent, ModelSettings, OpenAIChatCompletionsModel, RunHooks, Runner, function_tool, set_tracing_disabled  # noqa: E402
 from openai import AsyncOpenAI  # noqa: E402
 
 load_dotenv()
@@ -145,6 +145,7 @@ async def main() -> int:
         name="migrator",
         model=model,
         instructions=SYSTEM_PROMPT,
+        model_settings=ModelSettings(**sampling()),   # temperature: see common.temperature_setting
         tools=[list_files, read_file, write_file, run_tests, replace_in_files],
     )
 

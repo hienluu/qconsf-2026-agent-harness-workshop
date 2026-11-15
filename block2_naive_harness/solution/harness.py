@@ -17,7 +17,7 @@ from openai import OpenAI
 
 load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tools import TOOL_SCHEMAS, Workspace, print_run_header  # noqa: E402
+from tools import TOOL_SCHEMAS, Workspace, print_run_header, temperature_setting  # noqa: E402
 from scoreboard import Scoreboard  # noqa: E402  (observer-side commentary)
 
 SYSTEM_PROMPT = """You are a coding agent operating on a local workspace via tools.
@@ -49,6 +49,9 @@ def run(workspace_dir: str, task: str) -> None:
     )
     model = os.environ["LLM_MODEL"]
     ws = Workspace(workspace_dir)
+    # A low temperature by default (0.1); LLM_TEMPERATURE changes it.
+    # Never sent to api.anthropic.com, whose newer models reject it.
+    settings, temperature = temperature_setting(0.1)
     # What this run works on and calls (never the key): the first thing to
     # check when two runs disagree. Blocks 3 and 4 open the same way.
     print_run_header(f"naive harness × {ws.root.parent.name}", [
@@ -56,6 +59,7 @@ def run(workspace_dir: str, task: str) -> None:
         ("task", task),
         ("provider", os.environ["LLM_BASE_URL"]),
         ("model", model),
+        ("temperature", temperature),
     ])
 
     # The tool dispatcher: the bridge between what the model SAYS and what
@@ -82,13 +86,6 @@ def run(workspace_dir: str, task: str) -> None:
     # changes what the model sees or what the loop does.
     board = Scoreboard(MAX_TURNS)
     board.legend()
-
-    # A low temperature keeps runs alike. Anthropic's newer models reject
-    # the setting, so it's left out there.
-    if "api.anthropic.com" in os.environ["LLM_BASE_URL"]:
-        settings = {}
-    else:
-        settings = {"temperature": 0.1}
 
     for turn in range(1, MAX_TURNS + 1):
         response = client.chat.completions.create(

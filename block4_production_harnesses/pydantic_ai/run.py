@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, PartDeltaEvent, PartStartEvent, RetryPromptPart, TextPart, TextPartDelta  # noqa: E402
-from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, set_tokens_sent, trace_reject, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write  # noqa: E402
+from common import end_turn, trace_result, tool_detail, SYSTEM_PROMPT, set_tokens_sent, trace_reject, TASK, TASK_MAX_TURNS, new_turn, prepare_workspace, receipt, trace_key, trace_say, trace_tool, verify, ws_list, ws_read, ws_run_tests, ws_write, sampling  # noqa: E402
 
 from pydantic_ai import Agent, UsageLimits  # noqa: E402
 from pydantic_ai.models.openai import OpenAIChatModel  # noqa: E402
@@ -42,6 +42,7 @@ model = OpenAIChatModel(
 agent = Agent(
     model,
     instructions=SYSTEM_PROMPT,
+    model_settings=sampling() or None,   # temperature: see common.temperature_setting
 )
 
 
