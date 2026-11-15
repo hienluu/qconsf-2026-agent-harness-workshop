@@ -1,11 +1,11 @@
 # Block 4: The Production Harnesses
 
-> **In this block (35 min)**
+> **In this block (40 min)**
 >
 > | Part | Time | What happens |
 > |---|---|---|
 > | Intro | 5 min | The presenter sets up the block and the exercise |
-> | Hands-on | 20 min | Steps 0 to 4 under "Exercise": watch two harnesses work, design a tool, run one answer |
+> | Hands-on | 25 min | Steps 0 to 4 under "Exercise": watch two harnesses work, design a tool, run one answer |
 > | Discussion | 10 min | The presenter demo (step 5), then the questions under "Discussion" |
 >
 > **If you're behind:** if step 2 hasn't finished when the discussion

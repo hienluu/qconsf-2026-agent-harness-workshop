@@ -1,6 +1,6 @@
 # Block 1 — Why the Harness Matters
 
-**Nothing to run in this block.** It's 20 minutes of argument and vocabulary,
+**Nothing to run in this block.** It's 30 minutes of argument and vocabulary,
 and this page is the reference card: the terms defined here get used for the
 rest of the workshop, so keep it open.
 

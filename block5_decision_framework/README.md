@@ -1,16 +1,19 @@
 # Block 5: The Decision Framework
 
-> **In this block (35 min)**
+> **In this block (20 min)**
 >
 > | Part | Time | What happens |
 > |---|---|---|
-> | Intro | 5 min | The presenter recaps what Blocks 2 to 4 showed |
-> | Worksheet | 15 min | You work through [`WORKSHEET.md`](WORKSHEET.md) for your own agent |
-> | Pairs | 10 min | Swap worksheets and challenge each other's answers |
-> | Wrap-up | 5 min | The questions under "Discussion", and the take-home in one line |
+> | Intro | 3 min | The presenter recaps what Blocks 2 to 4 showed |
+> | Worksheet | 12 min | Your agent, questions 1 and 2 of [`WORKSHEET.md`](WORKSHEET.md), then decide |
+> | Pairs | 5 min | Swap worksheets and challenge each other's answers |
 >
-> **If you're behind:** answer questions 1 and 2, then decide; skip 3
-> and 4, which rule nothing out. The pair discussion starts on time.
+> The questions under "Discussion" and the take-home come in the
+> workshop's conclusion, right after this block.
+>
+> **If you finish early:** questions 3 and 4. They rule nothing out, so
+> they can wait until after the workshop, but they list what stays your
+> job whichever harness you pick. The pair discussion starts on time.
 
 You've built a harness, measured what its protections buy, and watched
 production harnesses work on the same task. Now the question the workshop is
@@ -56,7 +59,7 @@ something a feature list says.
 
 ## Exercise
 
-### Step 1: Your agent, through the worksheet (15 minutes)
+### Step 1: Your agent, through the worksheet (12 minutes)
 
 Open [`WORKSHEET.md`](WORKSHEET.md) and pick an agent you're working on
 or expect to build. Keep your notes from Blocks 2 to 4 in front of you.
@@ -65,17 +68,18 @@ or expect to build. Keep your notes from Blocks 2 to 4 in front of you.
 |---|---|---|
 | Your agent | what it does, which model it uses | 2 min |
 | Questions 1 and 2 (can rule a harness out) | will it work with your model and your code; what will you need to add or change | 4 min |
-| Questions 3 and 4 (your job, whichever you pick) | what can your agent reach or affect; what will you need to watch | 3 min |
 | Decide | adopt, extend, drop down a level, or build; one sentence for a design review, with a number you have or one you'll measure; how you'd test it | 6 min |
+| Questions 3 and 4 (your job, whichever you pick) | what can your agent reach or affect; what will you need to watch | if you finish early, or after the workshop |
 
 Stuck on a question? The worked examples below answer each one for two
 very different agents, and [`WHY.md`](WHY.md) explains why each question
 matters, with what we saw this morning.
 
-### Step 2: Pairs (10 minutes)
+### Step 2: Pairs (5 minutes)
 
 Swap worksheets with your neighbor. For each other's answer, push on
-these, in this order:
+these, in this order. Five minutes covers the first two; take the third
+if there's time:
 
 1. **The test.** Would their test catch a run that passed every check and
    still did the wrong job, like the alias shortcut? Start here: it's the
@@ -182,7 +186,7 @@ The worksheet ends with "how to test it". The repo is a testbed for that:
   it the way `scripts/reference_check.py` does: passing tests is where
   checking starts.
 
-## Discussion (5 min, in the wrap-up)
+## Discussion (in the conclusion, after this block)
 
 1. **Did you end up adopting or extending,** and what tipped it?
 2. **What's still your job no matter which harness you pick,** and who on

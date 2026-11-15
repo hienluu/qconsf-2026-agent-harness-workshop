@@ -78,12 +78,14 @@ starts editing, switch to GLM-5.3-Flash for Blocks 3 and 4.
 
 | Time | Block | Minutes |
 |---|---|---|
-| 9:00 | 1. Why the Harness Matters (slides) | 20 |
-| 9:20 | 2. Build the Naive Harness | 35 |
-| 9:55 | 3. Measure It | 33 |
-| 10:28 | Break | 15 |
-| 10:43 | 4. The Production Harnesses | 35 |
-| 11:18 | 5. The Decision Framework | 35 |
+| 9:00 | 1. Why the Harness Matters (slides) | 30 |
+| 9:30 | Lab setup: `uv run setup/check_setup.py`, help for anything not green | 10 |
+| 9:40 | 2. Build the Naive Harness | 32 |
+| 10:12 | 3. Measure It | 28 |
+| 10:40 | Break | 10 |
+| 10:50 | 4. The Production Harnesses | 40 |
+| 11:30 | 5. The Decision Framework | 20 |
+| 11:50 | Conclusion and feedback | 10 |
 
 Each block's README opens with its own breakdown: intro, hands-on and
 discussion.

@@ -1,8 +1,9 @@
 # Harness decision worksheet
 
 Pick an agent you're working on, or one you'll build soon. Answer four
-questions about it, then decide. About 15 minutes. Short answers are
-fine. Why each question matters, with what we saw this morning:
+questions about it, then decide. In the workshop you have 12 minutes:
+questions 1 and 2, then the decision. Questions 3 and 4 can wait until
+after. Short answers are fine. Why each question matters, with what we saw this morning:
 [WHY.md](WHY.md).
 
 ## Your agent

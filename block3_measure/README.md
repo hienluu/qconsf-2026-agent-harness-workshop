@@ -1,12 +1,12 @@
 # Block 3: Measure It
 
-> **In this block (33 min)**
+> **In this block (28 min)**
 >
 > | Part | Time | What happens |
 > |---|---|---|
-> | Intro | 5 min | The presenter sets up the block and the exercise |
+> | Intro | 4 min | The presenter sets up the block and the exercise |
 > | Hands-on | 18 min | Steps 0 to 3 under "Exercise" |
-> | Discussion | 10 min | The questions under "Discussion" near the end of this page |
+> | Discussion | 6 min | The questions under "Discussion" near the end of this page |
 >
 > **If you're behind:** if any run hasn't finished six minutes after you
 > started it, stop it (Ctrl+C) and read the numbers in step 2 instead. If
@@ -427,7 +427,7 @@ uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py
 `reset.py` restores every task, clears run copies, and archives (doesn't
 delete) your score table. `check_fixtures.py` only checks.
 
-## Discussion (10 min)
+## Discussion (6 min)
 
 **For the group:**
 

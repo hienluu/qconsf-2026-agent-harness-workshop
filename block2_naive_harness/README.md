@@ -1,12 +1,12 @@
 # Block 2: Build the Naive Harness
 
-> **In this block (35 min)**
+> **In this block (32 min)**
 >
 > | Part | Time | What happens |
 > |---|---|---|
 > | Intro | 3 min | The presenter sets up the block and the exercise |
 > | Hands-on | 26 min | Steps 1 to 4 below |
-> | Discussion | 6 min | The questions under "Discussion" at the end of this page |
+> | Discussion | 3 min | The questions under "Discussion" at the end of this page |
 >
 > **If you're behind:** if you haven't reached Step 4 fifteen minutes into
 > the hands-on, stop typing, switch to `solution/harness.py` (same two
@@ -256,7 +256,7 @@ you. Block 5's worksheet then takes your own agent to a harness decision.
 `added` with what it cost. You'll compare them with Block 3's harnesses on
 the same task. (Not wall time: that mostly measures the provider.)
 
-## Discussion (6 min)
+## Discussion (3 min)
 
 **For the group:**
 
