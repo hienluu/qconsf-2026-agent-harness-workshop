@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import sys
+from urllib.parse import urlparse
 
 failures = []
 
@@ -26,6 +27,19 @@ def check(label, ok, hint):
     print(f"[{mark}] {label}")
     if not ok:
         failures.append(f"{label}: {hint}")
+
+
+def token_limit(base_url: str, n: int) -> dict:
+    """The output-token cap, under the name this provider accepts.
+
+    OpenAI's own API rejects max_tokens for its newer models (o-series,
+    gpt-5) and wants max_completion_tokens. Other OpenAI-compatible
+    providers mostly still expect max_tokens.
+    """
+    host = urlparse(base_url).hostname or ""
+    if host == "openai.com" or host.endswith(".openai.com"):
+        return {"max_completion_tokens": n}
+    return {"max_tokens": n}
 
 
 def main() -> int:
@@ -103,7 +117,7 @@ def main() -> int:
             client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": "Reply with the single word: ready"}],
-                max_tokens=5,
+                **token_limit(base_url, 5),
             )
             check(f"provider reachable ({base_url}, model {model})", True, "")
         except Exception as exc:
@@ -134,7 +148,7 @@ def main() -> int:
                             },
                         },
                     }],
-                    max_tokens=100,
+                    **token_limit(base_url, 100),
                 )
                 calls = reply.choices[0].message.tool_calls or []
                 if not calls:

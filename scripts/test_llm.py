@@ -43,6 +43,19 @@ def provider_name(base_url: str) -> str:
     return host
 
 
+def token_limit(base_url: str, n: int) -> dict:
+    """The output-token cap, under the name this provider accepts.
+
+    OpenAI's own API rejects max_tokens for its newer models (o-series,
+    gpt-5) and wants max_completion_tokens. Other OpenAI-compatible
+    providers mostly still expect max_tokens.
+    """
+    host = urlparse(base_url).hostname or ""
+    if host == "openai.com" or host.endswith(".openai.com"):
+        return {"max_completion_tokens": n}
+    return {"max_tokens": n}
+
+
 def env_price(name: str) -> float | None:
     value = os.getenv(name)
     return float(value) if value else None
@@ -96,7 +109,7 @@ def main() -> int:
         resp = client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": args.prompt}],
-            max_tokens=args.max_tokens,
+            **token_limit(base_url, args.max_tokens),
         )
     except Exception as exc:  # report any connection/auth/model error plainly
         elapsed = time.perf_counter() - start
