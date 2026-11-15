@@ -23,6 +23,12 @@ cp .env.example .env           # fill in your provider API key + model
 uv run setup/check_setup.py    # expect: ALL GREEN
 ```
 
+The numbers in this repo come from GLM-5.3-Flash. Any OpenAI-compatible
+model runs the harnesses, but some won't finish Block 3's migration task:
+in our runs, Gemini Flash models mostly made one tool call per turn and
+ran out of turns every time. If yours reads one file a turn and never
+starts editing, switch to GLM-5.3-Flash for Blocks 3 and 4.
+
 ## Schedule (9:00 to noon)
 
 | Time | Block | Minutes |
