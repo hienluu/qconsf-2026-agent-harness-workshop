@@ -340,6 +340,9 @@ shell, it wrote a rename script into the empty `conftest.py`, ran the
 tests (which runs `conftest.py`), then emptied the file again. Clever,
 and against the rules: a run that changes a test file now fails, even if
 it changes it back. And a reminder that "run the tests" means "run code".
+(The file is empty on purpose: pytest puts its folder on Python's import
+path, so a plain `pytest` can import the package from `tests/`. Tasks
+whose tests sit next to the code don't have one.)
 
 Then read `COMPARISON.md`, the full comparison row by row, and argue with
 it against what you watched.
