@@ -11,17 +11,62 @@ same task to see what each one decides for you.
 
 ## Setup (do this at home — venue WiFi will not support it)
 
-Requires [uv](https://docs.astral.sh/uv/) (`brew install uv`, or
-`curl -LsSf https://astral.sh/uv/install.sh | sh`). No virtualenv to
-create or activate — `uv run` manages the environment itself.
+No virtualenv to create or activate — `uv run` manages the environment
+itself.
+
+**1. Install [uv](https://docs.astral.sh/uv/)** (one time per laptop).
+If `uv --version` already works, skip to step 2.
+
+- macOS/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+
+Open a new terminal afterwards so `uv` is on your PATH.
+
+**2. Clone and sync** (on real WiFi, before the workshop):
 
 ```
 git clone https://github.com/hienluu/qconsf-2026-agent-harness-workshop.git
 cd qconsf-2026-agent-harness-workshop
-uv sync                        # downloads dependencies — do this on real WiFi
-cp .env.example .env           # fill in your provider API key + model
-uv run setup/check_setup.py    # expect: ALL GREEN
+uv sync
 ```
+
+`uv sync` downloads the dependencies, and installs Python 3.11+ for you
+if you don't have it.
+
+**3. Configure the provider.**
+
+- Copy the template: `cp .env.example .env` (Windows: `copy .env.example .env`)
+- Create an account and an API key at https://app.gomomento.ai/
+- In `.env`, find the Momento section and edit the `LLM_API_KEY` line:
+  remove the leading `#`, then replace `<api_key>` with your key:
+
+  ```
+  LLM_API_KEY="your-key-here"
+  ```
+
+- Leave `LLM_BASE_URL` and `LLM_MODEL` in that section as they are, and
+  leave the other provider sections (Fireworks, Anthropic, Baseten)
+  commented out.
+
+**4. Verify.**
+
+```
+uv run setup/check_setup.py
+```
+
+The check makes two small API calls, so it needs network and a working
+key. The last line should read `ALL GREEN — see you at the workshop.` If
+it doesn't, follow the hints it prints, or bring the output to the help
+desk before 9am.
+
+**On Windows:** the commands in the block READMEs are written for bash
+or zsh. A line ending in `\` continues on the next line, `A && B` runs
+two commands in a row, and `NAME=value uv run ...` sets a variable for
+that one command. The easiest route is to run them in Git Bash (it comes
+with Git for Windows). In PowerShell instead: put a continued command on
+one line, write `A; B` for `A && B`, and set the variable first with
+`$env:NAME="value"; uv run ...`. In PowerShell the variable stays set
+until you close the window or run `Remove-Item Env:NAME`.
 
 The numbers in this repo come from GLM-5.3-Flash. Any OpenAI-compatible
 model runs the harnesses, but some won't finish Block 3's migration task:
