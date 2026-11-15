@@ -39,11 +39,40 @@ def diff_lines(workspace: Path, rel: Path, label: str) -> list:
                                      f"reference/{rel}", f"{label}/{rel}", lineterm="", n=0))
 
 
-def summary_line(workspace: Path) -> str:
-    """One line for the end of a migration run."""
+def summary_line(workspace: Path, solved: bool) -> str:
+    """One line for the end of a migration run. The warning about passing
+    tests only makes sense when the tests passed."""
     files = differing(workspace)
     if not files:
         return "--- against the reference migration: matches"
     shown = ", ".join(str(f) for f in files[:3]) + (f" and {len(files) - 3} more" if len(files) > 3 else "")
-    return (f"--- against the reference migration: {len(files)} file{'s' if len(files) != 1 else ''} "
-            f"differ ({shown}). Passing the tests isn't the same as doing the job.")
+    one = len(files) == 1
+    line = (f"--- against the reference migration: {len(files)} file{'' if one else 's'} "
+            f"{'differs' if one else 'differ'} ({shown}).")
+    if solved:
+        line += " Passing the tests isn't the same as doing the job."
+    return line
+
+
+def main(argv: list) -> int:
+    """Print what differs, for one run folder (or its workspace)."""
+    if len(argv) != 1:
+        raise SystemExit("usage: uv run ../scripts/reference_check.py results/runs/<run folder>")
+    folder = Path(argv[0])
+    workspace = folder / "workspace" if (folder / "workspace").is_dir() else folder
+    if not (workspace / "pyledger").is_dir():
+        raise SystemExit(f"{folder}: not a migration run (only refactor_v2 has a reference to compare)")
+    files = differing(workspace)
+    if not files:
+        print("\033[32mmatches the reference\033[0m")
+        return 0
+    print(f"\033[1;31m{len(files)} file(s) differ from the reference\033[0m")
+    for rel in files:
+        for line in diff_lines(workspace, rel, "yours"):
+            print("   " + line)
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    raise SystemExit(main(sys.argv[1:]))

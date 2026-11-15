@@ -10,6 +10,7 @@ work (h2 adds three at once).
 """
 
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -26,6 +27,14 @@ def age(timestamp: float) -> str:
     if seconds < 5400:
         return f"{seconds // 60}m ago"
     return f"{seconds // 3600}h ago"
+
+def short(harness: str) -> str:
+    """The table's label: h3+progress·20t for h3_full+progress-20turns, so
+    the name survives a narrow terminal. Folders and results keep full names."""
+    for full, brief in (("h1_naive", "h1"), ("h2_managed", "h2"), ("h3_no_notes", "h3·no-notes"), ("h3_full", "h3")):
+        harness = harness.replace(full, brief)
+    return re.sub(r"-(\d+)turns", r"·\1t", harness)
+
 
 RESULTS = Path(__file__).resolve().parent.parent / "results" / "results.jsonl"
 HARNESS_ORDER = ["h1_naive", "h2_managed", "h2_managed+turns", "h3_full", "h3_no_notes"]
@@ -48,17 +57,20 @@ def main() -> int:
         title="Same model, same tasks, different harnesses (one run each)",
         caption=(
             "fired = times each protection acted: ✂cut tool output · ✂✂dropped old output · ↻recovered\n"
+            "· ⛔refused test write. re-read isn't a protection: it's the agent fetching a file again,\n"
+            "shown here because after a ✂✂ it's what compaction cost\n"
             "not re-sent = conversation characters the harness kept off the wire, counted once per\n"
             "turn they would otherwise have been re-sent (the whole conversation goes over on every turn)\n"
+            "harness: h2 = h2_managed, h3 = h3_full, ·20t = run with MAX_TURNS=20\n"
             "wall-clock is in results.jsonl but not here — it is run-to-run noise, not a harness property"
         ),
         caption_justify="left",
     )
-    table.add_column("harness", style="bold")
+    table.add_column("harness", style="bold", no_wrap=True)
     table.add_column("task")
     table.add_column("solved?", justify="center")
     table.add_column("turns", justify="right")
-    table.add_column("input tokens", justify="right")
+    table.add_column("input tokens", justify="right", no_wrap=True)
     table.add_column("protections fired")
     table.add_column("not re-sent", justify="right")
     table.add_column("when")
@@ -91,7 +103,7 @@ def main() -> int:
 
             saved = n.get("chars_not_resent") or 0
             table.add_row(
-                harness,
+                short(harness),
                 task,
                 solved,
                 str(row["turns"]),

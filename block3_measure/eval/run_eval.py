@@ -139,13 +139,16 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
         shutil.rmtree(run_dir)
     shutil.copytree(source, workspace)
     log_path = run_dir / "console.log"
-    base.reset_habits()
+    base.reset_habits(str(workspace))
     with log_path.open("w") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):
         # The header goes in the saved trace too: which endpoint and model
         # produced a run is the first thing to know when comparing runs.
         rows = [("harness", (module.__doc__ or "").strip().splitlines()[0])]
         if label != HARNESSES[harness_key]:
-            rows.append(("variant", f"running {HARNESSES[harness_key]} with an option changed, recorded as {label}"))
+            options = ", ".join(f"{k}={os.environ[k]}" for k in
+                                ("MAX_TURNS", "BUDGET_SIGNAL", "TURN_NOTICE", "H3_NO_NOTES")
+                                if os.environ.get(k)) or "an option changed"
+            rows.append(("variant", f"{HARNESSES[harness_key]} with {options}, recorded as {label}"))
         rows += [("task", task["description"]),
                  ("workspace", workspace.relative_to(BLOCK3)),
                  ("provider", os.environ.get("LLM_BASE_URL", "(LLM_BASE_URL not set)")),
@@ -192,7 +195,10 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
                   f"tokens={result.input_tokens}+{result.output_tokens} "
                   f"wall={result.wall_seconds}s | {pytest_summary}\n{base.habits_line(result.turns)}")
         if task_name == "refactor_v2":   # a rename has one right answer: compare it
-            ending += "\n" + summary_line(workspace)
+            ending += "\n" + summary_line(workspace, tests_green)
+            if not ending.endswith("matches"):
+                ending += (f"\n    see what differs: uv run ../scripts/reference_check.py "
+                           f"{run_dir.relative_to(BLOCK3)}")
         print(ending)
     with log_path.open("a") as log:   # the saved trace ends the way the screen does
         log.write(ending + "\n")

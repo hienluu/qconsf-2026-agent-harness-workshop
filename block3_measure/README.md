@@ -8,10 +8,10 @@
 > | Hands-on | 18 min | Steps 0 to 3 under "Exercise" |
 > | Discussion | 10 min | The questions under "Discussion" near the end of this page |
 >
-> **If you're behind:** if h3 hasn't finished ten minutes into the
-> hands-on, stop it (Ctrl+C) and read your h2 results plus the h3 numbers
-> in step 2. If you reach step 3 with under four minutes left, skip its
-> runs and read its table. Steps 4 and 5 are optional, for after the
+> **If you're behind:** if any run hasn't finished six minutes after you
+> started it, stop it (Ctrl+C) and read the numbers in step 2 instead. If
+> you reach step 3 with under four minutes left, skip its runs and read
+> its table. Steps 4 and 5 are optional, for after the
 > workshop. The discussion starts on time, whether or not everyone has
 > finished.
 
@@ -94,8 +94,15 @@ already touched.
 
 ### Step 1: Run h2, then h3 (about 7 minutes)
 
-One at a time, so you can watch each harness work. Each takes about 3
-minutes and usually solves the task in 32 to 40 turns.
+One at a time, so you can watch each harness work. Each usually takes
+about 3 minutes. In our runs on Fireworks, h3 solved 6 of 6 in 29 to 39
+turns and h2 solved 5 of 7 in 26 to 39. But 2 of those 13 runs took
+over 12 minutes: in the one we traced, a single model call hung for ten
+minutes with nothing on screen. The harnesses now give up on a call
+after 3 minutes (our slowest real one took 20 seconds) and print a dim
+`⟳ model call took over 180s with no answer; retrying`. If you see it,
+the provider is struggling, not your run, and the behind-rule at the top
+applies.
 
 #### 1a. h2
 
@@ -150,7 +157,10 @@ Watch for everything above, plus:
 - **The guardrail:** a red `⛔ guardrail refused a write …` would mean it
   tried to edit a test. It almost never does here; step 4 shows it firing.
 
-### Step 2: Read the results (about 5 minutes)
+### Step 2: Read the results (about 8 minutes)
+
+**Start step 3's two runs first,** then read these while they run. They
+take about 3 minutes and don't depend on anything here.
 
 Each run ends with Block 2's turn table and summary, plus a `fired` column:
 `✂` a result was cut, `✂✂` old results dropped, `↻` a malformed call
@@ -163,11 +173,15 @@ Six things to find:
    of our pairs, Block 2's was 12 searches adding 19,747 tokens, re-sent on
    14 later turns (~276,000 tokens); h2's was 8 searches adding 9,391
    (~113,000). In total, h2 sent 390,294 to Block 2's 646,417, in about the
-   same number of turns.
+   same number of turns. If your h2 ran out of turns, its total covers
+   twice Block 2's 20; compare its `sent so far` at turn 20 with your
+   Block 2 total instead.
 2. **What h2 kept off the wire.** `not re-sent` counts what the
    protections removed, once for every turn it would otherwise have been
-   re-sent: roughly a quarter to a third in our runs. That part is the
-   harness; the rest of any gap is how the run went.
+   re-sent. It's in characters, so divide by 4 for tokens. Then compare
+   it with what was sent: kept off ÷ (sent + kept off) was roughly a
+   quarter to a third in our runs. That part is the harness; the rest of
+   any gap is how the run went.
 3. **Re-reads after compaction.** `re-read` climbing right after `✂✂`
    turns means compaction dropped something still needed. In one of our
    runs that cost about ten extra turns (see "Compaction" below).
@@ -179,8 +193,9 @@ Six things to find:
 
    If the agent never called `update_notes`, the file says so. That's a
    result, not an error: it happened in two of our five runs. Then compare
-   totals. h3's only systematic extra cost is its notes overhead, about 115
-   to 240 tokens a turn, under 1% of a run this size. So if your h3 cost
+   totals. h3's only systematic extra cost is its notes overhead, a few
+   hundred tokens a turn once the notes exist, around 1% of a run this
+   size. So if your h3 cost
    40% more or less than h2, that's the run, not the harness. Ours, three
    runs each: h2 0.84M to 1.19M, h3 1.03M to 1.18M.
 5. **When the agent ran the tests.** The line after the verdict:
@@ -201,7 +216,7 @@ so you can search it after it scrolls past:
 grep -n "run_tests" results/runs/h2_managed__refactor_v2__*/console.log
 ```
 
-### Step 3: Tell the agent its budget (about 4 minutes)
+### Step 3: Tell the agent its budget (runs started in step 2; 2 minutes to compare)
 
 No harness so far tells the model how many turns it has left, or whether
 its work passes. Research says it should: a 2025 paper's "Budget Tracker"
@@ -228,25 +243,28 @@ MAX_TURNS=20 BUDGET_SIGNAL=progress uv run eval/run_eval.py h3 --task refactor_v
 ```
 
 In the second, watch the dim `⏱ told the model: …` lines, and when it
-first runs the tests. Then compare how each ended. Our runs, nine of
-each across two providers (plus five of a third signal, `pacing`, which
-tells it to start editing at half the budget and to test and finish with
-5 turns left):
+first runs the tests. Then compare how each ended. Our runs on
+Fireworks, five of each:
 
-| h3 with 20 turns | Tests pass | Said it was done | Never ran the tests |
-|---|---|---|---|
-| No signal | 2 of 9 | 0 of 9 | 8 of 9 |
-| `BUDGET_SIGNAL=progress` | 9 of 9 | 8 of 9 | 0 of 9 |
-| `BUDGET_SIGNAL=pacing` | 4 of 5 | 2 of 5 | 1 of 5 |
+| h3 with 20 turns | Tests pass | Said it was done |
+|---|---|---|
+| No signal | 0 of 5 | 0 of 5 |
+| `BUDGET_SIGNAL=progress` | 4 of 5 | 3 of 5 |
 
-With or without `progress`, runs cost about the same: 0.24M to 0.48M tokens.
+With or without `progress`, runs cost about the same: 0.33M to 0.48M tokens.
 
-What made the difference was the agent checking its work. Without a
-signal, eight of nine runs never ran the tests, so none could say it was
-done. With `progress`, every run tested, and all but one said it was
-done inside the budget. (That one first tested on turn 19, found work it
-had missed, and ran out of turns fixing it.) The agent never once
-mentioned the signal: you only see the effect by measuring.
+What made the difference was the agent checking its work. On the
+provider we used before Fireworks (six runs of each), five of six runs
+without a signal never ran the tests, so none could say it was done;
+with `progress`, all six tested, passed and said so. A third signal,
+`pacing` (start editing at half the budget; test and finish with 5
+turns left), passed in 4 of 5. The agent never once mentioned the signal: you only see the
+effect by measuring.
+
+**If your `progress` run tested only on its last turn,** that's the
+failure the signal doesn't fix: the model knew its budget and still left
+testing to the end. One of ours did exactly that, found one file it had
+missed, and had no turn left to fix it.
 
 Two more findings, at the normal 40 turns, where the budget never got
 tight. The signals changed behavior but not cost: with
@@ -291,9 +309,12 @@ A corrupted tool call on turn 3: h1 (your Block 2 harness, run here) crashes (`t
 TRANSCRIPT_CHAR_BUDGET=4000 uv run eval/run_eval.py h2 --task bug_hunt
 ```
 
-A 4,000-character budget. In our run, `✂✂` fired on turns 6 to 11, `added`
-went negative, and `cached` fell from 64% to 10%: compaction changes the
-start of the conversation, so the provider's cache stops matching.
+A 4,000-character budget, far too small. `✂✂` fires on most turns,
+`added` goes negative, and `cached` falls (64% to 10% in one of our runs):
+compaction changes the start of the conversation, so the provider's cache
+stops matching. Watch `re-read` too. In another run the agent re-read the
+same files every few turns until it ran out, 84 re-reads in 40 turns:
+too small a budget makes the agent forget what it just read.
 
 ```bash
 uv run eval/run_eval.py h2 --task touch_tests

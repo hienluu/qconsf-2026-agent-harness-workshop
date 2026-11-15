@@ -36,6 +36,7 @@ from base import (
     Workspace,
     add_usage,
     corrupt,
+    call_model,
     make_client,
     malformed_injection_turn,
     model_name,
@@ -140,6 +141,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
     result = RunResult(harness=NAME, task=workspace_dir)
     board = Scoreboard(MAX_TURNS)
     board.timing = True   # Block 3 shows how long each turn took
+    board.drops_context = True   # compaction drops old tool outputs
     board.budget_told = TURN_NOTICE is not None
     board.legend()
     marker_key(SPEECH_MARKER, CUT_MARKER, RECOVER_MARKER, MILESTONE_MARKER,
@@ -156,7 +158,8 @@ def run(workspace_dir: str, task: str) -> RunResult:
             result.notes["chars_not_resent"] = (
                 result.notes.get("chars_not_resent", 0) + trimmed_chars
             )
-            response = client.chat.completions.create(
+            response = call_model(
+                client,
                 model=model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
@@ -251,7 +254,8 @@ def run(workspace_dir: str, task: str) -> RunResult:
             # result: the end of the conversation, so the start (and the
             # provider's cache) never changes, and every tool call still has
             # exactly one result message.
-            due = TURN_NOTICE == "every" or (TURN_NOTICE and turn in TURN_NOTICE)
+            # Not after the last turn: no turn follows for the model to read it.
+            due = turn < MAX_TURNS and (TURN_NOTICE == "every" or (TURN_NOTICE and turn in TURN_NOTICE))
             if due and messages and messages[-1].get("role") == "tool":
                 notice = f"[harness] turn {turn} of {MAX_TURNS} used: {MAX_TURNS - turn} left."
                 messages[-1]["content"] += "\n" + notice

@@ -27,6 +27,7 @@ from base import (
     Workspace,
     add_usage,
     corrupt,
+    call_model,
     make_client,
     malformed_injection_turn,
     model_name,
@@ -65,7 +66,8 @@ def run(workspace_dir: str, task: str) -> RunResult:
     start = time.monotonic()
     try:
         for turn in range(1, MAX_TURNS + 1):
-            response = client.chat.completions.create(
+            response = call_model(
+                client,
                 model=model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,

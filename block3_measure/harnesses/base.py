@@ -64,11 +64,45 @@ class RunResult:
     notes: dict = field(default_factory=dict)  # harness-specific extras
 
 
+# How long one model call may take before the harness gives up and retries.
+# The SDK default is 600s, retried silently, so a stalled call looked like a
+# ten-minute turn with nothing on screen. Our slowest real turns (one writing
+# many files) took well under a minute.
+MODEL_TIMEOUT = float(os.environ.get("MODEL_TIMEOUT", "180"))
+MODEL_RETRIES = 2
+
+
 def make_client() -> OpenAI:
+    # Retries happen in call_model(), where they can be shown.
     return OpenAI(
         base_url=os.environ["LLM_BASE_URL"],
         api_key=os.environ["LLM_API_KEY"],
+        timeout=MODEL_TIMEOUT,
+        max_retries=0,
     )
+
+
+def call_model(client: OpenAI, **kwargs):
+    """One model call, retried on a timeout, a rate limit, a dropped
+    connection or a server error, with a dim line saying so. Anything else
+    (a bad key, an unknown model) fails at once."""
+    import time
+    import openai
+    for attempt in range(MODEL_RETRIES + 1):
+        try:
+            return client.chat.completions.create(**kwargs)
+        except openai.APITimeoutError:
+            if attempt == MODEL_RETRIES:
+                raise
+            print(f"\033[2m   ⟳ model call took over {MODEL_TIMEOUT:.0f}s with no answer; "
+                  f"retrying ({attempt + 1} of {MODEL_RETRIES})\033[0m")
+        except (openai.RateLimitError, openai.APIConnectionError, openai.InternalServerError) as exc:
+            if attempt == MODEL_RETRIES:
+                raise
+            wait = 2 ** attempt * 2
+            print(f"\033[2m   ⟳ {type(exc).__name__}; retrying in {wait}s "
+                  f"({attempt + 1} of {MODEL_RETRIES})\033[0m")
+            time.sleep(wait)
 
 
 def sampling() -> dict:
@@ -102,6 +136,10 @@ def explain_crash(error: str, turns: int) -> list[str]:
         lines.append("rate limited: wait a minute and run it again")
     elif code == "400":
         lines.append("the provider rejected the request itself; its message above says which part")
+    elif "APITimeoutError" in error:
+        lines.append(f"the provider didn't answer within {MODEL_TIMEOUT:.0f}s, "
+                     f"{MODEL_RETRIES + 1} times in a row: it's probably overloaded. "
+                     "Wait a minute and run it again")
     elif "Connection" in error or "Timeout" in error:
         lines.append("couldn't reach the provider: check LLM_BASE_URL in .env and your network")
     if turns == 0:
@@ -170,8 +208,13 @@ def marker_key(*entries) -> None:
 _habits: dict = {}
 
 
-def reset_habits() -> None:
-    _habits.update(turn=0, test_turns=[], read=set(), unread_writes=set())
+def reset_habits(workspace: str | None = None) -> None:
+    _habits.update(turn=0, test_turns=[], read=set(), unread_writes=set(), workspace=workspace)
+
+
+def forget_write(path: str) -> None:
+    """A write the harness refused changed nothing, so it isn't a rewrite."""
+    _habits["unread_writes"].discard(path)
 
 
 reset_habits()
@@ -197,7 +240,11 @@ def describe_call(name: str, args: dict) -> str:
     elif name == "read_file":
         _habits["read"].add(str(args.get("path", "")))
     elif name == "write_file" and str(args.get("path", "")) not in _habits["read"]:
-        _habits["unread_writes"].add(str(args.get("path", "")))
+        # Only a file that already existed can be rewritten without reading it.
+        path = str(args.get("path", ""))
+        ws = _habits.get("workspace")
+        if ws is None or (Path(ws) / path).exists():
+            _habits["unread_writes"].add(path)
     if name == "write_file":
         size = len(str(args.get("content", "")))
         return f"write_file(file={args.get('path', '')}, chars={size:,})"

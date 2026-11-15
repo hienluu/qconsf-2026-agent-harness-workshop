@@ -80,6 +80,9 @@ class Scoreboard:
         # Set by a harness that shows the model its turn budget (Block 3's
         # BUDGET_SIGNAL / TURN_NOTICE), so the low-budget call-out stays true.
         self.budget_told = False
+        # Set by a harness that drops old context (Block 3's h2 and h3), so
+        # the re-read wording doesn't claim nothing was dropped.
+        self.drops_context = False
         self.turns: list = []  # one dict per model call, for the turn-by-turn table
         self._counts_at_last_report: dict = {}
         self.cache_reported = False
@@ -105,8 +108,11 @@ class Scoreboard:
             "     sent so far — tokens billed, input vs output. Input climbs far faster\n"
             "       than the conversation grows, because each turn re-sends all of it.\n"
             "     re-read — files fetched again that the agent had already read. Appears\n"
-            "       only when it happens. Nothing was dropped: the first copy is still in\n"
-            "       the conversation, so every re-read pays for the same file twice.\n"
+            + ("       only when it happens. If compaction (✂✂) dropped the first copy, the\n"
+               "       re-read is what compaction cost; if not, it pays for the same file twice.\n"
+               if self.drops_context else
+               "       only when it happens. Nothing was dropped: the first copy is still in\n"
+               "       the conversation, so every re-read pays for the same file twice.\n")
             + ("     9.4s (model 9.1s): how long the turn took, and how much of that was\n"
                "       waiting for the model; the rest ran the tools. Then the time so far.\n"
                "       It depends on the provider and how busy it is: compare turns within\n"
@@ -330,8 +336,8 @@ class Scoreboard:
         else:
             green, last = final_check(workspace.root)
             if green:
-                ended += (f"out of turns, but the work was finished: the tests pass "
-                          f"({last}). It never got to tell you")
+                ended += (f"out of turns before it could check its work; the harness ran "
+                          f"the tests afterward and they pass ({last}). It never got to tell you")
             else:
                 ended += f"out of turns with the job unfinished ({last})"
         rows.append(("ended", ended))
@@ -346,7 +352,9 @@ class Scoreboard:
             rows.append(("", "Each turn re-sends the whole conversation plus the tool definitions."))
         if self.rereads:
             rows.append(("re-reads", f"{self.rereads} file(s) read again, though the first copy "
-                                     f"was still in the conversation"))
+                                     f"was still in the conversation" if not self.drops_context else
+                                     f"{self.rereads} file(s) read again (after a ✂✂, the first copy "
+                                     f"may have been dropped)"))
         if not self.counts.get("run_tests") and not error:
             rows.append(("note", "it never ran the tests. It had the tool the whole time"))
         if self.timing:

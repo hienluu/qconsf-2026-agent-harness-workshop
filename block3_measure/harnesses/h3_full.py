@@ -21,6 +21,7 @@ from base import (
     BUDGET_SUFFIX,
     MAX_TURNS,
     describe_call,
+    forget_write,
     print_turn,
     MILESTONE_MARKER,
     BUDGET_MARKER,
@@ -35,6 +36,7 @@ from base import (
     Workspace,
     add_usage,
     corrupt,
+    call_model,
     make_client,
     malformed_injection_turn,
     model_name,
@@ -154,6 +156,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
             result.notes["guardrail_refusals"] = result.notes.get("guardrail_refusals", 0) + 1
             board.mark("⛔")
             print(f"\033[31m⛔ [{NAME}] guardrail refused a write to {path!r}\033[0m")
+            forget_write(str(path))
             return f"guardrail: writing to {path!r} is not permitted — tests are read-only."
         return ws.write_file(path, args["content"])
 
@@ -216,6 +219,7 @@ def run(workspace_dir: str, task: str) -> RunResult:
     result = RunResult(harness=NAME, task=workspace_dir)
     board = Scoreboard(MAX_TURNS)
     board.timing = True   # Block 3 shows how long each turn took
+    board.drops_context = True   # compaction drops old tool outputs
     board.budget_told = BUDGET_SIGNAL in ("progress", "pacing")
     board.legend()
     marker_key(SPEECH_MARKER, CUT_MARKER, RECOVER_MARKER, NOTES_MARKER, MILESTONE_MARKER,
@@ -233,7 +237,8 @@ def run(workspace_dir: str, task: str) -> RunResult:
             result.notes["chars_not_resent"] = (
                 result.notes.get("chars_not_resent", 0) + trimmed_chars
             )
-            response = client.chat.completions.create(
+            response = call_model(
+                client,
                 model=model,
                 messages=messages,
                 tools=tool_schemas,
@@ -337,7 +342,8 @@ def run(workspace_dir: str, task: str) -> RunResult:
                       f"output(s), freeing {freed:,} chars\033[0m")
             # [h3, optional] Budget signal, after compaction so it sees the
             # conversation's real size, appended among the newest messages.
-            if BUDGET_SIGNAL and messages and messages[-1].get("role") == "tool":
+            # Not after the last turn: no turn follows for the model to read it.
+            if BUDGET_SIGNAL and turn < MAX_TURNS and messages and messages[-1].get("role") == "tool":
                 signal = budget_signal(turn, transcript_chars(messages))
                 if signal:
                     messages[-1]["content"] += "\n" + signal
