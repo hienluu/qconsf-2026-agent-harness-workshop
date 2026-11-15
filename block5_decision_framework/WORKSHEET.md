@@ -30,7 +30,12 @@ fine. Why each question matters, with what we saw this morning:
 
 ## Now rule them out
 
-What we saw this morning, for each harness. Apply your answers to 1 and 2:
+**In our runs, one thing crossed harnesses out: switching providers.** If
+you'll switch, cross out Claude Agent SDK and OpenAI Agents, unless you'd
+pay to leave them later, and Google ADK too if adding LiteLLM to your
+project is a problem. Every harness had somewhere to plug your steps in,
+and its own tools only decide adopt or extend. If your agent differs from
+ours, the rules and the table below are what we saw for each harness:
 
 - **Switching providers?** Cross out the ones that needed workarounds off
   their own model, unless you'd pay to leave them later.
@@ -88,12 +93,17 @@ to watch.
 
 **What's still my job (from 3 and 4):** ________________________________
 
-**In a design review, I'd say (with a number):**
+**In a design review, I'd say (with a number you have, or the one you'll
+measure and the value that would change your mind):**
 
 *For example: "We'll extend OpenAI Agents with our own rename tool,
 because on our migration it cut the tool calls from 278–315 to 35–88
 per run. We'd look again if another harness matched that on the same
 test."*
+
+*Or, before you've measured: "We'll adopt Pydantic AI, because our
+provider will change. We'll replay 50 past tickets and count refunds
+that differ from what the team did; above 2%, we'd look again."*
 
 ______________________________________________________________________
 

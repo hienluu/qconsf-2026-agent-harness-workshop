@@ -7,7 +7,7 @@
 > | Intro | 5 min | The presenter recaps what Blocks 2 to 4 showed |
 > | Worksheet | 15 min | You work through [`WORKSHEET.md`](WORKSHEET.md) for your own agent |
 > | Pairs | 10 min | Swap worksheets and challenge each other's answers |
-> | Wrap-up | 5 min | The take-home, and the questions under "Discussion" |
+> | Wrap-up | 5 min | The questions under "Discussion", and the take-home in one line |
 >
 > **If you're behind:** answer questions 1 and 2, then decide; skip 3
 > and 4, which rule nothing out. The pair discussion starts on time.
@@ -64,9 +64,9 @@ or expect to build. Keep your notes from Blocks 2 to 4 in front of you.
 | Part | What it asks | Time |
 |---|---|---|
 | Your agent | what it does, which model it uses | 2 min |
-| Questions 1 and 2 (can rule a harness out) | will it work with your model and your code; what will you need to add or change | 6 min |
-| Questions 3 and 4 (your job, whichever you pick) | what can your agent reach or affect; what will you need to watch | 4 min |
-| Decide | adopt, extend, drop down a level, or build; one sentence for a design review; how you'd test it | 3 min |
+| Questions 1 and 2 (can rule a harness out) | will it work with your model and your code; what will you need to add or change | 4 min |
+| Questions 3 and 4 (your job, whichever you pick) | what can your agent reach or affect; what will you need to watch | 3 min |
+| Decide | adopt, extend, drop down a level, or build; one sentence for a design review, with a number you have or one you'll measure; how you'd test it | 6 min |
 
 Stuck on a question? The worked examples below answer each one for two
 very different agents, and [`WHY.md`](WHY.md) explains why each question
@@ -75,14 +75,17 @@ matters, with what we saw this morning.
 ### Step 2: Pairs (10 minutes)
 
 Swap worksheets with your neighbor. For each other's answer, push on
-three things:
+these, in this order:
 
-1. **The eliminations.** Which question ruled out a harness? Is that
-   constraint real, or a preference?
+1. **The test.** Would their test catch a run that passed every check and
+   still did the wrong job, like the alias shortcut? Start here: it's the
+   one that changes worksheets, whatever the agent.
 2. **The design-review sentence.** What number would change your mind?
+   If they don't have one yet, what will they measure, and what value
+   would make them look again?
    ("Choose, extend or defend, with numbers": the promise from Block 1.)
-3. **The test.** Would their test catch a run that passed every check and
-   still did the wrong job, like the alias shortcut?
+3. **The eliminations,** if they crossed a harness out. Is that
+   constraint real, or a preference?
 
 ## Two worked examples
 
@@ -169,9 +172,11 @@ The worksheet ends with "how to test it". The repo is a testbed for that:
   you did in Block 3. `scripts/reset.py` leaves a task folder you haven't
   committed alone, but once it's committed, reset restores it like the
   others, so commit each change to your task before you reset.
-- **Your task through a production harness.** Block 4's scripts are each
-  about 150 lines; copy the one closest to your candidate and point it at
-  your task.
+- **Your task through a production harness** isn't wired up yet: Block
+  4's scripts only take the workshop's tasks. To try one now, copy the
+  script closest to your candidate and change its workspace, prompt and
+  turn cap. Its tables will still label the run as the workshop's
+  migration, so read the numbers, not the labels.
 - **Read the traces, not the verdict.** The line after each verdict says
   when the agent ran the tests and whether it rewrote files it never
   read. If your task has one right answer, keep it, and compare against
@@ -180,8 +185,7 @@ The worksheet ends with "how to test it". The repo is a testbed for that:
 
 ## Discussion (5 min, in the wrap-up)
 
-1. **Which question ruled out the most for you,** and was it the one you
-   expected before the workshop?
+1. **Did you end up adopting or extending,** and what tipped it?
 2. **What's still your job no matter which harness you pick,** and who on
    your team owns it today?
 3. **What would you measure first** on your own agent, now that you've
