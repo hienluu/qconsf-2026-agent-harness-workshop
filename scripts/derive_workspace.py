@@ -67,7 +67,7 @@ def main(target: Path = WORKSPACE) -> None:
         if in_tests or exempt or src.suffix != ".py":
             shutil.copy2(src, dst)
         else:
-            dst.write_text(to_v1(src.read_text()))
+            dst.write_text(to_v1(src.read_text(encoding="utf-8")), encoding="utf-8")
 
     rows = "\n".join(f"| `{v1}` | `{v2}` |" for v1, v2, doc in RENAMES if doc)
     (target / "MIGRATION.md").write_text(
@@ -83,7 +83,8 @@ def main(target: Path = WORKSPACE) -> None:
         "truth for the full v2 API.\n\n"
         "**Out of scope:** `pyledger/integrations/webhook.py` — its `post()`\n"
         "is the HTTP verb, not the ledger API. Do not rename anything there.\n\n"
-        "Done means: `pytest` exits green.\n"
+        "Done means: `pytest` exits green.\n",
+        encoding="utf-8",
     )
     print(f"workspace derived at {target}")
 

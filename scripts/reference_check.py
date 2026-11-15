@@ -21,7 +21,7 @@ SKIP = {"__pycache__", ".pytest_cache", "tests"}
 
 def sources(root: Path) -> dict:
     """Every .py file under root except tests: relative path -> text."""
-    return {f.relative_to(root): f.read_text(errors="replace") for f in sorted(root.rglob("*.py"))
+    return {f.relative_to(root): f.read_text(encoding="utf-8", errors="replace") for f in sorted(root.rglob("*.py"))
             if not SKIP & set(f.relative_to(root).parts) and f.name != "conftest.py"}
 
 
@@ -33,8 +33,8 @@ def differing(workspace: Path) -> list:
 
 def diff_lines(workspace: Path, rel: Path, label: str) -> list:
     """A unified diff of one file, reference first."""
-    ref = (REFERENCE / rel).read_text(errors="replace") if (REFERENCE / rel).exists() else ""
-    mine = (workspace / rel).read_text(errors="replace") if (workspace / rel).exists() else ""
+    ref = (REFERENCE / rel).read_text(encoding="utf-8", errors="replace") if (REFERENCE / rel).exists() else ""
+    mine = (workspace / rel).read_text(encoding="utf-8", errors="replace") if (workspace / rel).exists() else ""
     return list(difflib.unified_diff(ref.splitlines(), mine.splitlines(),
                                      f"reference/{rel}", f"{label}/{rel}", lineterm="", n=0))
 

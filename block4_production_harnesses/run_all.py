@@ -31,7 +31,7 @@ ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def status(log: Path) -> str:
-    text = ANSI.sub("", log.read_text(errors="replace")) if log.exists() else ""
+    text = ANSI.sub("", log.read_text(encoding="utf-8", errors="replace")) if log.exists() else ""
     verdict = re.search(r"^--- \S+: (SOLVED|NOT SOLVED)", text, re.M)
     if verdict:
         return verdict.group(1)
@@ -58,8 +58,9 @@ def main() -> int:
     for name in names:
         log = logs / f"{name}.log"
         procs[name] = (subprocess.Popen([sys.executable, SCRIPTS[name]], cwd=BLOCK4,
-                                         stdout=log.open("w"), stderr=subprocess.STDOUT,
+                                         stdout=log.open("w", encoding="utf-8"), stderr=subprocess.STDOUT,
                                          env={**os.environ, "PYTHONUNBUFFERED": "1",
+                                              "PYTHONUTF8": "1",   # the log file is UTF-8 on Windows too
                                               "BLOCK4_LOGGED": "1"}),   # we capture it here
                        log, time.monotonic())
         time.sleep(1)   # stagger the starts a little

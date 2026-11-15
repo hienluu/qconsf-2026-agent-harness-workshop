@@ -43,12 +43,12 @@ class Workspace:
         return "\n".join(files)
 
     def read_file(self, path: str) -> str:
-        return self._path(path).read_text()
+        return self._path(path).read_text(encoding="utf-8")
 
     def write_file(self, path: str, content: str) -> str:
         target = self._path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content)
+        target.write_text(content, encoding="utf-8")
         return f"wrote {len(content)} chars to {path}"
 
     def search(self, pattern: str) -> str:
@@ -57,7 +57,7 @@ class Workspace:
         for p in sorted(self.root.rglob("*.py")):
             if "__pycache__" in p.parts:
                 continue
-            for i, line in enumerate(p.read_text().splitlines(), 1):
+            for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
                 if pattern in line:
                     hits.append(f"{p.relative_to(self.root)}:{i}: {line}")
         return "\n".join(hits) or f"no matches for {pattern!r}"

@@ -47,7 +47,7 @@ def main() -> int:
         return 1
 
     latest = {}
-    with RESULTS.open() as fh:
+    with RESULTS.open(encoding="utf-8") as fh:
         for line in fh:
             row = json.loads(line)
             latest[(row["harness"], row["task"])] = row

@@ -73,7 +73,7 @@ def main() -> int:
             if proc.returncode != 0:
                 print(f"[ablation] run failed (exit {proc.returncode}) — continuing")
 
-    rows = [json.loads(line) for line in RESULTS.read_text().splitlines()]
+    rows = [json.loads(line) for line in RESULTS.read_text(encoding="utf-8").splitlines()]
     rows = [r for r in rows if r["timestamp"] >= started_at and r["task"] == args.task]
 
     print(f"\n{'=' * 70}\nABLATION SUMMARY — {args.task}, {args.runs} run(s) per arm")

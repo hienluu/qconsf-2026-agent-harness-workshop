@@ -140,7 +140,7 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
     shutil.copytree(source, workspace)
     log_path = run_dir / "console.log"
     base.reset_habits(str(workspace))
-    with log_path.open("w") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):
+    with log_path.open("w", encoding="utf-8") as log, contextlib.redirect_stdout(Tee(sys.stdout, log)):
         # The header goes in the saved trace too: which endpoint and model
         # produced a run is the first thing to know when comparing runs.
         rows = [("harness", (module.__doc__ or "").strip().splitlines()[0])]
@@ -174,7 +174,7 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
                   f"({notes_path.relative_to(BLOCK3)})")
         else:
             print(f"    agent notes saved: {notes_path.relative_to(BLOCK3)}")
-        notes_path.write_text(notes_text + "\n")
+        notes_path.write_text(notes_text + "\n", encoding="utf-8")
     row.update(
         task=task_name,
         tests_green=tests_green,
@@ -200,7 +200,7 @@ def run_one(harness_key: str, task_name: str, out_dir: Path) -> dict:
                 ending += (f"\n    see what differs: uv run ../scripts/reference_check.py "
                            f"{run_dir.relative_to(BLOCK3)}")
         print(ending)
-    with log_path.open("a") as log:   # the saved trace ends the way the screen does
+    with log_path.open("a", encoding="utf-8") as log:   # the saved trace ends the way the screen does
         log.write(ending + "\n")
     return row
 
@@ -229,7 +229,7 @@ def main() -> int:
         for task_name in task_names:
             row = run_one(harness_key, task_name, out_dir)
             if not demo:
-                with results_file.open("a") as fh:
+                with results_file.open("a", encoding="utf-8") as fh:
                     fh.write(json.dumps(row) + "\n")
             if row["status"] == "crashed" and row["turns"] == 0:
                 # The first model call failed: every run left would fail the

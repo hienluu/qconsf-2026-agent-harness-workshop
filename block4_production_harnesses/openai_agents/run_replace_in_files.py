@@ -110,7 +110,7 @@ def rename_everywhere(workspace: Path, old: str, new: str, exclude=None, dry_run
         rel = f.relative_to(workspace)
         if "__pycache__" in rel.parts or str(rel) in skip:
             continue
-        text = f.read_text()
+        text = f.read_text(encoding="utf-8")
         n = len(word.findall(text))
         if not n:
             continue
@@ -120,7 +120,7 @@ def rename_everywhere(workspace: Path, old: str, new: str, exclude=None, dry_run
         total += n
         changed.append(f"{rel} ({n})")
         if not dry_run:
-            f.write_text(word.sub(new, text))
+            f.write_text(word.sub(new, text), encoding="utf-8")
     lines = changed[:40] + ([f"... and {len(changed) - 40} more files"] if len(changed) > 40 else [])
     if skipped_tests:
         lines.append(f"(left {skipped_tests} test file(s) alone: tests are never changed)")

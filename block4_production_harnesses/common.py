@@ -389,7 +389,7 @@ def ws_read(workspace: Path, path: str) -> str:
         return f"error: {path!r} is a directory, not a file. Files:\n{ws_list(workspace)}"
     if not target.is_file():
         return f"error: {path!r} not found. Files:\n{ws_list(workspace)}"
-    return target.read_text()
+    return target.read_text(encoding="utf-8")
 
 
 def ws_write(workspace: Path, path: str, content: str) -> str:
@@ -402,7 +402,7 @@ def ws_write(workspace: Path, path: str, content: str) -> str:
         return f"error: {path!r} is a test file; tests are read-only in this run"
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
-        target.write_text(content)
+        target.write_text(content, encoding="utf-8")
     except PermissionError:
         return f"error: {path!r} is read-only"
     return f"wrote {len(content)} chars"
@@ -549,7 +549,7 @@ class _Tee:
         import re
         # Line-buffered, so the log keeps up with the screen: the README
         # suggests grepping it while a run is still going.
-        self._stream, self._file, self._ansi = stream, path.open("w", buffering=1), re.compile(r"\x1b\[[0-9;]*m")
+        self._stream, self._file, self._ansi = stream, path.open("w", buffering=1, encoding="utf-8"), re.compile(r"\x1b\[[0-9;]*m")
 
     def write(self, s):
         self._stream.write(s)
@@ -711,14 +711,14 @@ def receipt(
         "tools_we_wrote": f"{len(tools_we_wrote)} ({', '.join(tools_we_wrote) or 'none'})",
         "tools_harness_shipped": tools_harness_shipped,
         "provider_friction": provider_friction,
-        "code_lines": len(Path(script).read_text().splitlines()),
+        "code_lines": len(Path(script).read_text(encoding="utf-8").splitlines()),
         "timestamp": time.time(),
         **run_context(),
     }
 
     receipts = BLOCK4 / "runs" / "receipts.jsonl"
     receipts.parent.mkdir(exist_ok=True)
-    with receipts.open("a") as fh:
+    with receipts.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row) + "\n")
 
     print_tables(task_name)
@@ -733,7 +733,7 @@ def print_tables(task_name: str = BLOCK4_TASK, *, quiet_progress: bool = False) 
         print("no receipts yet")
         return
     latest: dict = {}
-    with receipts.open() as fh:
+    with receipts.open(encoding="utf-8") as fh:
         for line in fh:
             r = json.loads(line)
             # rows recorded before task tracking existed show as "?"
