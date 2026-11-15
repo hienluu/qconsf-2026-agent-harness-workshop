@@ -114,7 +114,8 @@ def main() -> int:
         trace_say(NAME, str(result.output))
         end_turn()
         print(f"[{NAME}] usage: {result.usage}")
-        set_tokens_sent(result.usage.input_tokens, result.usage.output_tokens)
+        set_tokens_sent(result.usage.input_tokens, result.usage.output_tokens,
+                        result.usage.cache_read_tokens)
     except Exception as exc:  # hitting the request limit is an outcome, not a crash
         end_turn()
         print(f"[{NAME}] run ended without finishing: {type(exc).__name__}: {exc}")

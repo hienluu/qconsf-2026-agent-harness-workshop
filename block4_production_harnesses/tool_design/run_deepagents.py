@@ -58,7 +58,9 @@ class Watch(BaseCallbackHandler):
                 u = getattr(getattr(gen, "message", None), "usage_metadata", None) or {}
                 if u.get("input_tokens"):
                     Watch.sent += u["input_tokens"]
-                    trace_cost(NAME, u["input_tokens"], u.get("output_tokens") or 0, Watch.sent)
+                    cached = (u.get("input_token_details") or {}).get("cache_read") or 0
+                    trace_cost(NAME, u["input_tokens"], u.get("output_tokens") or 0, Watch.sent,
+                               cached=cached)
                 said = getattr(gen, "text", None)
                 if said and said.strip():
                     trace_say(NAME, said)

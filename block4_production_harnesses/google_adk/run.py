@@ -114,7 +114,8 @@ async def main() -> int:
             um = getattr(event, "usage_metadata", None)
             if um and getattr(um, "prompt_token_count", None):
                 trace_cost(NAME, um.prompt_token_count,
-                           getattr(um, "candidates_token_count", 0) or 0)
+                           getattr(um, "candidates_token_count", 0) or 0,
+                           cached=getattr(um, "cached_content_token_count", 0) or 0)
     except Exception as exc:  # hitting max_llm_calls is an outcome, not a crash
         end_turn()
         print(f"[{NAME}] run ended without finishing: {type(exc).__name__}: {exc}")
