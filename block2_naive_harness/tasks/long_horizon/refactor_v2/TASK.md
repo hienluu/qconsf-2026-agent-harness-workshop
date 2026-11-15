@@ -4,7 +4,7 @@ This task is deliberately sized past the naive harness's design limits —
 the failure it produces is the subject of Blocks 2 and 3.
 
 The `workspace/` contains **pyledger**, a small double-entry bookkeeping
-library (~20 source files), whose test suite was already updated to the v2
+library (149 source files), whose test suite was already updated to the v2
 API. The source still uses legacy v1 names. `workspace/MIGRATION.md` lists
 the 14 rename rules. The agent must apply them across every file until
 `pytest` is green. Do not modify the tests.
@@ -29,9 +29,9 @@ uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
 - When the agent writes many files in one turn, the model can hit its
   output limit mid-batch and send a cut-off tool call. The naive harness
   has no error recovery, so `json.loads` raises and the run dies.
-- With Block 2's 20-turn cap, a run ends one of four ways: finished and
-  said so, finished but never said so, ran out mid-job, or crashed. See
-  Block 2's README.
+- With Block 2's 20-turn cap, a run ends one of five ways: finished and
+  said so, finished but never said so, ran out mid-job, never started
+  (spent its turns reading), or crashed. See Block 2's README.
 - Compare with a short task: same harness, same model, same tools. Only
   the size of the job changed.
 

@@ -458,7 +458,7 @@ code, the isolation is your job, whichever harness you pick.
    change?
 
 2. Two vendors' harnesses on the same tools ran the same algorithm, with
-   nearly the same numbers. Then one tool, designed for the job, cut the
+   ranges that overlap our h2's. Then one tool, designed for the job, cut the
    calls three to eight times. For your agent, where is the effort better spent:
    choosing the harness, or designing its tools?
 3. On their own tools, Claude's harness cost 2 to 4 times more and Deep

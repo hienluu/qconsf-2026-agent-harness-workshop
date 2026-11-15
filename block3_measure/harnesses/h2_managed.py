@@ -76,10 +76,10 @@ NAME += BUDGET_SUFFIX
 
 # [h2] Protection knobs.
 MAX_TOOL_RESULT_CHARS = 6_000     # per tool result fed back to the model
-# ~20k tokens; keeps cumulative cost linear on long tasks. Overridable so you
-# can watch compaction work: on refactor_v2 the transcript peaks just under
-# this default (77k of 80k in one measured run), so the protection is real but
-# rarely fires. Tighten it and it fires on demand:
+# ~20k tokens; keeps cumulative cost linear on long tasks. On refactor_v2 it
+# fired in three of five long h2 runs on the hosted endpoint and in every h2
+# and h3 run on Fireworks (see Block 3's README, "Compaction"). Overridable;
+# tighten it and it fires sooner:
 #   TRANSCRIPT_CHAR_BUDGET=40000 uv run eval/run_eval.py h2 --task refactor_v2
 TRANSCRIPT_CHAR_BUDGET = int(_os.environ.get("TRANSCRIPT_CHAR_BUDGET", 80_000))
 KEEP_RECENT_MESSAGES = 12         # never compact the newest N messages
