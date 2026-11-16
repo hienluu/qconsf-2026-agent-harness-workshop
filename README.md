@@ -9,7 +9,7 @@ minimal harness, see what it costs and where it falls short, measure what
 each added component buys, and then run five production harnesses on the
 same task to see what each one decides for you.
 
-## Setup (do this at home — venue WiFi will not support it)
+## Setup (before the workshop if you can)
 
 No virtualenv to create or activate — `uv run` manages the environment
 itself.
@@ -22,7 +22,7 @@ If `uv --version` already works, skip to step 2.
 
 Open a new terminal afterwards so `uv` is on your PATH.
 
-**2. Clone and sync** (on real WiFi, before the workshop):
+**2. Clone and sync:**
 
 ```
 git clone https://github.com/hienluu/qconsf-2026-agent-harness-workshop.git
