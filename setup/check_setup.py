@@ -1,4 +1,4 @@
-"""Pre-workshop setup check. Run this at home, on real WiFi.
+"""Pre-workshop setup check. Run it before the workshop if you can.
 
     uv run setup/check_setup.py
 
