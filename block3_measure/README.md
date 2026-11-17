@@ -11,22 +11,17 @@
 > **If you're behind:** if any run hasn't finished six minutes after you
 > started it, stop it (Ctrl+C) and read the numbers in step 2 instead. If
 > you reach step 3 with under four minutes left, skip its runs and read
-> its table. Steps 4 and 5 are optional, for after the
-> workshop. The discussion starts on time, whether or not everyone has
+> its table. The discussion starts on time, whether or not everyone has
 > finished.
 
-Block 2 ended with the naive harness on the 149-file migration. This block
-runs the **same task** through two better harnesses and measures what each
-change was worth: same model, same task, same tools, only the harness
-changes. That's also how to settle a harness argument at work: run your
-own tasks through the candidates, and judge with something other than the
-agent's own report.
+This block runs Block 2's 149-file migration through two better harnesses:
+same model, task and tools, only the harness changes. That's also how to
+settle a harness argument at work: run your own tasks through the
+candidates, and don't take the agent's word for the result.
 
-**Bring your Block 2 numbers:** how it ended, the last turn, the total
-sent, and your biggest `added`. That run is your baseline. One difference:
-Block 2's harness had 20 turns and these get 40, so if your Block 2 run ran
-out, its total is what it spent before it was cut off. Compare turn by turn,
-not just totals.
+**Your Block 2 numbers are the baseline:** ending, last turn, total sent,
+biggest `added`. Block 2 had 20 turns and these get 40, so if yours ran
+out, compare turn by turn, not just totals.
 
 ## The two harnesses
 
@@ -34,22 +29,27 @@ Each has a short name and a full one. You type the short name (`h2`,
 `h3`) when you run it; the output, files and folders use the full name
 (`h2_managed`, `h3_full`). Your Block 2 harness is `h1` (`h1_naive`).
 
-**h2** (`h2_managed`): your Block 2 harness plus three protections.
+**h2** (`h2_managed`): your Block 2 harness plus two protections. In
+Block 2, every tool result stayed in the conversation and was re-sent on
+every later turn; that's where the cost came from (your biggest `added`).
+These two go after it from both ends: the cap keeps one huge result from
+getting in, and compaction clears out old results once the conversation
+gets big.
 
 1. **A cap on tool output.** Each tool result is cut to 6,000 characters:
-   the first 4,000, the last 1,500, and a note saying how much was cut. It
-   targets single huge results, such as a search across all 149 files
-   (13,000 to 22,000 characters). Code: `truncate()` in
-   `harnesses/h2_managed.py`, 12 lines.
-2. **Recovery from a malformed tool call.** If the model sends a tool call
-   that isn't valid JSON, the harness tells it what went wrong and carries
-   on. In Block 2, that crashed the run. Code: the `[h2] Guarded parse`
-   block in `run()`.
-3. **Compaction.** Past 80,000 characters, the oldest tool results are
+   the first 4,000, the last 1,500, and a note saying how much was cut.
+   6,000 is a setting we chose: it leaves files whole (only 1 of 149 is
+   longer) and cuts searches and tracebacks (see "Why 6,000 and 80,000?").
+   Code: `truncate()` in `harnesses/h2_managed.py`, 12 lines.
+2. **Compaction.** Past 80,000 characters, the oldest tool results are
    swapped for a short placeholder ("re-run the tool if you need it"); the
-   newest messages are never touched. Why: old tool results are most of
-   the conversation, the agent has usually already acted on them, and every
-   turn pays to re-send them. Code: `compact()`.
+   newest messages are never touched. Old results are most of the
+   conversation, and the agent has usually already acted on them. 80,000
+   is also a setting we chose: we started at 200,000, and compaction never
+   fired on this task (see "Why 6,000 and 80,000?"). Code: `compact()`.
+
+h2 also catches a malformed tool call instead of crashing. It's rare on
+this task; `AFTER_THE_WORKSHOP.md` shows it.
 
 **h3** (`h3_full`): h2 plus two things production harnesses ship.
 
@@ -95,18 +95,14 @@ already touched.
 ### Step 1: Run h2, then h3 (about 7 minutes)
 
 One at a time, so you can watch each harness work. Each usually takes
-about 3 minutes. In our runs on Fireworks, h3 solved 6 of 6 in 29 to 39
-turns and h2 solved 5 of 7 in 26 to 39. But 2 of those 13 runs took
-over 12 minutes: in the one we traced, a single model call hung for ten
-minutes with nothing on screen. The harnesses now give up on a call
-after 3 minutes (our slowest real one took 20 seconds) and print a dim
-`⟳ model call took over 180s with no answer; retrying`. If you see it,
-the provider is struggling, not your run, and the behind-rule at the top
-applies.
+about 3 minutes and solves the task. If a model call hangs, the harness
+retries after 3 minutes and prints a dim `⟳ model call took over 180s
+with no answer; retrying`. That's the provider, not your run: the
+behind-rule at the top applies.
 
 #### 1a. h2
 
-Your Block 2 harness plus the cap, recovery and compaction. You're
+Your Block 2 harness plus the cap and compaction. You're
 watching the harness manage what the model sees.
 
 ```bash
@@ -155,7 +151,8 @@ Watch for everything above, plus:
   or late, as a summary? Some runs never use it; the harness only offers
   the tool.
 - **The guardrail:** a red `⛔ guardrail refused a write …` would mean it
-  tried to edit a test. It almost never does here; step 4 shows it firing.
+  tried to edit a test. It almost never does here;
+  `AFTER_THE_WORKSHOP.md` shows it firing.
 
 ### Step 2: Read the results (about 8 minutes)
 
@@ -167,76 +164,52 @@ Each run ends with Block 2's turn table and summary, plus a `fired` column:
 recovered, `⛔` a test write refused. Then the comparison table prints
 (`uv run eval/compare.py` re-renders it).
 
-Six things to find:
+Four things to find:
 
-1. **Against your Block 2 run.** Find the biggest `added` in each. In one
-   of our pairs, Block 2's was 12 searches adding 19,747 tokens, re-sent on
-   14 later turns (~276,000 tokens); h2's was 8 searches adding 9,391
-   (~113,000). In total, h2 sent 390,294 to Block 2's 646,417, in about the
-   same number of turns. If your h2 ran out of turns, its total covers
-   twice Block 2's 20; compare its `sent so far` at turn 20 with your
-   Block 2 total instead.
-2. **What h2 kept off the wire.** `not re-sent` counts what the
-   protections removed, once for every turn it would otherwise have been
-   re-sent. It's in characters, so divide by 4 for tokens. Then compare
-   it with what was sent: kept off ÷ (sent + kept off) was roughly a
-   quarter to a third in our runs. That part is the harness; the rest of
-   any gap is how the run went.
-3. **Re-reads after compaction.** `re-read` climbing right after `✂✂`
-   turns means compaction dropped something still needed. In one of our
-   runs that cost about ten extra turns (see "Compaction" below).
-4. **h3's notes, and your prediction.**
+1. **What h2 saved.** Find the biggest `added` in your Block 2 run and in
+   h2, and multiply each by the turns after it. In one of our pairs,
+   Block 2's biggest was re-sent for ~276,000 tokens, h2's for ~113,000;
+   in total, h2 sent 390,294 to Block 2's 646,417 in about the same
+   number of turns. Then read `not re-sent` (characters; divide by 4 for
+   tokens): kept off ÷ (sent + kept off) was a quarter to a third in our
+   runs. That part is the harness; the rest of any gap is how the run
+   went. If your h2 ran past 20 turns, compare its `sent so far` at turn
+   20 with your Block 2 total.
+2. **h3's notes, and your prediction.**
 
    ```bash
    cat results/runs/h3_full__refactor_v2__*/agent_notes.md
    ```
 
-   If the agent never called `update_notes`, the file says so. That's a
-   result, not an error: it happened in two of our five runs. Then compare
-   totals. h3's only systematic extra cost is its notes overhead, a few
-   hundred tokens a turn once the notes exist, around 1% of a run this
-   size. So if your h3 cost
-   40% more or less than h2, that's the run, not the harness. Ours, three
-   runs each: h2 0.84M to 1.19M, h3 1.03M to 1.18M. That's on Fireworks.
-   On the hosted endpoint in `.env.example` the same model took fewer
-   turns and tokens (19 to 34 turns, 0.39M to 0.78M), and those are the
-   runs Block 4 compares its harnesses with. Compare runs from one
-   provider.
-5. **When the agent ran the tests.** The line after the verdict:
+   If it says the agent never called `update_notes`, that's a result, not
+   an error (two of our five runs). Then check your prediction: notes add
+   about 1% to a run, so a big h2/h3 gap is the run, not the harness. Ours
+   on Fireworks, three each: h2 0.84M to 1.19M, h3 1.03M to 1.18M. Don't
+   compare across providers. In our ablation (h3 with and without notes,
+   three runs each), the notes bought nothing measurable: no run re-read a
+   file, so there was nothing to preserve.
+3. **When the agent ran the tests.** The line after the verdict:
    `what the trace shows: tests run 2 times, first at turn 24 of 28 · 0
    files rewritten without being read first`. Note when your h2 and h3
    first tested: step 3 asks whether telling the agent its budget changes
-   that. You'll see the same line in Block 4, for every harness.
-6. **Against the reference.** On `refactor_v2`, the last line compares the
+   that. Block 4 shows the same line for every harness. Check it yourself in the run's full
+   trace:
+
+   ```bash
+   grep -n "run_tests" results/runs/h2_managed__refactor_v2__*/console.log
+   ```
+4. **Against the reference.** On `refactor_v2`, the last line compares the
    final code with a careful hand migration: `against the reference
    migration: matches`, or how many files differ. Tests passing and this
    line disagreeing is a finding, not a bug in the checker.
 
-Every run's full trace is saved, as plain text, to
-`results/runs/<harness>__<task>__<time>/console.log`, one file per run,
-so you can search it after it scrolls past:
-
-```bash
-grep -n "run_tests" results/runs/h2_managed__refactor_v2__*/console.log
-```
-
 ### Step 3: Tell the agent its budget (runs started in step 2; 2 minutes to compare)
 
-No harness so far tells the model how many turns it has left, or whether
-its work passes. Research says it should: a 2025 paper's "Budget Tracker"
-showed the agent its remaining tool calls after every step and matched a
-standard agent's accuracy at 31% lower cost
-([arXiv 2511.17006](https://arxiv.org/abs/2511.17006)), and Anthropic's
-[context awareness](https://platform.claude.com/docs/en/build-with-claude/context-windows)
-and [task budgets](https://platform.claude.com/docs/en/build-with-claude/task-budgets)
-show the model its remaining tokens as it works.
-
-`BUDGET_SIGNAL=progress` makes h3 add one line to the end of each turn's
-last tool result: turns left plus the last test result, e.g. `Turn 12 of
-20 used: 8 left. Last test run (turn 9): 23 failed, 12 passed.`, or `Tests
-not run yet.` A signal only matters when the budget is tight, so both runs
-get 20 turns (`MAX_TURNS=20`, recorded separately from the 40-turn runs).
-Start them side by side, each in its own terminal:
+No harness so far tells the model how many turns it has left or whether
+its work passes. `BUDGET_SIGNAL=progress` makes h3 add one line to each
+turn, e.g. `Turn 12 of 20 used: 8 left. Last test run (turn 9): 23 failed,
+12 passed.` A signal only matters when the budget is tight, so both runs
+get 20 turns. Start them side by side, each in its own terminal:
 
 ```bash
 MAX_TURNS=20 uv run eval/run_eval.py h3 --task refactor_v2
@@ -246,179 +219,32 @@ MAX_TURNS=20 uv run eval/run_eval.py h3 --task refactor_v2
 MAX_TURNS=20 BUDGET_SIGNAL=progress uv run eval/run_eval.py h3 --task refactor_v2
 ```
 
-In the second, watch the dim `⏱ told the model: …` lines, and when it
-first runs the tests. Then compare how each ended. Our runs on
-Fireworks, five of each:
+In the second, watch the dim `⏱ told the model: …` lines and when it
+first runs the tests. Our Fireworks runs, five of each, at about the same
+cost (0.33M to 0.48M tokens):
 
 | h3 with 20 turns | Tests pass | Said it was done |
 |---|---|---|
 | No signal | 0 of 5 | 0 of 5 |
 | `BUDGET_SIGNAL=progress` | 4 of 5 | 3 of 5 |
 
-With or without `progress`, runs cost about the same: 0.33M to 0.48M tokens.
+The difference was the agent testing its work, and it never mentioned the
+signal: you only see the effect by measuring. A turn count alone did
+little; the test status is what mattered. The signal doesn't stop an agent
+leaving testing to its last turn, though: one of ours found a missed file
+that way, with no turn left to fix it.
 
-What made the difference was the agent checking its work. On the
-provider we used before Fireworks (six runs of each), five of six runs
-without a signal never ran the tests, so none could say it was done;
-with `progress`, all six tested, passed and said so. A third signal,
-`pacing` (start editing at half the budget; test and finish with 5
-turns left), passed in 4 of 5. The agent never once mentioned the signal: you only see the
-effect by measuring.
-
-**If your `progress` run tested only on its last turn,** that's the
-failure the signal doesn't fix: the model knew its budget and still left
-testing to the end. One of ours did exactly that, found one file it had
-missed, and had no turn left to fix it.
-
-Two more findings, at the normal 40 turns, where the budget never got
-tight. The signals changed behavior but not cost: with
-`BUDGET_SIGNAL=compaction` ("save what you need to your notes" near the
-compaction budget), the agent saved its notes as the warnings began in
-all three runs, yet no signal ran cheaper than plain h3. And a turn count
-alone did little: h2's `TURN_NOTICE=every` adds just "turn 12 of 40 used:
-28 left", and its costs overlapped plain h2's. What `progress` adds is the
-test status.
-
-**Read the last line, too.** One of our 20-turn runs without the signal
-finished in 14 turns at half the cost of any other, and the scoreboard
-called it solved. The line under it said `against the reference
-migration: 120 files differ`. The agent had renamed the core functions,
-then added aliases (`make_ledger = new_ledger`) so the old names kept
-working, and left 70 files still calling v1 functions. All 35 tests
-passed: they exercise only the v2 API. Under a tight budget, the
-cheapest run was the one that didn't do the job.
+**Read the last line, too.** One no-signal run finished in 14 turns at
+half the cost of any other, all 35 tests passing, but `120 files differ`
+from the reference: it had aliased the old names (`make_ledger =
+new_ledger`) and left 70 files on v1. The cheapest run didn't do the job.
 
 **The method is what you take to work:** fix the model and the task, vary
-one thing, judge with an external checker, and run enough times to tell a
-result from noise. Then check the checker: a test suite measures what it
-tests, and an agent under pressure will find what it doesn't.
+one thing, judge with an external checker, and run enough times to tell
+a result from noise. Then check the checker: an agent under pressure will
+find what your tests don't cover.
 
-## Optional steps
-
-**4. Make the rare protections fire.** Each on a short task. The first two
-are demos and aren't recorded.
-
-```bash
-INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h1 --task fix_bug
-```
-
-```bash
-INJECT_MALFORMED_TURN=3 uv run eval/run_eval.py h2 --task fix_bug
-```
-
-A corrupted tool call on turn 3: h1 (your Block 2 harness, run here) crashes (`the harness crashed
-(JSONDecodeError ...)`); h2 prints `↻`, carries on and solves it.
-
-```bash
-TRANSCRIPT_CHAR_BUDGET=4000 uv run eval/run_eval.py h2 --task bug_hunt
-```
-
-A 4,000-character budget, far too small. `✂✂` fires on most turns,
-`added` goes negative, and `cached` falls (64% to 10% in one of our runs):
-compaction changes the start of the conversation, so the provider's cache
-stops matching. Watch `re-read` too. In another run the agent re-read the
-same files every few turns until it ran out, 84 re-reads in 40 turns:
-too small a budget makes the agent forget what it just read.
-
-```bash
-uv run eval/run_eval.py h2 --task touch_tests
-```
-
-```bash
-uv run eval/run_eval.py h3 --task touch_tests
-```
-
-This task asks the agent to fix the bug *and* add a test. h2 adds it (5
-pass). h3 refuses (`⛔`), still fixes the bug, and carries on, because the
-refusal is an ordinary tool result. Ours said so in its summary: it tried
-to add the test "but the workspace blocks writes to test files."
-
-**5. Do h3's notes earn their place?** h3 with and without notes, nothing
-else changed:
-
-```bash
-uv run eval/ablation.py --runs 1 --task refactor_v2
-```
-
-Two more long runs. Predict the direction first. We ran three of each:
-with notes 365k to 702k tokens, without 187k to 492k, ranges overlapping,
-and no run in either arm re-read a single file. **The notes bought
-nothing measurable**, because this migration never sends the agent back
-for something it already had, so there was nothing for the notes to
-preserve. Durable memory is a good feature; it did nothing here because
-this workload doesn't produce the failure it prevents. Raw rows:
-`ablation_results.jsonl`.
-
-## Reference
-
-### Compaction
-
-It triggers on a threshold, and once crossed, keeps firing every later
-turn: none, or a lot. It fired in three of our five long h2 runs on the
-hosted endpoint (9, 13 and 40 results dropped), and in every h2 and h3
-run on Fireworks, where runs went longer.
-
-It can also cost turns. In one run it started on turn 14, while the agent
-was still reading. The agent re-read 18 dropped files, made its first edit
-on turn 20, and finished on 34. Our other runs re-read nothing. Compaction
-saves tokens per turn, but when it drops something still needed, the run
-gets longer; that's the problem h3's notes target.
-
-### "Why 6,000 and 80,000?"
-
-Knobs, not derived values. **6,000** was a starting value that happens to
-fit this task: only 1 of the 149 files is longer, so files are rarely cut,
-while searches and tracebacks are. **80,000** was tuned down from 200,000,
-at which compaction never fired here. (It counts messages and tool
-results, not files the agent writes.)
-
-| Knob | Lower | Higher |
-|---|---|---|
-| Tool-output cap | Saves more, but cuts things the agent needed | Saves less |
-| Compaction budget | Compacts sooner, but drops results it may need, and breaks the cache | May never fire |
-
-Defaults are tuned to someone's workload. Production harnesses usually
-tie compaction to the model's context window instead.
-
-### "Doesn't truncating a big file hurt?"
-
-It can. The model is told what was cut (`... [harness truncated N chars]
-...`), so it can search or re-read for the rest. On this task it doesn't
-matter: the one file over the cap contains none of the renames. Production
-harnesses tend to **paginate** instead: Claude Code's `Read` returns "the
-first page with a `PARTIAL view` notice" and lets the model ask for more
-with `offset` and `limit`
-([tools reference](https://code.claude.com/docs/en/tools-reference),
-checked Sep 2026). h2 discards the middle; pagination keeps it reachable.
-
-### Recovery has two halves
-
-Catching the parse error is one. The other: the bad arguments are also in
-the stored assistant message, and if left there, the next request is
-rejected (`400 Invalid JSON in tool call arguments`), one turn *after*
-recovery seemed to work. h2 cleans both. An attendee's run found that bug;
-our own fault injection had missed it because it corrupted only a local
-copy. **A test that can't reproduce the real failure still passes.**
-`uv run eval/demo_recovery.py` replays the case offline.
-
-### How scoring works
-
-- Each run works on a copy of the task under `results/runs/`, so runs
-  never touch the repo or each other, and its trace is saved next to that
-  copy (`console.log`). The runner refuses a task whose tests already
-  pass or whose files differ from git.
-- Solved means **pytest passes** afterwards; the agent's report is never
-  consulted. Green tests are this exercise's definition of done, not proof
-  of correctness: your checker is only as good as your bar. On
-  `refactor_v2`, a second line compares the code with the reference
-  migration (`../scripts/reference_check.py`); the score table still
-  counts only the tests.
-- `results/results.jsonl` keeps every run with its model and provider;
-  `compare.py` shows the latest per harness and task.
-- h2 changes three things at once, so it can't say which protection earned
-  a difference. The ablation (step 5) shows how to isolate one.
-
-### Starting over
+## Starting over
 
 ```bash
 uv run ../scripts/reset.py && uv run ../scripts/check_fixtures.py
@@ -495,3 +321,80 @@ harnesses ship:
 
 That these patterns are common is documented. That they help *your*
 workload is something to measure.
+
+## After the workshop
+
+Want to see the rare protections fire, or test whether h3's notes earn
+their place? See [`AFTER_THE_WORKSHOP.md`](AFTER_THE_WORKSHOP.md).
+
+## Reference
+
+### Compaction
+
+It triggers on a threshold, and once crossed, keeps firing every later
+turn: none, or a lot. It fired in three of our five long h2 runs on the
+hosted endpoint (9, 13 and 40 results dropped), and in every h2 and h3
+run on Fireworks, where runs went longer.
+
+It can also cost turns. In one run it started on turn 14, while the agent
+was still reading. The agent re-read 18 dropped files, made its first edit
+on turn 20, and finished on 34. Our other runs re-read nothing. Compaction
+saves tokens per turn, but when it drops something still needed, the run
+gets longer; that's the problem h3's notes target.
+
+### "Why 6,000 and 80,000?"
+
+Knobs, not derived values. **6,000** was a starting value that happens to
+fit this task: only 1 of the 149 files is longer, so files are rarely cut,
+while searches and tracebacks are. The file listing (6,360 characters) is
+cut too, and in one run the cut hid two file families, which the agent
+then rewrote from guesses. **80,000** was tuned down from 200,000,
+at which compaction never fired here. (It counts messages and tool
+results, not files the agent writes.)
+
+| Knob | Lower | Higher |
+|---|---|---|
+| Tool-output cap | Saves more, but cuts things the agent needed | Saves less |
+| Compaction budget | Compacts sooner, but drops results it may need, and breaks the cache | May never fire |
+
+Defaults are tuned to someone's workload. Production harnesses usually
+tie compaction to the model's context window instead.
+
+### "Doesn't truncating a big file hurt?"
+
+It can. The model is told what was cut (`... [harness truncated N chars]
+...`), so it can search or re-read for the rest. On this task it doesn't
+matter: the one file over the cap contains none of the renames. Production
+harnesses tend to **paginate** instead: Claude Code's `Read` returns "the
+first page with a `PARTIAL view` notice" and lets the model ask for more
+with `offset` and `limit`
+([tools reference](https://code.claude.com/docs/en/tools-reference),
+checked Sep 2026). h2 discards the middle; pagination keeps it reachable.
+
+### Recovery has two halves
+
+Catching the parse error is one. The other: the bad arguments are also in
+the stored assistant message, and if left there, the next request is
+rejected (`400 Invalid JSON in tool call arguments`), one turn *after*
+recovery seemed to work. h2 cleans both. An attendee's run found that bug;
+our own fault injection had missed it because it corrupted only a local
+copy. **A test that can't reproduce the real failure still passes.**
+`uv run eval/demo_recovery.py` replays the case offline.
+
+### How scoring works
+
+- Each run works on a copy of the task under `results/runs/`, so runs
+  never touch the repo or each other, and its trace is saved next to that
+  copy (`console.log`). The runner refuses a task whose tests already
+  pass or whose files differ from git.
+- Solved means **pytest passes** afterwards; the agent's report is never
+  consulted. Green tests are this exercise's definition of done, not proof
+  of correctness: your checker is only as good as your bar. On
+  `refactor_v2`, a second line compares the code with the reference
+  migration (`../scripts/reference_check.py`); the score table still
+  counts only the tests.
+- `results/results.jsonl` keeps every run with its model and provider;
+  `compare.py` shows the latest per harness and task.
+- h2 changes three things at once, so it can't say which protection earned
+  a difference. The ablation in `AFTER_THE_WORKSHOP.md` shows how to
+  isolate one.

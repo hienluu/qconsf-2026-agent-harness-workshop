@@ -18,8 +18,8 @@ hand it a migration across 149 Python files. Block 1 listed seven parts of a har
 this one has two, the loop and tool dispatch. The point is to see what the
 other five would have done for you, so that Block 3 can measure it.
 
-Cost: about $1 to $2 in total. Everything runs with `uv run`, so there's
-no virtualenv to create or activate.
+Everything runs with `uv run`, so there's no virtualenv to create or
+activate.
 
 ## What's missing, on purpose
 
@@ -136,7 +136,7 @@ uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 `7 errors during collection`: none of the test files can even import the
 code.
 
-Run it **once**. It costs about $0.50, and the 20-turn cap bounds that:
+Run it **once**:
 
 ```bash
 uv run harness_skeleton.py tasks/long_horizon/refactor_v2/workspace \
@@ -166,74 +166,49 @@ tracking the remaining work.
 Note the turn where you'd first have guessed it was in trouble.
 
 **How it ends.** Twenty turns is about what this job needs, with no
-margin, and the model is never told how many it has. So it nearly always
-uses most or all of them, and runs end differently. We've seen five
-endings:
+margin, and the model is never told how many it has, so endings vary:
 
-- **Finished, and said so.** Tests pass and the agent sums up. Nothing
-  looks wrong.
-- **Finished, but never said so.** It ran the tests on the last turn and
-  had no turn left to read the result. The scoreboard runs the tests
-  itself and tells you.
-- **Ran out mid-job.** Partly migrated, tests still failing.
-- **Never started.** It spent its turns reading, a file or two at a time,
-  and ran out before the first edit. The scoreboard shows `write 0`, and
-  the tests fail exactly as they did before it began.
-- **Crashed.** The model hit its output limit partway through a big batch
-  of writes and sent a truncated tool call. Nothing in your harness
-  catches the `json.loads` error, so the process dies. Rare.
+| Ending | What you'll see |
+|---|---|
+| Finished, and said so | Tests pass and the agent sums up |
+| Finished, never said so | It ran the tests on its last turn with none left to read them. The scoreboard runs them and tells you |
+| Ran out mid-job | Partly migrated, tests still failing |
+| Never started | Every turn spent reading: `write 0`, tests fail as before |
+| Crashed (rare) | A truncated tool call at the output limit. Nothing catches the `json.loads` error |
 
-**When it stops**, it prints a **turn-by-turn table** and then a two-line
-**run summary**: how the run ended (checked by running the tests when the
-agent didn't say it was done), and how much it sent against the
-conversation's final size. Each row of the table is one turn:
-
-- **sent this turn:** what that turn's call cost to send, in tokens, as
-  billed. Not a running total: each row is one call, and it grows because
-  each call carries the whole conversation so far, plus the tool
-  definitions. The `total` row adds them up. The bar draws this number.
-- **cached:** how much of that the provider had already seen on an
-  earlier call, and charges less for. Providers match from the start of
-  the conversation up to the first change, so it stays high as long as the
-  harness only adds to the end. Shown only if your provider reports it.
-- **tool calls:** what the model asked for in reply.
-- **added:** how much the turn added to the conversation (an estimate):
-  the model's reply, including its tool calls and any file it wrote, plus
-  the tool results. On the last turn it's just the closing message. Every
-  later turn pays to send it again.
-- **agent says:** its words that turn, in green, cut to fit your window.
-  The full text is in the trace above the table. (In a narrow window they
-  move to a line under the row.)
-
-A row from a long run:
+**When it stops**, it prints a turn-by-turn table, then a two-line run
+summary: the ending (checked with the tests if the agent didn't say) and
+the total sent against the conversation's final size. A row:
 
 ```text
    turn  sent this turn                        cached  tool calls           added
       7          10,917  ████                     85%  search 5           +11,535
 ```
 
-Turn 7 cost 10,917 tokens to send. Its five searches then added 11,535
-tokens of results, so turn 8 costs about that much more, and so does every
-turn after it. The big `+` numbers are where the cost comes from, and
-they're what Block 3's harnesses go after.
+| Column | Meaning |
+|---|---|
+| sent this turn | Tokens billed for this one call, not a running total. It grows because every call re-sends the whole conversation. `total` sums them |
+| cached | Share the provider saw on an earlier call and charges less for. Stays high while the harness only appends |
+| tool calls | What the model asked for |
+| added | Estimated tokens this turn added: reply, written files, tool results. Every later turn re-sends it |
+| agent says | Its words, cut to fit (full text in the trace above) |
 
-**Read your output, whatever happened.** Three things to find in your own
-table:
+Turn 7's five searches added 11,535 tokens, so turn 8, and every turn
+after, costs that much more to send. The big `+` numbers are where the
+cost comes from, and what Block 3's harnesses go after.
 
-1. **Your most expensive result.** Find the biggest number in the `added`
-   column and multiply it by the number of turns after it. That's what one
-   turn's results cost you in re-sending. In one of our runs, turn 3's
-   eight searches added 10,052 tokens, and the 17 turns after it sent them
-   again: about 171,000 tokens, **a third of the run's 518,776**, for
-   results the agent read once. What was yours: a search, a test run, a
-   big read? A limit on tool output is aimed at exactly this, and it's the
-   first thing Block 3 adds. (The `cached` column makes the re-sending
-   cheaper, but the model still processes every token.)
-2. **When it checked its work.** Find `tests` in the `tool calls` column.
-   How many turns were left when it first ran them? In the same run: once,
-   on turn 19 of 20. If they had failed, there was no room to fix
-   anything, and nothing in the harness watches the budget or prompts the
-   agent to test as it goes.
+**Read your output, whatever happened.** Find three things in your table:
+
+1. **Your most expensive result.** Multiply the biggest `added` by the
+   turns after it: that's what re-sending it cost. In one of our runs,
+   turn 3's eight searches added 10,052 tokens and the 17 later turns
+   re-sent them: about 171,000 tokens, **a third of the run's 518,776**,
+   for results read once. Limiting tool output targets exactly this, and
+   it's the first thing Block 3 adds. (Caching makes re-sending cheaper,
+   but the model still processes every token.)
+2. **When it checked its work.** How many turns were left when `tests`
+   first shows up under `tool calls`? In that run: turn 19 of 20, with no
+   room to fix a failure. Nothing in the harness prompts it to test sooner.
 3. **What the people around you got.** Same code, model and task: compare
    endings and totals. One run tells you very little, which is where
    Block 3 starts.
