@@ -14,10 +14,11 @@
 > its table. The discussion starts on time, whether or not everyone has
 > finished.
 
-This block runs Block 2's 149-file migration through two better harnesses:
-same model, task and tools, only the harness changes. That's also how to
-settle a harness argument at work: run your own tasks through the
-candidates, and don't take the agent's word for the result.
+This block runs Block 2's 149-file migration through two harnesses with
+more protections: same model, task and tools, only the harness changes.
+It's also how you'd settle a harness argument at work: run your own tasks
+through the candidates and check the results yourself, rather than taking
+the agent's word for them.
 
 **Your Block 2 numbers are the baseline:** ending, last turn, total sent,
 biggest `added`. Block 2 had 20 turns and these get 40, so if yours ran
@@ -102,8 +103,8 @@ behind-rule at the top applies.
 
 #### 1a. h2
 
-Your Block 2 harness plus the cap and compaction. You're
-watching the harness manage what the model sees.
+Your Block 2 harness plus the cap and compaction. You're watching the
+harness manage what the model sees.
 
 ```bash
 uv run eval/run_eval.py h2 --task refactor_v2
@@ -136,8 +137,8 @@ Watch for:
 h2 plus durable notes and the test guardrail. You're watching whether the
 agent uses its notes, and whether more capability changes the cost.
 
-**Note: no reset needed between the two.** Each run works on its own copy
-of the task.
+**No reset needed between the two:** each run works on its own copy of
+the task.
 
 **Write down a prediction first:** will h3 send more tokens than h2, or
 fewer?
@@ -188,12 +189,12 @@ Four things to find:
    compare across providers. In our ablation (h3 with and without notes,
    three runs each), the notes bought nothing measurable: no run re-read a
    file, so there was nothing to preserve.
-3. **When the agent ran the tests.** The line after the verdict:
+3. **When the agent ran the tests.** The line under the verdict:
    `what the trace shows: tests run 2 times, first at turn 24 of 28 · 0
    files rewritten without being read first`. Note when your h2 and h3
    first tested: step 3 asks whether telling the agent its budget changes
-   that. Block 4 shows the same line for every harness. Check it yourself in the run's full
-   trace:
+   that. Block 4 shows the same line for every harness. Check it against
+   the run's full trace:
 
    ```bash
    grep -n "run_tests" results/runs/h2_managed__refactor_v2__*/console.log
@@ -277,7 +278,8 @@ delete) your score table. `check_fixtures.py` only checks.
 - The guardrail never fired on the migration. Is it worthless? (What could
   you claim about the runs nobody inspected?)
 
-Block 4: what five production harnesses decide for you, and what they leave to you.
+Block 4: what production harnesses decide for you, and what they leave
+to you.
 
 ## Where these ideas come from
 
@@ -315,9 +317,8 @@ harnesses ship:
   modes ([docs](https://code.claude.com/docs/en/permissions)), Deep
   Agents' file access confined to a folder with `virtual_mode=True`
   ([docs](https://docs.langchain.com/oss/python/deepagents/backends)).
-  Block 4 shows both. h3's
-  version guards one thing, the tests, at the one place every tool call
-  passes through.
+  Block 4 shows both. h3's version guards one thing, the tests, at the one
+  place every tool call passes through.
 
 That these patterns are common is documented. That they help *your*
 workload is something to measure.
@@ -348,9 +349,9 @@ Knobs, not derived values. **6,000** was a starting value that happens to
 fit this task: only 1 of the 149 files is longer, so files are rarely cut,
 while searches and tracebacks are. The file listing (6,360 characters) is
 cut too, and in one run the cut hid two file families, which the agent
-then rewrote from guesses. **80,000** was tuned down from 200,000,
-at which compaction never fired here. (It counts messages and tool
-results, not files the agent writes.)
+then rewrote from guesses. **80,000** was tuned down from 200,000, at
+which compaction never fired here. (It counts messages and tool results,
+not files the agent writes.)
 
 | Knob | Lower | Higher |
 |---|---|---|
@@ -395,6 +396,6 @@ copy. **A test that can't reproduce the real failure still passes.**
   counts only the tests.
 - `results/results.jsonl` keeps every run with its model and provider;
   `compare.py` shows the latest per harness and task.
-- h2 changes three things at once, so it can't say which protection earned
-  a difference. The ablation in `AFTER_THE_WORKSHOP.md` shows how to
-  isolate one.
+- h2 changes several things at once (the cap, compaction and recovery),
+  so it can't say which one earned a difference. The ablation in
+  `AFTER_THE_WORKSHOP.md` shows how to isolate one.

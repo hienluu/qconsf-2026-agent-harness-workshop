@@ -14,17 +14,16 @@
 > whether or not everyone has finished.
 
 You'll finish a minimal agent harness, check it on a one-line bug, then
-hand it a migration across 149 Python files. Block 1 listed seven parts of a harness;
-this one has two, the loop and tool dispatch. The point is to see what the
-other five would have done for you, so that Block 3 can measure it.
+hand it a 149-file migration. Block 1 listed seven parts of a harness;
+this one has two, the loop and tool dispatch. The table below lists what
+that leaves out, and the long task shows what each gap costs.
 
-Everything runs with `uv run`, so there's no virtualenv to create or
-activate.
+Everything runs with `uv run`; there's no virtualenv to manage.
 
 ## What's missing, on purpose
 
 `harness_skeleton.py` is a working loop with two gaps to fill and no
-protections. Here's what that looks like in practice:
+protections. In practice:
 
 | Missing | What you'll see |
 |---|---|
@@ -44,14 +43,14 @@ cd block2_naive_harness
 
 ### Step 0: Check your setup (at home)
 
-You did this at home, as the last line of Setup in the repo README. If you
-didn't, run it during Block 1, not now:
+This is the last line of Setup in the repo README. If you skipped it,
+run it during Block 1, not now:
 
 ```bash
 uv run ../setup/check_setup.py
 ```
 
-Expect `ALL GREEN`. If not, fix what it tells you, or flag a helper.
+Expect `ALL GREEN`. If not, fix what it reports, or flag a helper.
 
 ### Step 1: Read what you were given (2 min)
 
@@ -69,11 +68,10 @@ Expect `ALL GREEN`. If not, fix what it tells you, or flag a helper.
   the tool, call it, append the result to the conversation.
 
 The comments show what to write. TODO 2 runs once per tool call, so keep
-it indented inside the `for call in msg.tool_calls:` loop. If the append
-lands outside it, only the last call gets a result and the next model
-call fails. Stuck? `solution/harness.py` is the
-finished version and takes the same arguments, so it works in place of
-yours in every command below.
+it inside the `for call in msg.tool_calls:` loop: if the append lands
+outside it, only the last call gets a result and the next model call
+fails. Stuck? `solution/harness.py` is the finished version and takes the
+same arguments, so it works in place of yours in every command below.
 
 ### Step 3: A short task (3 min)
 
@@ -85,10 +83,10 @@ uv run python -m pytest tasks/short/01_fix_bug/workspace -q
 
 `2 failed, 2 passed`. `moving_average([1, 2, 3, 4], 2)` returns
 `[1.5, 2.5]`: the loop on line 6 of `stats.py` stops one window short.
-Keep `stats.py` open in your editor and you'll see the fix land. You may
-also see it wiped first: `write_file` replaces the whole file, so if the
-agent writes only a fragment, that's all the file holds until it writes
-it again. Nothing in this harness checks an edit before it lands.
+Keep `stats.py` open in your editor to watch the fix land. You may see it
+wiped first: `write_file` replaces the whole file, so if the agent writes
+a fragment, that's all the file holds until it writes again. Nothing in
+this harness checks an edit before it lands.
 
 Now run your agent. It takes two arguments: the workspace (the only files
 its tools can see) and the task in quotes, which becomes its first
@@ -100,8 +98,8 @@ uv run harness_skeleton.py tasks/short/01_fix_bug/workspace \
 ```
 
 5 to 8 turns, under a minute. It does what you just did: runs the tests,
-reads the failure, reads the loop, edits. Then check it yourself. The
-agent's summary isn't evidence; the tests are:
+reads the failure, reads the loop, edits. Then check it yourself; the
+agent's summary isn't evidence, the tests are:
 
 ```bash
 uv run python -m pytest tasks/short/01_fix_bug/workspace -q
@@ -116,16 +114,17 @@ first (see "Starting over").
 Same harness, model and tools. Only the size of the job changes.
 
 `tasks/long_horizon/refactor_v2/workspace/` is *pyledger*, a bookkeeping
-library: 149 Python files, 35 tests. The tests use a new v2 API, but the code is
-still on v1, so nothing imports. The agent has to rename every v1
+library: 149 Python files, 35 tests. The tests use a new v2 API, the code
+is still on v1, so nothing imports. The agent has to rename every v1
 identifier until the tests pass. It's harder than find-and-replace:
 
 - `MIGRATION.md` documents 8 of the 14 renames. The other 6 have to be
   worked out from the failing tests.
 - The renames hit definitions, imports, call sites, dataclass fields and
   dict keys.
-- `post()` in `webhook.py` is an HTTP verb, not the ledger API, and must
-  not be renamed. `MIGRATION.md` says so.
+- `post()` becomes `record()` everywhere except `webhook.py`, whose
+  `post()` sends an HTTP request and must keep its name. `MIGRATION.md`
+  says so.
 
 The before-state:
 
@@ -133,8 +132,7 @@ The before-state:
 uv run python -m pytest tasks/long_horizon/refactor_v2/workspace -q
 ```
 
-`7 errors during collection`: none of the test files can even import the
-code.
+`7 errors during collection`: no test file can even import the code.
 
 Run it **once**:
 
@@ -163,7 +161,7 @@ Up to three yellow call-outs, once each: the turn of the first edit
 passes 150k characters, and the moment 4 turns are left with nothing
 tracking the remaining work.
 
-Note the turn where you'd first have guessed it was in trouble.
+Note the turn where you'd first have called it in trouble.
 
 **How it ends.** Twenty turns is about what this job needs, with no
 margin, and the model is never told how many it has, so endings vary:
@@ -213,8 +211,8 @@ cost comes from, and what Block 3's harnesses go after.
    endings and totals. One run tells you very little, which is where
    Block 3 starts.
 
-**The point.** Every harness answers four questions, whether or not anyone
-decided. Yours answered each the simplest way:
+**The point.** Every harness answers four questions, whether or not
+anyone decided. Yours answered each the simplest way:
 
 | Question | Your harness's answer |
 |---|---|
@@ -223,9 +221,9 @@ decided. Yours answered each the simplest way:
 | When does the agent check its work? | Whenever the model happens to |
 | Does anything watch the budget? | No |
 
-Block 3 changes these answers one at a time and measures what each change
-is worth. Block 4 shows how five production harnesses answered them for
-you. Block 5's worksheet then takes your own agent to a harness decision.
+Block 3 changes these answers one at a time and measures what each
+change is worth. Block 4 shows how production harnesses answer them for
+you. Block 5 turns that into a decision for your own agent.
 
 **Write down** the ending, the last turn, the total sent, and your biggest
 `added` with what it cost. You'll compare them with Block 3's harnesses on
@@ -250,14 +248,12 @@ the same task. (Not wall time: that mostly measures the provider.)
 - If your run finished, how would you know without taking the agent's
   word for it or running the tests by hand?
 
-Block 3 adds the missing pieces back one at a time and measures each.
-
 ## Starting over
 
 The tasks are fixtures: a bug that must still be there, code that must
 still be on v1. After a run, they aren't. Rerun without resetting and the
-next agent starts where the last one stopped, and may report a success it
-didn't earn. That happened to us: one run left 56 files migrated, the next
+next agent starts where the last one stopped, and may claim a success it
+didn't earn. We hit this: one run left 56 files migrated, the next
 finished the job and reported "all 35 tests pass."
 
 ```bash

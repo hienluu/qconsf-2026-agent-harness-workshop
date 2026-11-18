@@ -76,10 +76,10 @@ uv run openai_agents/run.py
 The OpenAI Agents SDK gets the four file tools you know from Blocks 2 and
 3. Watch:
 
-- **The algorithm.** A few turns of reading (`read_file × 8`),
-  then turns of writing (`write_file × 8`): about 130 files, one call
-  each. That's your h2's algorithm, inside someone else's loop.
-- **The headers.** The model narrates between steps (`❝ agent says:`):
+- **The algorithm.** A few turns of reading (`read_file × 8`), then
+  turns of writing (`write_file × 8`): about 130 files, one call each.
+  That's your h2's algorithm, inside someone else's loop.
+- **What it says.** The model narrates between steps (`❝ agent says:`):
   where it finds the renames `MIGRATION.md` left out, and whether it
   notices `webhook.py`.
 - **How long it reads before it writes.** Usually 6 to 20 turns. Once in
@@ -146,13 +146,13 @@ Step 4 runs one answer.
 <details>
 <summary><b>The answer we ran.</b> Open it once you've written yours down (step 3).</summary>
 
-**The insight, from the traces you just watched.** By the time the agent
+**What the traces showed.** By the time the agent
 starts writing, it already knows what to do: about 14 rename rules, from
 `MIGRATION.md` and the tests. Then it spends some 280 calls applying them,
 one file at a time, re-sending each whole file to change a few words. The
 model isn't the bottleneck; the tool is. It works one *file* per call,
-while the work comes one *rule* at a time. So: a tool whose unit is the
-rule.
+while the work comes one *rule* at a time. So the tool's unit should be
+the rule.
 
 **What `replace_in_files(old, new, exclude, dry_run)` does:**
 
@@ -160,9 +160,9 @@ rule.
 |---|---|
 | **One call per rename** | replaces `old` with `new` in every `.py` file, as a whole word (`post`, not the `post` in `posted`), in code, strings and comments (the field names also appear as dict keys) |
 | **Never touches a test file** | test files are skipped and counted in the result, whatever the model asks |
-| **`exclude`** | files to leave alone, e.g. `pyledger/integrations/webhook.py`, whose `post()` is the HTTP verb. The tool doesn't know that; the agent has to. A path that matches no file is an error, so a typo can't quietly let the rename through |
+| **`exclude`** | files to leave alone, e.g. `pyledger/integrations/webhook.py`, whose `post()` sends an HTTP request. The tool doesn't know that; the agent has to. A path that matches no file is an error, so a typo can't quietly let the rename through |
 | **`dry_run`** | lists the files and counts it *would* change, without changing anything: a search and a preview |
-| **Returns** | the files it changed, with counts: proof the model can read |
+| **Returns** | the files it changed, with counts, so the model can check its work |
 
 It sits alongside the four file tools, for anything that isn't a rename,
 and runs no shell commands, so it's as safe on your laptop as step 1. The
@@ -282,12 +282,12 @@ tokens. Deep Agents ran out of budget in all three runs; with its
 subagent turned off and one line of prompt added it solves it (see
 `COMPARISON.md`).
 
-**So, the intro's question.** What a production harness did that yours
-didn't: on this task, nothing measurable; its own tools and features cost
-more here. What it left to you: the tool design (step 4), checking the
-result (discussion question 1), the turn budget (step 1), and isolation
-(see the Reference). `COMPARISON.md`'s "What each harness decides for
-you" table covers the rest, row by row.
+**Back to the opening question.** What a production harness did that
+yours didn't: on this task, nothing measurable; its own tools and
+features cost more here. What it left to you: the tool design (step 4),
+checking the result (discussion question 1), the turn budget (step 1),
+and isolation (see the Reference). `COMPARISON.md`'s "What each harness
+decides for you" table covers the rest, row by row.
 
 To run the other three yourself, see "After the workshop" at the bottom.
 
@@ -352,7 +352,7 @@ Deep Agents, Pydantic AI and Google ADK to run yourself, all five side by
 side, a quicker task, and Deep Agents' summarization forced on: see
 [`AFTER_THE_WORKSHOP.md`](AFTER_THE_WORKSHOP.md).
 
-## Reference: what "sandbox" means here (less than you might think)
+## Reference: what "sandbox" means here
 
 Every run works on a **disposable copy** of the task under `runs/`. That
 keeps runs repeatable; it isn't security.
