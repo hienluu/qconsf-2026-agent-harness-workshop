@@ -52,16 +52,18 @@ gets big.
 h2 also catches a malformed tool call instead of crashing. It's rare on
 this task; `AFTER_THE_WORKSHOP.md` shows it.
 
-**h3** (`h3_full`): h2 plus two things production harnesses ship.
+**h3** (`h3_full`): h2 plus three things production harnesses ship. The
+second is off until you flip it in step 3.
 
 1. **Durable notes.** An `update_notes` tool writes to a pinned message
    that compaction never drops, so the agent's plan survives. Code: the
    `[h3]` blocks in `harnesses/h3_full.py`.
-2. **A write guardrail.** Writes to test files (under `tests/`, any
-   `test_*.py`, `conftest.py`) are refused by the harness, not just
-   forbidden by the prompt. Why: success means "the tests pass," and an
-   agent that can edit the tests can get there without fixing anything.
-   Code: `is_test_file()` and `guarded_write()`.
+2. **A budget signal (off by default).** `BUDGET_SIGNAL=progress` adds
+   one line to each turn: the turns left and the last test result. Step 3
+   turns it on. Code: `budget_signal()`, tagged `[h3, optional]`.
+3. **A write guardrail.** The harness refuses writes to test files, so
+   the agent can't make the tests pass by editing them. Code:
+   `is_test_file()` and `guarded_write()`.
 
 Every addition is tagged in the source; everything untagged is identical
 to the harness before it:
@@ -183,10 +185,11 @@ Four things to find:
    ```
 
    If it says the agent never called `update_notes`, that's a result, not
-   an error (two of our five runs). Then check your prediction: notes add
-   about 1% to a run, so a big h2/h3 gap is the run, not the harness. Ours
-   on Fireworks, three each: h2 0.84M to 1.19M, h3 1.03M to 1.18M. Don't
-   compare across providers. In our ablation (h3 with and without notes,
+   an error (most of our runs took notes; on one provider most didn't).
+   Then check your prediction: notes add about 1% to a run, so a big h2/h3
+   gap is the run, not the harness. Ours on Fireworks: h2 0.62M to 1.19M
+   over seven runs, h3 0.73M to 1.18M over eight. Don't compare across
+   providers. In our ablation (h3 with and without notes,
    three runs each), the notes bought nothing measurable: no run re-read a
    file, so there was nothing to preserve.
 3. **When the agent ran the tests.** The line under the verdict:
